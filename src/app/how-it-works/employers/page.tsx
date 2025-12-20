@@ -459,10 +459,18 @@ export default function HowItWorksEmployersPage() {
                   </div>
 
                   <div className="mt-6 flex gap-3">
-                    <button className="flex-1 py-2.5 bg-green-600 text-white rounded-lg font-medium text-sm">
+                    <button
+                      className="flex-1 py-2.5 bg-green-400 text-white/80 rounded-lg font-medium text-sm cursor-not-allowed opacity-75"
+                      disabled
+                      title="Demo button - not functional"
+                    >
                       Download Letter
                     </button>
-                    <button className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium text-sm">
+                    <button
+                      className="flex-1 py-2.5 border border-gray-200 text-gray-400 rounded-lg font-medium text-sm cursor-not-allowed opacity-75"
+                      disabled
+                      title="Demo button - not functional"
+                    >
                       View Full Profile
                     </button>
                   </div>

@@ -3,13 +3,29 @@ import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { O1Criterion, O1_CRITERIA } from '@/types/enums';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid build-time errors when API keys aren't set
+let openai: OpenAI | null = null;
+let anthropic: Anthropic | null = null;
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+function getOpenAI(): OpenAI {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not set');
+    }
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openai;
+}
+
+function getAnthropic(): Anthropic {
+  if (!anthropic) {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY is not set');
+    }
+    anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return anthropic;
+}
 
 const CLASSIFICATION_PROMPT = `You are an expert O-1 visa document classifier. Analyze the following document content and classify it into one of the 8 O-1 visa criteria categories.
 
@@ -40,7 +56,7 @@ interface ClassificationResult {
 }
 
 async function classifyWithOpenAI(content: string): Promise<ClassificationResult> {
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4o',
     messages: [
       {
@@ -66,7 +82,7 @@ async function classifyWithOpenAI(content: string): Promise<ClassificationResult
 }
 
 async function classifyWithAnthropic(content: string): Promise<ClassificationResult> {
-  const response = await anthropic.messages.create({
+  const response = await getAnthropic().messages.create({
     model: 'claude-3-5-sonnet-20241022',
     max_tokens: 1024,
     messages: [

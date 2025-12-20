@@ -444,7 +444,11 @@ export default function HowItWorksCandidatesPage() {
                         <p className="font-medium text-gray-900">John Smith</p>
                         <p className="text-xs text-gray-500">CEO, TechCorp</p>
                       </div>
-                      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">
+                      <button
+                        className="px-4 py-2 bg-blue-400 text-white/80 rounded-lg text-sm cursor-not-allowed opacity-75"
+                        disabled
+                        title="Demo button - not functional"
+                      >
                         Download PDF
                       </button>
                     </div>

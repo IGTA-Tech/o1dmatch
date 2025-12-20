@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { sendEmail, interestLetterReceived, letterResponse } from '@/lib/email';
 import { COMMITMENT_LEVELS, CommitmentLevel } from '@/types/enums';
+import { getEmployerUsageLimits, incrementLetterCount } from '@/lib/subscriptions/limits';
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,6 +70,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check usage limits for employers
+    if (employerProfile) {
+      const limits = await getEmployerUsageLimits(user.id);
+      if (!limits.canSendLetter) {
+        return NextResponse.json(
+          {
+            error: 'Letter limit reached',
+            message: `You have used all ${limits.maxLettersPerMonth} letters for this month. Upgrade your plan to send more.`,
+            limits: {
+              sent: limits.lettersSentThisMonth,
+              max: limits.maxLettersPerMonth,
+              tier: limits.tier,
+            },
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     // Get talent profile to verify they exist
     const { data: talentProfile } = await adminSupabase
       .from('talent_profiles')
@@ -117,6 +137,11 @@ export async function POST(request: NextRequest) {
 
     if (letterError) {
       throw letterError;
+    }
+
+    // Increment letter count for employer
+    if (employerProfile) {
+      await incrementLetterCount(user.id);
     }
 
     // Update application status if this was from an application
