@@ -11,6 +11,7 @@ import {
   XCircle,
   Clock,
   Eye,
+  PenTool,
 } from 'lucide-react';
 import Link from 'next/link';
 import { LetterStatus, COMMITMENT_LEVELS } from '@/types/enums';
@@ -25,6 +26,9 @@ const STATUS_CONFIG: Record<
   accepted: { label: 'Accepted', variant: 'success', icon: <CheckCircle className="w-4 h-4" /> },
   declined: { label: 'Declined', variant: 'error', icon: <XCircle className="w-4 h-4" /> },
   expired: { label: 'Expired', variant: 'default', icon: <Clock className="w-4 h-4" /> },
+  signature_requested: { label: 'Signature Requested', variant: 'info', icon: <PenTool className="w-4 h-4" /> },
+  signature_pending: { label: 'Awaiting Signature', variant: 'warning', icon: <PenTool className="w-4 h-4" /> },
+  signed: { label: 'Signed', variant: 'success', icon: <CheckCircle className="w-4 h-4" /> },
 };
 
 export default async function EmployerLettersPage() {

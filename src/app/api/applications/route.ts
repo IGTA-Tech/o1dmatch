@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { sendEmail, applicationReceived } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -103,6 +104,32 @@ export async function POST(request: NextRequest) {
         job_title: job.title,
       },
     });
+
+    // Send email notification to employer
+    try {
+      const { data: employer } = await adminSupabase
+        .from('employer_profiles')
+        .select('signatory_email, signatory_name, company_name')
+        .eq('id', job.employer_id)
+        .single();
+
+      if (employer?.signatory_email) {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        await sendEmail({
+          to: employer.signatory_email,
+          template: applicationReceived({
+            employerName: employer.signatory_name || employer.company_name || 'Hiring Manager',
+            candidateId: talentProfile.candidate_id,
+            jobTitle: job.title,
+            o1Score: talentProfile.o1_score || 0,
+            dashboardUrl: `${baseUrl}/dashboard/employer/jobs`,
+          }),
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to send application received email:', emailError);
+      // Don't fail the request if email fails
+    }
 
     return NextResponse.json({
       success: true,

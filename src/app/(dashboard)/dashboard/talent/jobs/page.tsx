@@ -3,13 +3,20 @@ import { redirect } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui';
 import { ScoreInline } from '@/components/talent/ScoreDisplay';
 import {
+  calculateMatchScore,
+  TalentMatchProfile,
+  JobMatchProfile,
+} from '@/lib/matching';
+import { O1Criterion } from '@/types/enums';
+import {
   Briefcase,
   MapPin,
   DollarSign,
   Calendar,
   ArrowRight,
   Building2,
-  Search,
+  Sparkles,
+  Target,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -59,19 +66,41 @@ export default async function TalentJobsPage() {
 
   const talentScore = talentProfile.o1_score || 0;
 
+  // Calculate smart match scores
+  const talent: TalentMatchProfile = {
+    id: talentProfile.id,
+    o1_score: talentScore,
+    criteria_met: (talentProfile.criteria_met as O1Criterion[]) || [],
+    skills: (talentProfile.skills as string[]) || [],
+    education_level: talentProfile.education_level,
+    years_experience: talentProfile.years_experience,
+  };
+
+  const jobsWithMatches = (jobs || [])
+    .filter((job) => !appliedJobIds.has(job.id))
+    .map((job) => {
+      const jobProfile: JobMatchProfile = {
+        id: job.id,
+        min_score: job.min_score,
+        preferred_criteria: (job.preferred_criteria as O1Criterion[]) || [],
+        required_skills: (job.required_skills as string[]) || [],
+        preferred_skills: (job.preferred_skills as string[]) || [],
+        required_education: job.required_education,
+        min_experience: job.min_experience,
+      };
+      const match = calculateMatchScore(talent, jobProfile);
+      return { ...job, match };
+    });
+
+  // Sort by match score
+  const sortedJobs = jobsWithMatches.sort((a, b) => b.match.overall_score - a.match.overall_score);
+
+  // Categorize by match quality
   const categorizedJobs = {
-    matching: jobs?.filter(
-      (job) => !appliedJobIds.has(job.id) && job.min_score <= talentScore
-    ) || [],
-    stretch: jobs?.filter(
-      (job) =>
-        !appliedJobIds.has(job.id) &&
-        job.min_score > talentScore &&
-        job.min_score <= talentScore + 20
-    ) || [],
-    other: jobs?.filter(
-      (job) => !appliedJobIds.has(job.id) && job.min_score > talentScore + 20
-    ) || [],
+    excellent: sortedJobs.filter((job) => job.match.category === 'excellent'),
+    good: sortedJobs.filter((job) => job.match.category === 'good'),
+    fair: sortedJobs.filter((job) => job.match.category === 'fair'),
+    poor: sortedJobs.filter((job) => job.match.category === 'poor'),
   };
 
   const formatSalary = (min?: number | null, max?: number | null) => {
@@ -81,7 +110,22 @@ export default async function TalentJobsPage() {
     return `Up to $${((max || 0) / 1000).toFixed(0)}k`;
   };
 
-  const renderJobCard = (job: NonNullable<typeof jobs>[number]) => (
+  const getMatchBadgeColor = (category: string) => {
+    switch (category) {
+      case 'excellent':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'good':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'fair':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-600 border-gray-200';
+    }
+  };
+
+  type JobWithMatch = typeof sortedJobs[number];
+
+  const renderJobCard = (job: JobWithMatch) => (
     <Link key={job.id} href={`/dashboard/talent/jobs/${job.id}`}>
       <Card hover className="h-full">
         <CardContent className="flex flex-col h-full">
@@ -103,9 +147,13 @@ export default async function TalentJobsPage() {
                 <p className="text-sm text-gray-600">{job.employer?.company_name}</p>
               </div>
             </div>
-            <div className="text-right">
-              <span className="text-xs text-gray-500">Min Score</span>
-              <p className="font-semibold text-gray-900">{job.min_score}%</p>
+            <div className="flex flex-col items-end gap-1">
+              <span
+                className={`text-xs font-medium px-2 py-0.5 rounded-full border ${getMatchBadgeColor(job.match.category)}`}
+              >
+                {job.match.overall_score}% match
+              </span>
+              <span className="text-xs text-gray-500">Min: {job.min_score}%</span>
             </div>
           </div>
 
@@ -160,61 +208,77 @@ export default async function TalentJobsPage() {
         </div>
       </div>
 
-      {/* Score explanation */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      {/* Smart matching explanation */}
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-100 rounded-lg p-4">
         <div className="flex items-start gap-3">
-          <Search className="w-5 h-5 text-blue-600 mt-0.5" />
+          <Sparkles className="w-5 h-5 text-purple-600 mt-0.5" />
           <div>
-            <p className="font-medium text-blue-900">How matching works</p>
-            <p className="text-sm text-blue-700 mt-1">
-              Jobs are matched based on your O-1 score. &quot;Perfect Match&quot; jobs have a minimum
-              score at or below yours. &quot;Stretch&quot; jobs are within 20 points of your score.
+            <p className="font-medium text-gray-900">Smart Job Matching</p>
+            <p className="text-sm text-gray-700 mt-1">
+              Jobs are ranked using our AI-powered matching algorithm that considers your O-1 score,
+              criteria met, skills, education, and experience. Higher match scores mean better fit.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Perfect Matches */}
-      {categorizedJobs.matching.length > 0 && (
+      {/* Excellent Matches */}
+      {categorizedJobs.excellent.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Perfect Matches</h2>
+            <Target className="w-5 h-5 text-green-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Excellent Matches</h2>
             <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full">
-              {categorizedJobs.matching.length} jobs
+              {categorizedJobs.excellent.length} jobs
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categorizedJobs.matching.map(renderJobCard)}
+            {categorizedJobs.excellent.map(renderJobCard)}
           </div>
         </section>
       )}
 
-      {/* Stretch Jobs */}
-      {categorizedJobs.stretch.length > 0 && (
+      {/* Good Matches */}
+      {categorizedJobs.good.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Stretch Opportunities</h2>
-            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
-              {categorizedJobs.stretch.length} jobs
+            <h2 className="text-lg font-semibold text-gray-900">Good Matches</h2>
+            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
+              {categorizedJobs.good.length} jobs
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categorizedJobs.stretch.map(renderJobCard)}
+            {categorizedJobs.good.map(renderJobCard)}
           </div>
         </section>
       )}
 
-      {/* Other Jobs */}
-      {categorizedJobs.other.length > 0 && (
+      {/* Fair Matches */}
+      {categorizedJobs.fair.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Fair Matches</h2>
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
+              {categorizedJobs.fair.length} jobs
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {categorizedJobs.fair.map(renderJobCard)}
+          </div>
+        </section>
+      )}
+
+      {/* Limited Matches */}
+      {categorizedJobs.poor.length > 0 && (
         <section>
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Other Opportunities</h2>
             <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
-              {categorizedJobs.other.length} jobs
+              {categorizedJobs.poor.length} jobs
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categorizedJobs.other.map(renderJobCard)}
+            {categorizedJobs.poor.map(renderJobCard)}
           </div>
         </section>
       )}
@@ -243,6 +307,22 @@ export default async function TalentJobsPage() {
                 applications
               </Link>
               .
+            </p>
+          </CardContent>
+        </Card>
+      ) : sortedJobs.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No new jobs to show
+            </h3>
+            <p className="text-gray-600">
+              You&apos;ve seen all available jobs. Check your{' '}
+              <Link href="/dashboard/talent/applications" className="text-blue-600 hover:underline">
+                applications
+              </Link>{' '}
+              for updates.
             </p>
           </CardContent>
         </Card>

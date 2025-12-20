@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { sendEmail, documentVerified, documentRejected } from '@/lib/email';
+import { O1_CRITERIA, O1Criterion } from '@/types/enums';
 
 export async function POST(request: NextRequest) {
   try {
@@ -103,12 +105,68 @@ export async function POST(request: NextRequest) {
     });
 
     // Recalculate score if document was verified or rejected
+    let newScore = 0;
     if (action === 'approve' || action === 'reject') {
-      await fetch(`${request.nextUrl.origin}/api/calculate-score`, {
+      const scoreResponse = await fetch(`${request.nextUrl.origin}/api/calculate-score`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ talent_id: document.talent_id }),
       });
+      const scoreData = await scoreResponse.json();
+      newScore = scoreData?.data?.o1_score || 0;
+    }
+
+    // Send email notification to talent
+    try {
+      // Get talent user details
+      const { data: talentUser } = await adminSupabase
+        .from('profiles')
+        .select('email')
+        .eq('id', document.talent?.user_id)
+        .single();
+
+      const { data: talentProfile } = await adminSupabase
+        .from('talent_profiles')
+        .select('first_name')
+        .eq('id', document.talent_id)
+        .single();
+
+      if (talentUser?.email) {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const talentName = talentProfile?.first_name || 'there';
+
+        if (action === 'approve') {
+          const criterionName = criterion
+            ? O1_CRITERIA[criterion as O1Criterion]?.name || criterion
+            : 'O-1 Evidence';
+
+          await sendEmail({
+            to: talentUser.email,
+            template: documentVerified({
+              talentName,
+              documentTitle: document.title,
+              criterion: criterionName,
+              scoreImpact: score_impact || 0,
+              newScore,
+              dashboardUrl: `${baseUrl}/dashboard/talent/evidence`,
+            }),
+          });
+        } else if (action === 'reject') {
+          await sendEmail({
+            to: talentUser.email,
+            template: documentRejected({
+              talentName,
+              documentTitle: document.title,
+              reason: 'The document did not meet the criteria requirements.',
+              reviewerNotes: reviewer_notes,
+              dashboardUrl: `${baseUrl}/dashboard/talent/evidence`,
+            }),
+          });
+        }
+      }
+    } catch (emailError) {
+      console.error('Failed to send document verification email:', emailError);
+      // Don't fail the request if email fails
     }
 
     return NextResponse.json({

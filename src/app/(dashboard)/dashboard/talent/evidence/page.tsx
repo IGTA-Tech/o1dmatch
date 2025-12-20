@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import { CriteriaBreakdown } from '@/components/talent/CriteriaBreakdown';
+import { DocumentUploader } from '@/components/documents';
+import { ConfidenceBadge } from '@/components/documents/ConfidenceIndicator';
 import {
   Upload,
   FileText,
@@ -16,6 +18,8 @@ import {
   Clock,
   XCircle,
   AlertCircle,
+  X,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { O1Criterion, O1_CRITERIA } from '@/types/enums';
@@ -26,16 +30,9 @@ export default function EvidencePage() {
   const [profile, setProfile] = useState<TalentProfile | null>(null);
   const [documents, setDocuments] = useState<TalentDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [selectedCriterion, setSelectedCriterion] = useState<O1Criterion | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadForm, setUploadForm] = useState({
-    title: '',
-    description: '',
-    criterion: '' as O1Criterion | '',
-    auto_classify: true,
-  });
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preselectedCriterion, setPreselectedCriterion] = useState<O1Criterion | null>(null);
 
   const supabase = createClient();
 
@@ -73,66 +70,10 @@ export default function EvidencePage() {
     loadData();
   }, [loadData]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-      if (!uploadForm.title) {
-        setUploadForm({
-          ...uploadForm,
-          title: e.target.files[0].name.replace(/\.[^/.]+$/, ''),
-        });
-      }
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile || !profile) return;
-
-    setUploading(true);
-
-    try {
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${profile.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('evidence')
-        .upload(fileName, selectedFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('evidence')
-        .getPublicUrl(fileName);
-
-      const { error: dbError } = await supabase.from('talent_documents').insert({
-        talent_id: profile.id,
-        title: uploadForm.title,
-        description: uploadForm.description || null,
-        file_url: publicUrl,
-        file_type: fileExt?.toUpperCase() || 'PDF',
-        file_size: selectedFile.size,
-        criterion: uploadForm.criterion || null,
-        status: 'pending',
-      });
-
-      if (dbError) throw dbError;
-
-      setShowUploadModal(false);
-      setSelectedFile(null);
-      setUploadForm({
-        title: '',
-        description: '',
-        criterion: '',
-        auto_classify: true,
-      });
-
-      await loadData();
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Failed to upload document. Please try again.');
-    } finally {
-      setUploading(false);
-    }
+  const handleUploadComplete = () => {
+    setShowUploadModal(false);
+    setPreselectedCriterion(null);
+    loadData();
   };
 
   const handleDelete = async (doc: TalentDocument) => {
@@ -156,8 +97,10 @@ export default function EvidencePage() {
         return <CheckCircle className="w-4 h-4 text-green-500" />;
       case 'rejected':
         return <XCircle className="w-4 h-4 text-red-500" />;
+      case 'needs_review':
+        return <AlertCircle className="w-4 h-4 text-yellow-500" />;
       default:
-        return <Clock className="w-4 h-4 text-yellow-500" />;
+        return <Clock className="w-4 h-4 text-gray-500" />;
     }
   };
 
@@ -167,8 +110,23 @@ export default function EvidencePage() {
         return 'bg-green-100 text-green-800';
       case 'rejected':
         return 'bg-red-100 text-red-800';
-      default:
+      case 'needs_review':
         return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'verified':
+        return 'Verified';
+      case 'rejected':
+        return 'Rejected';
+      case 'needs_review':
+        return 'Needs Review';
+      default:
+        return 'Pending';
     }
   };
 
@@ -208,6 +166,19 @@ export default function EvidencePage() {
         </button>
       </div>
 
+      {/* AI-Powered Feature Banner */}
+      <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-100">
+        <div className="p-2 bg-purple-100 rounded-lg">
+          <Sparkles className="w-5 h-5 text-purple-600" />
+        </div>
+        <div>
+          <h3 className="font-medium text-gray-900">AI-Powered Document Analysis</h3>
+          <p className="text-sm text-gray-600">
+            Our AI automatically extracts text, classifies documents, and suggests the best O-1 criterion.
+          </p>
+        </div>
+      </div>
+
       {/* Criteria Overview */}
       <Card>
         <CardHeader>
@@ -219,7 +190,7 @@ export default function EvidencePage() {
             criteriaMet={profile?.criteria_met || []}
             showUploadButtons
             onUpload={(criterion) => {
-              setUploadForm({ ...uploadForm, criterion });
+              setPreselectedCriterion(criterion);
               setShowUploadModal(true);
             }}
           />
@@ -285,7 +256,7 @@ export default function EvidencePage() {
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900">{doc.title}</h3>
-                    <div className="flex items-center gap-3 mt-1">
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
                       {doc.criterion && (
                         <span className="text-xs text-gray-500">
                           {O1_CRITERIA[doc.criterion].name}
@@ -294,18 +265,34 @@ export default function EvidencePage() {
                       <span className="text-xs text-gray-400">
                         {new Date(doc.created_at).toLocaleDateString()}
                       </span>
+                      {doc.extraction_method && (
+                        <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+                          {doc.extraction_method === 'ocr' ? 'OCR' : doc.extraction_method.toUpperCase()}
+                        </span>
+                      )}
+                      {doc.classification_confidence && (
+                        <ConfidenceBadge
+                          confidence={doc.classification_confidence}
+                          size="sm"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
+                  {doc.score_impact && doc.status === 'verified' && (
+                    <span className="text-sm font-medium text-green-600">
+                      +{doc.score_impact} pts
+                    </span>
+                  )}
                   <span
                     className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(
                       doc.status
                     )}`}
                   >
                     {getStatusIcon(doc.status)}
-                    {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+                    {getStatusLabel(doc.status)}
                   </span>
 
                   <div className="flex items-center gap-2">
@@ -314,12 +301,14 @@ export default function EvidencePage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="View document"
                     >
                       <Eye className="w-4 h-4 text-gray-600" />
                     </a>
                     <button
                       onClick={() => handleDelete(doc)}
                       className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete document"
                     >
                       <Trash2 className="w-4 h-4 text-red-600" />
                     </button>
@@ -331,139 +320,51 @@ export default function EvidencePage() {
         )}
       </div>
 
-      {/* Upload Modal */}
+      {/* Upload Modal with New Uploader */}
       {showUploadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/50"
-            onClick={() => setShowUploadModal(false)}
+            onClick={() => {
+              setShowUploadModal(false);
+              setPreselectedCriterion(null);
+            }}
           />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Upload Document</h2>
-
-            <div className="space-y-4">
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  File *
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  {selectedFile ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <FileText className="w-5 h-5 text-blue-600" />
-                      <span className="text-sm text-gray-900">{selectedFile.name}</span>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">
-                        Click or drag to upload PDF, DOC, or image
-                      </p>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-                    onChange={handleFileChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    style={{ position: 'absolute', top: 0, left: 0 }}
-                  />
-                </div>
+                <h2 className="text-xl font-semibold text-gray-900">Upload Document</h2>
+                {preselectedCriterion && (
+                  <p className="text-sm text-gray-600">
+                    For: {O1_CRITERIA[preselectedCriterion].name}
+                  </p>
+                )}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  value={uploadForm.title}
-                  onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={uploadForm.description}
-                  onChange={(e) =>
-                    setUploadForm({ ...uploadForm, description: e.target.value })
-                  }
-                  rows={2}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  O-1 Criterion
-                </label>
-                <select
-                  value={uploadForm.criterion}
-                  onChange={(e) =>
-                    setUploadForm({ ...uploadForm, criterion: e.target.value as O1Criterion })
-                  }
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Auto-detect or select...</option>
-                  {(Object.keys(O1_CRITERIA) as O1Criterion[]).map((criterion) => (
-                    <option key={criterion} value={criterion}>
-                      {O1_CRITERIA[criterion].name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="auto_classify"
-                  checked={uploadForm.auto_classify}
-                  onChange={(e) =>
-                    setUploadForm({ ...uploadForm, auto_classify: e.target.checked })
-                  }
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                />
-                <label htmlFor="auto_classify" className="text-sm text-gray-700">
-                  Auto-classify using AI
-                </label>
-              </div>
-
-              <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-700">
-                  Documents will be reviewed by our team. Verified documents contribute to
-                  your O-1 score.
-                </p>
-              </div>
+              <button
+                onClick={() => {
+                  setShowUploadModal(false);
+                  setPreselectedCriterion(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowUploadModal(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpload}
-                disabled={!selectedFile || !uploadForm.title || uploading}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Upload
-                  </>
-                )}
-              </button>
+            <DocumentUploader
+              onUploadComplete={handleUploadComplete}
+              onCancel={() => {
+                setShowUploadModal(false);
+                setPreselectedCriterion(null);
+              }}
+            />
+
+            <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg mt-4">
+              <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-blue-700">
+                Documents are automatically analyzed with AI. High-confidence documents may be
+                auto-verified. All documents are subject to review.
+              </p>
             </div>
           </div>
         </div>

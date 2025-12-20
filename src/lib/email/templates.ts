@@ -292,6 +292,58 @@ The O1DMatch Team
   };
 }
 
+// Document Rejected (for talent)
+export function documentRejected(params: {
+  talentName: string;
+  documentTitle: string;
+  reason: string;
+  reviewerNotes?: string;
+  dashboardUrl: string;
+}): EmailTemplate {
+  const { talentName, documentTitle, reason, reviewerNotes, dashboardUrl } = params;
+
+  return {
+    subject: `Document Review Update - ${documentTitle}`,
+    html: layout(`
+      <h2 style="margin: 0 0 20px; font-size: 20px; color: #111827;">
+        Document Review Update
+      </h2>
+      <p>Hi ${talentName},</p>
+      <p>
+        Your document <strong>${documentTitle}</strong> has been reviewed and requires some attention.
+      </p>
+      <div style="background-color: #fef2f2; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #ef4444;">
+        <p style="margin: 5px 0;"><strong>Status:</strong> Needs Revision</p>
+        <p style="margin: 5px 0;"><strong>Reason:</strong> ${reason}</p>
+        ${reviewerNotes ? `<p style="margin: 10px 0 0;"><strong>Reviewer Notes:</strong> ${reviewerNotes}</p>` : ''}
+      </div>
+      <p>
+        Please review the feedback and consider uploading an updated document or additional evidence.
+      </p>
+      <p style="margin: 30px 0;">
+        <a href="${dashboardUrl}" style="${buttonStyle}">View Your Documents</a>
+      </p>
+      <p>Best regards,<br>The O1DMatch Team</p>
+    `),
+    text: `
+Hi ${talentName},
+
+Your document "${documentTitle}" has been reviewed and requires some attention.
+
+Status: Needs Revision
+Reason: ${reason}
+${reviewerNotes ? `Reviewer Notes: ${reviewerNotes}` : ''}
+
+Please review the feedback and consider uploading an updated document or additional evidence.
+
+View Your Documents: ${dashboardUrl}
+
+Best regards,
+The O1DMatch Team
+    `.trim(),
+  };
+}
+
 // Welcome Email
 export function welcomeEmail(params: {
   name: string;

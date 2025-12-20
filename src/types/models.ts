@@ -176,17 +176,25 @@ export interface TalentDocument {
   title: string;
   description: string | null;
   file_url: string;
-  file_name: string;
+  file_name?: string;
   file_type: string | null;
   file_size: number | null;
   criterion: O1Criterion | null;
   auto_classified_criterion: O1Criterion | null;
-  classification_confidence: ClassificationConfidence | null;
+  classification_confidence: ClassificationConfidence | number | null;
   classification_notes: string | null;
   status: DocumentStatus;
   reviewed_by: string | null;
   reviewed_at: string | null;
   review_notes: string | null;
+  reviewer_notes?: string | null;
+  score_impact?: number | null;
+  // Extraction fields
+  extraction_method?: 'pdf' | 'ocr' | 'pdf+ocr' | null;
+  extraction_confidence?: number | null;
+  extracted_text?: string | null;
+  ai_reasoning?: string | null;
+  ai_notes?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -392,12 +400,21 @@ export interface InterestLetter {
   expires_at: string | null;
   revealed_at: string | null;
 
+  // SignWell e-signature fields
+  signwell_document_id?: string | null;
+  signwell_status?: 'pending' | 'sent' | 'viewed' | 'signed' | 'declined' | 'expired' | null;
+  signed_pdf_url?: string | null;
+  signature_requested_at?: string | null;
+  signature_completed_at?: string | null;
+  content?: string | null;
+
   created_at: string;
   updated_at: string;
 
   // Joined data
   employer?: EmployerProfile;
   talent?: TalentProfile | MaskedTalentProfile;
+  job?: { id: string; title: string };
 }
 
 // Lawyer profile

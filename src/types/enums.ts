@@ -52,7 +52,10 @@ export type LetterStatus =
   | 'viewed'
   | 'accepted'
   | 'declined'
-  | 'expired';
+  | 'expired'
+  | 'signature_requested'
+  | 'signature_pending'
+  | 'signed';
 
 // Commitment level for interest letters
 export type CommitmentLevel =
