@@ -25,6 +25,12 @@ export default function Home() {
               <span className="font-semibold text-gray-900">O1DMatch</span>
             </div>
             <nav className="hidden md:flex items-center gap-8">
+              <Link href="/how-it-works/candidates" className="text-gray-600 hover:text-gray-900">
+                For Candidates
+              </Link>
+              <Link href="/how-it-works/employers" className="text-gray-600 hover:text-gray-900">
+                For Employers
+              </Link>
               <Link href="/lawyers" className="text-gray-600 hover:text-gray-900">
                 Lawyer Directory
               </Link>
@@ -284,6 +290,7 @@ export default function Home() {
             <div>
               <h4 className="text-white font-medium mb-4">For Talent</h4>
               <ul className="space-y-2 text-sm">
+                <li><Link href="/how-it-works/candidates" className="hover:text-white">How It Works</Link></li>
                 <li><Link href="/signup?role=talent" className="hover:text-white">Create Profile</Link></li>
                 <li><Link href="/login" className="hover:text-white">Log In</Link></li>
               </ul>
@@ -291,6 +298,7 @@ export default function Home() {
             <div>
               <h4 className="text-white font-medium mb-4">For Employers</h4>
               <ul className="space-y-2 text-sm">
+                <li><Link href="/how-it-works/employers" className="hover:text-white">How It Works</Link></li>
                 <li><Link href="/signup?role=employer" className="hover:text-white">Post Jobs</Link></li>
                 <li><Link href="/login" className="hover:text-white">Browse Talent</Link></li>
               </ul>
