@@ -1,19 +1,21 @@
 import Stripe from 'stripe';
 
-// Initialize Stripe with secret key
-// IMPORTANT: Set STRIPE_SECRET_KEY in your .env.local file
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+// Initialize Stripe with secret key (lazy initialization for build compatibility)
+// IMPORTANT: Set STRIPE_SECRET_KEY in your environment variables
+let stripeInstance: Stripe | null = null;
 
-if (!stripeSecretKey && process.env.NODE_ENV === 'production') {
-  throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
-}
-
-export const stripe = stripeSecretKey
-  ? new Stripe(stripeSecretKey, {
+export function getStripe(): Stripe | null {
+  if (!stripeInstance && process.env.STRIPE_SECRET_KEY) {
+    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: '2025-12-15.clover',
       typescript: true,
-    })
-  : null;
+    });
+  }
+  return stripeInstance;
+}
+
+// For backward compatibility
+export const stripe = null as Stripe | null; // Will be lazily initialized
 
 // Stripe Price IDs - configured in .env.local
 export const STRIPE_PRICE_IDS = {
@@ -37,13 +39,14 @@ export async function getOrCreateStripeCustomer(
   name?: string,
   metadata?: Record<string, string>
 ): Promise<Stripe.Customer | null> {
-  if (!stripe) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
     console.warn('Stripe not initialized - missing STRIPE_SECRET_KEY');
     return null;
   }
 
   // Check if customer already exists
-  const existingCustomers = await stripe.customers.list({
+  const existingCustomers = await stripeClient.customers.list({
     email,
     limit: 1,
   });
@@ -53,7 +56,7 @@ export async function getOrCreateStripeCustomer(
   }
 
   // Create new customer
-  const customer = await stripe.customers.create({
+  const customer = await stripeClient.customers.create({
     email,
     name,
     metadata: {
@@ -75,7 +78,8 @@ export async function createCheckoutSession(params: {
   trialDays?: number;
   metadata?: Record<string, string>;
 }): Promise<Stripe.Checkout.Session | null> {
-  if (!stripe) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
     console.warn('Stripe not initialized');
     return null;
   }
@@ -112,7 +116,7 @@ export async function createCheckoutSession(params: {
     sessionParams.subscription_data!.trial_period_days = params.trialDays;
   }
 
-  const session = await stripe.checkout.sessions.create(sessionParams);
+  const session = await stripeClient.checkout.sessions.create(sessionParams);
   return session;
 }
 
@@ -121,12 +125,13 @@ export async function createBillingPortalSession(
   customerId: string,
   returnUrl: string
 ): Promise<Stripe.BillingPortal.Session | null> {
-  if (!stripe) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
     console.warn('Stripe not initialized');
     return null;
   }
 
-  const session = await stripe.billingPortal.sessions.create({
+  const session = await stripeClient.billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrl,
   });
@@ -139,17 +144,18 @@ export async function cancelSubscription(
   subscriptionId: string,
   immediately: boolean = false
 ): Promise<Stripe.Subscription | null> {
-  if (!stripe) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
     console.warn('Stripe not initialized');
     return null;
   }
 
   if (immediately) {
-    return await stripe.subscriptions.cancel(subscriptionId);
+    return await stripeClient.subscriptions.cancel(subscriptionId);
   }
 
   // Cancel at period end
-  return await stripe.subscriptions.update(subscriptionId, {
+  return await stripeClient.subscriptions.update(subscriptionId, {
     cancel_at_period_end: true,
   });
 }
@@ -158,12 +164,13 @@ export async function cancelSubscription(
 export async function resumeSubscription(
   subscriptionId: string
 ): Promise<Stripe.Subscription | null> {
-  if (!stripe) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
     console.warn('Stripe not initialized');
     return null;
   }
 
-  return await stripe.subscriptions.update(subscriptionId, {
+  return await stripeClient.subscriptions.update(subscriptionId, {
     cancel_at_period_end: false,
   });
 }
@@ -172,12 +179,13 @@ export async function resumeSubscription(
 export async function getSubscription(
   subscriptionId: string
 ): Promise<Stripe.Subscription | null> {
-  if (!stripe) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
     console.warn('Stripe not initialized');
     return null;
   }
 
-  return await stripe.subscriptions.retrieve(subscriptionId);
+  return await stripeClient.subscriptions.retrieve(subscriptionId);
 }
 
 // Change subscription tier
@@ -185,14 +193,15 @@ export async function changeSubscriptionTier(
   subscriptionId: string,
   newPriceId: string
 ): Promise<Stripe.Subscription | null> {
-  if (!stripe) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
     console.warn('Stripe not initialized');
     return null;
   }
 
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const subscription = await stripeClient.subscriptions.retrieve(subscriptionId);
 
-  return await stripe.subscriptions.update(subscriptionId, {
+  return await stripeClient.subscriptions.update(subscriptionId, {
     items: [
       {
         id: subscription.items.data[0].id,
@@ -209,13 +218,14 @@ export function constructWebhookEvent(
   signature: string,
   webhookSecret: string
 ): Stripe.Event | null {
-  if (!stripe) {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
     console.warn('Stripe not initialized');
     return null;
   }
 
   try {
-    return stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    return stripeClient.webhooks.constructEvent(payload, signature, webhookSecret);
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
     return null;
