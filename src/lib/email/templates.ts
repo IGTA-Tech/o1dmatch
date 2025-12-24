@@ -396,3 +396,112 @@ The O1DMatch Team
     `.trim(),
   };
 }
+
+// Waitlist Confirmation (for user who signed up)
+export function waitlistConfirmation(params: {
+  name: string;
+  userType: string;
+  position?: string;
+}): EmailTemplate {
+  const { name, userType, position } = params;
+
+  const userTypeMessages: Record<string, string> = {
+    talent: 'As an O-1 talent, you\'ll get early access to connect with employers looking for extraordinary individuals like you.',
+    employer: 'As an employer, you\'ll be among the first to access our pool of pre-vetted O-1 ready talent.',
+    agency: 'As an agency partner, you\'ll get priority access to our platform for managing O-1 placements.',
+    lawyer: 'As an immigration attorney, you\'ll be featured in our lawyer directory and connect with O-1 candidates.',
+  };
+
+  const message = userTypeMessages[userType] || userTypeMessages.talent;
+
+  return {
+    subject: `You're on the O1DMatch Waitlist!`,
+    html: layout(`
+      <h2 style="margin: 0 0 20px; font-size: 20px; color: #111827;">
+        You're on the list!
+      </h2>
+      <p>Hi ${name},</p>
+      <p>
+        Thank you for joining the O1DMatch waitlist! We're building the premier platform for
+        connecting O-1 visa talent with US employers.
+      </p>
+      <p>${message}</p>
+      <div style="background-color: #eff6ff; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #2563eb;">
+        <p style="margin: 0; font-weight: 600; color: #1e40af;">What happens next?</p>
+        <ul style="margin: 10px 0 0; padding-left: 20px; color: #1e40af;">
+          <li>We'll notify you as soon as we launch</li>
+          <li>Early waitlist members get priority access</li>
+          <li>You may receive exclusive pre-launch offers</li>
+        </ul>
+      </div>
+      ${position ? `<p style="font-size: 14px; color: #6b7280;">Your priority status: <strong>${position}</strong></p>` : ''}
+      <p>
+        Stay tuned for updates! We can't wait to have you on board.
+      </p>
+      <p>Best regards,<br>The O1DMatch Team</p>
+    `),
+    text: `
+Hi ${name},
+
+Thank you for joining the O1DMatch waitlist! We're building the premier platform for connecting O-1 visa talent with US employers.
+
+${message}
+
+What happens next?
+- We'll notify you as soon as we launch
+- Early waitlist members get priority access
+- You may receive exclusive pre-launch offers
+
+${position ? `Your priority status: ${position}` : ''}
+
+Stay tuned for updates! We can't wait to have you on board.
+
+Best regards,
+The O1DMatch Team
+    `.trim(),
+  };
+}
+
+// Waitlist Admin Notification (for admin when someone signs up)
+export function waitlistSignupAdmin(params: {
+  userType: string;
+  name: string;
+  email: string;
+  company?: string;
+  priorityScore: number;
+}): EmailTemplate {
+  const { userType, name, email, company, priorityScore } = params;
+
+  return {
+    subject: `New Waitlist Signup: ${userType.charAt(0).toUpperCase() + userType.slice(1)} - ${name}`,
+    html: layout(`
+      <h2 style="margin: 0 0 20px; font-size: 20px; color: #111827;">
+        New Waitlist Signup
+      </h2>
+      <p>A new user has joined the O1DMatch waitlist:</p>
+      <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin: 20px 0;">
+        <p style="margin: 5px 0;"><strong>Type:</strong> ${userType.charAt(0).toUpperCase() + userType.slice(1)}</p>
+        <p style="margin: 5px 0;"><strong>Name:</strong> ${name}</p>
+        <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+        ${company ? `<p style="margin: 5px 0;"><strong>Company/Firm:</strong> ${company}</p>` : ''}
+        <p style="margin: 5px 0;"><strong>Priority Score:</strong> ${priorityScore}</p>
+      </div>
+      <p>
+        Log in to the admin dashboard to review and manage waitlist entries.
+      </p>
+    `),
+    text: `
+New Waitlist Signup
+
+A new user has joined the O1DMatch waitlist:
+
+Type: ${userType.charAt(0).toUpperCase() + userType.slice(1)}
+Name: ${name}
+Email: ${email}
+${company ? `Company/Firm: ${company}` : ''}
+Priority Score: ${priorityScore}
+
+Log in to the admin dashboard to review and manage waitlist entries.
+    `.trim(),
+  };
+}
