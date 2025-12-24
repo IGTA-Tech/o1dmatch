@@ -396,3 +396,78 @@ The O1DMatch Team
     `.trim(),
   };
 }
+
+// Waitlist Admin Notification (sent to waitlist@o1dmatch.com)
+export function waitlistAdminNotification(params: {
+  category: string;
+  fullName: string;
+  email: string;
+  queuePosition: number;
+  formData: Record<string, unknown>;
+  offer: string;
+}): EmailTemplate {
+  const { category, fullName, email, queuePosition, formData, offer } = params;
+
+  const categoryColors: Record<string, string> = {
+    talent: '#3b82f6',
+    employer: '#16a34a',
+    agency: '#f59e0b',
+    lawyer: '#7c3aed',
+  };
+
+  const color = categoryColors[category] || '#2563eb';
+
+  // Format form data as readable rows
+  const formRows = Object.entries(formData)
+    .filter(([, value]) => value !== null && value !== undefined && value !== '')
+    .map(([key, value]) => {
+      const label = key
+        .replace(/_/g, ' ')
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (str) => str.toUpperCase());
+      const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
+      return `<tr><td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${label}</td><td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${displayValue}</td></tr>`;
+    })
+    .join('');
+
+  return {
+    subject: `🎉 New ${category.charAt(0).toUpperCase() + category.slice(1)} Waitlist Signup - #${queuePosition}`,
+    html: layout(`
+      <div style="background-color: ${color}; color: white; padding: 20px; border-radius: 6px 6px 0 0; margin: -40px -40px 20px -40px;">
+        <h2 style="margin: 0; font-size: 20px;">New Waitlist Signup!</h2>
+        <p style="margin: 10px 0 0; opacity: 0.9;">${category.charAt(0).toUpperCase() + category.slice(1)} - Queue Position #${queuePosition}</p>
+      </div>
+
+      <div style="background-color: #f9fafb; padding: 20px; border-radius: 6px; margin-bottom: 20px;">
+        <h3 style="margin: 0 0 10px; color: #374151;">Contact Info</h3>
+        <p style="margin: 5px 0;"><strong>Name:</strong> ${fullName}</p>
+        <p style="margin: 5px 0;"><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+        <p style="margin: 5px 0;"><strong>Offer:</strong> ${offer}</p>
+      </div>
+
+      <h3 style="margin: 20px 0 10px; color: #374151;">Form Details</h3>
+      <table style="width: 100%; border-collapse: collapse; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px;">
+        ${formRows}
+      </table>
+
+      <p style="margin-top: 20px; font-size: 12px; color: #6b7280;">
+        Submitted at ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })} EST
+      </p>
+    `),
+    text: `
+New ${category} Waitlist Signup - #${queuePosition}
+
+Name: ${fullName}
+Email: ${email}
+Offer: ${offer}
+
+Form Details:
+${Object.entries(formData)
+  .filter(([, value]) => value !== null && value !== undefined && value !== '')
+  .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+  .join('\n')}
+
+Submitted at ${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })} EST
+    `.trim(),
+  };
+}
