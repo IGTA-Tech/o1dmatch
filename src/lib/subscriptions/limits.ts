@@ -29,7 +29,7 @@ export async function getEmployerUsageLimits(userId: string): Promise<UsageLimit
 
   // Get active job count
   const { count: activeJobs } = await supabase
-    .from('job_postings')
+    .from('job_listings')
     .select('*', { count: 'exact', head: true })
     .eq('employer_id', userId)
     .eq('status', 'active');
