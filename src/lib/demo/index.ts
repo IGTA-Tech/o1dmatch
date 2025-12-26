@@ -55,8 +55,14 @@ export {
   getPendingReviewDocuments,
 } from './mock-documents';
 
+// Mock Data - Waitlist
+export {
+  DEMO_WAITLIST_ENTRIES,
+  DEMO_WAITLIST_STATS,
+} from './mock-waitlist';
+
 // Demo API Service
 export { DemoAPI } from './demo-api';
 
 // Demo Auth
-export { DemoAuth, DEMO_USERS } from './demo-auth';
+export { DemoAuth, DEMO_USERS, getDemoAuthState } from './demo-auth';
