@@ -4,11 +4,11 @@
  * Provides mock API responses for all endpoints in demo mode.
  */
 
-import { O1Criterion, DocumentStatus, ClassificationConfidence, LetterStatus, ApplicationStatus, JobStatus } from '@/types/enums';
+import type { O1Criterion, ClassificationConfidence, JobStatus } from '@/types/enums';
 import type { TalentProfile, MaskedTalentProfile, JobListing, InterestLetter, JobApplication, TalentDocument, JobMatch } from '@/types/models';
 import { simulateDelay } from './config';
 import { DEMO_TALENT_PROFILES, DEMO_MASKED_TALENTS, maskTalentProfile } from './mock-data';
-import { DEMO_EMPLOYER_PROFILES, DEMO_JOB_LISTINGS, DEMO_JOB_LISTINGS_WITH_EMPLOYERS } from './mock-employers';
+import { DEMO_JOB_LISTINGS, DEMO_JOB_LISTINGS_WITH_EMPLOYERS } from './mock-employers';
 import { DEMO_PUBLIC_LAWYER_PROFILES } from './mock-lawyers';
 import { DEMO_INTEREST_LETTERS, DEMO_JOB_APPLICATIONS, getLettersByTalent, getLettersByEmployer, getApplicationsByTalent, getApplicationsByJob } from './mock-letters';
 import { DEMO_TALENT_DOCUMENTS, getDocumentsByTalent } from './mock-documents';
@@ -86,7 +86,7 @@ export class DemoAPI {
       auto_classified_criterion: null,
       classification_confidence: null,
       classification_notes: null,
-      status: DocumentStatus.PENDING,
+      status: 'pending',
       reviewed_by: null,
       reviewed_at: null,
       review_notes: null,
@@ -112,9 +112,9 @@ export class DemoAPI {
     }
 
     // Simulate AI classification
-    const criteria = Object.values(O1Criterion);
+    const criteria: O1Criterion[] = ['awards', 'memberships', 'published_material', 'judging', 'original_contributions', 'scholarly_articles', 'critical_role', 'high_salary'];
     const randomCriterion = criteria[Math.floor(Math.random() * criteria.length)];
-    const confidences = [ClassificationConfidence.HIGH, ClassificationConfidence.MEDIUM, ClassificationConfidence.LOW];
+    const confidences = ['high', 'medium', 'low'] as ClassificationConfidence[];
     const randomConfidence = confidences[Math.floor(Math.random() * 2)]; // Bias toward high/medium
 
     return {
@@ -122,7 +122,7 @@ export class DemoAPI {
       auto_classified_criterion: randomCriterion,
       classification_confidence: randomConfidence,
       classification_notes: `AI classified this document as evidence for ${randomCriterion.replace('_', ' ')}.`,
-      score_impact: randomConfidence === ClassificationConfidence.HIGH ? 10 : randomConfidence === ClassificationConfidence.MEDIUM ? 7 : 4,
+      score_impact: randomConfidence === 'high' ? 10 : randomConfidence === 'medium' ? 7 : 4,
       extraction_confidence: 0.85,
       ai_reasoning: `Based on the document content, this appears to be evidence of ${randomCriterion.replace('_', ' ')}. The extracted text contains relevant keywords and context.`,
       updated_at: new Date().toISOString(),
@@ -186,7 +186,7 @@ export class DemoAPI {
       min_education: jobData.min_education || null,
       education_preferred_not_required: jobData.education_preferred_not_required || true,
       min_years_experience: jobData.min_years_experience || null,
-      status: JobStatus.DRAFT,
+      status: 'draft',
       visibility: 'public',
       is_featured: false,
       posted_at: null,
@@ -231,7 +231,7 @@ export class DemoAPI {
       attached_documents: [],
       score_at_application: talent?.o1_score || 50,
       criteria_met_at_application: talent?.criteria_met || [],
-      status: ApplicationStatus.PENDING,
+      status: 'pending',
       employer_rating: null,
       employer_notes: null,
       applied_at: new Date().toISOString(),
@@ -292,7 +292,7 @@ export class DemoAPI {
       why_o1_required: letterData.why_o1_required!,
       letter_content: null,
       pdf_url: null,
-      status: LetterStatus.DRAFT,
+      status: 'draft',
       talent_response_message: null,
       responded_at: null,
       expires_at: null,
@@ -314,7 +314,7 @@ export class DemoAPI {
 
     return {
       ...letter,
-      status: LetterStatus.SENT,
+      status: 'sent',
       pdf_url: `/demo/letters/${letterId}.pdf`,
       expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
       updated_at: new Date().toISOString(),
@@ -331,7 +331,7 @@ export class DemoAPI {
 
     return {
       ...letter,
-      status: accept ? LetterStatus.ACCEPTED : LetterStatus.DECLINED,
+      status: accept ? 'accepted' : 'declined',
       talent_response_message: message || null,
       responded_at: new Date().toISOString(),
       revealed_at: accept ? new Date().toISOString() : null,
@@ -416,7 +416,7 @@ export class DemoAPI {
 
     const results = await Promise.all(
       DEMO_JOB_LISTINGS_WITH_EMPLOYERS
-        .filter(j => j.status === JobStatus.ACTIVE)
+        .filter(j => j.status === 'active')
         .map(async job => ({
           job,
           match: await this.calculateMatch(talentId, job.id),
@@ -480,7 +480,7 @@ export class DemoAPI {
   static async calculateScore(talentId: string): Promise<{ score: number; criteria_met: O1Criterion[] }> {
     await simulateDelay('api');
 
-    const documents = getDocumentsByTalent(talentId).filter(d => d.status === DocumentStatus.VERIFIED);
+    const documents = getDocumentsByTalent(talentId).filter(d => d.status === 'verified');
 
     // Calculate score from verified documents
     const scoreBycriterion: Record<string, number> = {};
@@ -504,6 +504,7 @@ export class DemoAPI {
   // WAITLIST APIs
   // ============================================================================
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   static async joinWaitlist(data: {
     email: string;
     full_name: string;
@@ -573,6 +574,7 @@ export class DemoAPI {
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   static async getSubscription(userId: string): Promise<{ tier: string; status: string }> {
     await simulateDelay('api');
 

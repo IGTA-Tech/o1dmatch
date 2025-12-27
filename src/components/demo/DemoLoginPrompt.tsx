@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users, Building2, Briefcase, Scale, Shield, ArrowRight, Loader2 } from 'lucide-react';
-import { UserRole } from '@/types/enums';
+import type { UserRole } from '@/types/enums';
 import { DemoAuth } from '@/lib/demo/demo-auth';
 
 interface DemoAccount {
@@ -18,7 +18,7 @@ interface DemoAccount {
 
 const DEMO_ACCOUNTS: DemoAccount[] = [
   {
-    role: UserRole.TALENT,
+    role: 'talent' as UserRole,
     label: 'Talent / Candidate',
     description: 'Experience the platform as an O-1 visa candidate',
     icon: <Users className="w-6 h-6" />,
@@ -32,7 +32,7 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
     ],
   },
   {
-    role: UserRole.EMPLOYER,
+    role: 'employer' as UserRole,
     label: 'Employer',
     description: 'Experience the platform as a hiring company',
     icon: <Building2 className="w-6 h-6" />,
@@ -46,7 +46,7 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
     ],
   },
   {
-    role: UserRole.AGENCY,
+    role: 'agency' as UserRole,
     label: 'Talent Agency',
     description: 'Experience the platform as a recruiting agency',
     icon: <Briefcase className="w-6 h-6" />,
@@ -60,7 +60,7 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
     ],
   },
   {
-    role: UserRole.LAWYER,
+    role: 'lawyer' as UserRole,
     label: 'Immigration Lawyer',
     description: 'Experience the lawyer directory and connections',
     icon: <Scale className="w-6 h-6" />,
@@ -74,7 +74,7 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
     ],
   },
   {
-    role: UserRole.ADMIN,
+    role: 'admin' as UserRole,
     label: 'Platform Admin',
     description: 'Experience the admin dashboard',
     icon: <Shield className="w-6 h-6" />,

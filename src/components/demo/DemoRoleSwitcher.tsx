@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users, ChevronDown, Check, Building2, Briefcase, Scale, Shield } from 'lucide-react';
-import { UserRole } from '@/types/enums';
+import type { UserRole } from '@/types/enums';
 import { DemoAuth } from '@/lib/demo/demo-auth';
 import { DEMO_MODE } from '@/lib/demo/config';
 
@@ -17,35 +17,35 @@ interface RoleOption {
 
 const ROLE_OPTIONS: RoleOption[] = [
   {
-    role: UserRole.TALENT,
+    role: 'talent',
     label: 'Talent',
     description: 'Sarah Chen - AI Researcher',
     icon: <Users className="w-4 h-4" />,
     dashboardPath: '/dashboard/talent',
   },
   {
-    role: UserRole.EMPLOYER,
+    role: 'employer',
     label: 'Employer',
     description: 'TechCorp AI',
     icon: <Building2 className="w-4 h-4" />,
     dashboardPath: '/dashboard/employer',
   },
   {
-    role: UserRole.AGENCY,
+    role: 'agency',
     label: 'Agency',
     description: 'Elite Talent Agency',
     icon: <Briefcase className="w-4 h-4" />,
     dashboardPath: '/dashboard/agency',
   },
   {
-    role: UserRole.LAWYER,
+    role: 'lawyer',
     label: 'Lawyer',
     description: 'Michael Thompson',
     icon: <Scale className="w-4 h-4" />,
     dashboardPath: '/dashboard/lawyer',
   },
   {
-    role: UserRole.ADMIN,
+    role: 'admin',
     label: 'Admin',
     description: 'Platform Admin',
     icon: <Shield className="w-4 h-4" />,

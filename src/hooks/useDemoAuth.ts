@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { DEMO_MODE } from '@/lib/demo/config';
 import { DemoAuth, getDemoAuthState, type DemoSession } from '@/lib/demo/demo-auth';
 import type { Profile } from '@/types/models';
-import { UserRole } from '@/types/enums';
+import type { UserRole } from '@/types/enums';
 
 interface DemoAuthState {
   user: DemoSession['user'] | null;
@@ -72,11 +72,12 @@ export function useDemoAuth() {
     return result.session;
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const signUp = useCallback(async (
     email: string,
     password: string,
     role: UserRole,
-    fullName: string
+    /* eslint-disable @typescript-eslint/no-unused-vars */ _fullName: string
   ) => {
     if (!DEMO_MODE) {
       throw new Error('Demo auth not available outside demo mode');
@@ -169,11 +170,11 @@ export function useDemoAuth() {
     updatePassword,
     refreshProfile,
     isAuthenticated: !!state.user,
-    isAdmin: state.profile?.role === UserRole.ADMIN,
-    isTalent: state.profile?.role === UserRole.TALENT,
-    isEmployer: state.profile?.role === UserRole.EMPLOYER,
-    isAgency: state.profile?.role === UserRole.AGENCY,
-    isLawyer: state.profile?.role === UserRole.LAWYER,
+    isAdmin: state.profile?.role === 'admin',
+    isTalent: state.profile?.role === 'talent',
+    isEmployer: state.profile?.role === 'employer',
+    isAgency: state.profile?.role === 'agency',
+    isLawyer: state.profile?.role === 'lawyer',
     isDemoMode: DEMO_MODE,
     availableRoles: DemoAuth.getAvailableRoles(),
   };

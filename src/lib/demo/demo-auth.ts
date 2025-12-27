@@ -4,7 +4,7 @@
  * Provides mock authentication for the demo site without requiring Supabase.
  */
 
-import { UserRole } from '@/types/enums';
+import type { UserRole } from '@/types/enums';
 import type { Profile } from '@/types/models';
 import { DEMO_PROFILES } from './mock-data';
 import { simulateDelay } from './config';
@@ -15,31 +15,31 @@ export const DEMO_USERS = {
     id: 'demo-talent-1',
     email: 'sarah.chen@demo.com',
     password: 'demo123',
-    role: UserRole.TALENT,
+    role: 'talent' as UserRole,
   },
   employer: {
     id: 'demo-employer-1',
     email: 'john.martinez@techcorp.demo',
     password: 'demo123',
-    role: UserRole.EMPLOYER,
+    role: 'employer' as UserRole,
   },
   agency: {
     id: 'demo-agency-1',
     email: 'elite@agency.demo',
     password: 'demo123',
-    role: UserRole.AGENCY,
+    role: 'agency' as UserRole,
   },
   lawyer: {
     id: 'demo-lawyer-1',
     email: 'michael.thompson@lawfirm.demo',
     password: 'demo123',
-    role: UserRole.LAWYER,
+    role: 'lawyer' as UserRole,
   },
   admin: {
     id: 'demo-admin-1',
     email: 'admin@o1dmatch.demo',
     password: 'demo123',
-    role: UserRole.ADMIN,
+    role: 'admin' as UserRole,
   },
 };
 
@@ -96,7 +96,7 @@ export class DemoAuth {
   /**
    * Sign up (demo mode - instant success)
    */
-  static async signUp(email: string, password: string, role: UserRole): Promise<{ success: boolean; error?: string }> {
+  static async signUp(email: string, _password: string, role: UserRole): Promise<{ success: boolean; error?: string }> {
     await simulateDelay('auth');
 
     // In demo mode, signup always succeeds and logs in as a demo user
@@ -187,17 +187,18 @@ export class DemoAuth {
    */
   static getAvailableRoles(): { role: UserRole; email: string; name: string }[] {
     return [
-      { role: UserRole.TALENT, email: DEMO_USERS.talent.email, name: 'Talent (Sarah Chen)' },
-      { role: UserRole.EMPLOYER, email: DEMO_USERS.employer.email, name: 'Employer (TechCorp AI)' },
-      { role: UserRole.AGENCY, email: DEMO_USERS.agency.email, name: 'Agency (Elite Talent)' },
-      { role: UserRole.LAWYER, email: DEMO_USERS.lawyer.email, name: 'Lawyer (Michael Thompson)' },
-      { role: UserRole.ADMIN, email: DEMO_USERS.admin.email, name: 'Admin' },
+      { role: 'talent' as UserRole, email: DEMO_USERS.talent.email, name: 'Talent (Sarah Chen)' },
+      { role: 'employer' as UserRole, email: DEMO_USERS.employer.email, name: 'Employer (TechCorp AI)' },
+      { role: 'agency' as UserRole, email: DEMO_USERS.agency.email, name: 'Agency (Elite Talent)' },
+      { role: 'lawyer' as UserRole, email: DEMO_USERS.lawyer.email, name: 'Lawyer (Michael Thompson)' },
+      { role: 'admin' as UserRole, email: DEMO_USERS.admin.email, name: 'Admin' },
     ];
   }
 
   /**
    * Reset password (demo mode - always succeeds)
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   static async resetPassword(email: string): Promise<{ success: boolean }> {
     await simulateDelay('auth');
     return { success: true };
@@ -206,6 +207,7 @@ export class DemoAuth {
   /**
    * Update password (demo mode - always succeeds)
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   static async updatePassword(newPassword: string): Promise<{ success: boolean }> {
     await simulateDelay('auth');
     return { success: true };
