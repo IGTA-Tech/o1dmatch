@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   FileCheck,
@@ -9,13 +12,35 @@ import {
   Building2,
   Briefcase,
   Scale,
+  Menu,
+  X,
+  Info,
 } from 'lucide-react';
 
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
 export default function Home() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const loginHref = isDemoMode ? '/demo' : '/login';
+  const signupHref = isDemoMode ? '/demo' : '/signup';
+  const talentSignupHref = isDemoMode ? '/demo' : '/signup?role=talent';
+  const employerSignupHref = isDemoMode ? '/demo' : '/signup?role=employer';
+
   return (
     <div className="min-h-screen bg-white">
+      {/* Demo Banner */}
+      {isDemoMode && (
+        <div className="bg-amber-500 text-white py-2 px-4 text-center text-sm font-medium">
+          <div className="flex items-center justify-center gap-2">
+            <Info className="w-4 h-4" />
+            <span>Demo Mode - Explore with sample data. No real accounts or transactions.</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50">
+      <header className={`fixed ${isDemoMode ? 'top-10' : 'top-0'} left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
@@ -24,6 +49,8 @@ export default function Home() {
               </div>
               <span className="font-semibold text-gray-900">O1DMatch</span>
             </div>
+
+            {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8">
               <Link href="/how-it-works/candidates" className="text-gray-600 hover:text-gray-900">
                 For Candidates
@@ -34,22 +61,78 @@ export default function Home() {
               <Link href="/lawyers" className="text-gray-600 hover:text-gray-900">
                 Lawyer Directory
               </Link>
-              <Link href="/login" className="text-gray-600 hover:text-gray-900">
+              <Link href={loginHref} className="text-gray-600 hover:text-gray-900">
                 Log In
               </Link>
               <Link
-                href="/signup"
+                href={signupHref}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Get Started
               </Link>
             </nav>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6 text-gray-600" />
+              ) : (
+                <Menu className="w-6 h-6 text-gray-600" />
+              )}
+            </button>
           </div>
+
+          {/* Mobile Navigation */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden py-4 border-t border-gray-100">
+              <nav className="flex flex-col gap-4">
+                <Link
+                  href="/how-it-works/candidates"
+                  className="text-gray-600 hover:text-gray-900 py-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  For Candidates
+                </Link>
+                <Link
+                  href="/how-it-works/employers"
+                  className="text-gray-600 hover:text-gray-900 py-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  For Employers
+                </Link>
+                <Link
+                  href="/lawyers"
+                  className="text-gray-600 hover:text-gray-900 py-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Lawyer Directory
+                </Link>
+                <Link
+                  href={loginHref}
+                  className="text-gray-600 hover:text-gray-900 py-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Log In
+                </Link>
+                <Link
+                  href={signupHref}
+                  className="px-4 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Get Started
+                </Link>
+              </nav>
+            </div>
+          )}
         </div>
       </header>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+      <section className={`${isDemoMode ? 'pt-40' : 'pt-32'} pb-20 px-4 sm:px-6 lg:px-8`}>
         <div className="max-w-7xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium mb-8">
             <Star className="w-4 h-4" />
@@ -67,14 +150,14 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/signup?role=talent"
+              href={talentSignupHref}
               className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
               I&apos;m a Talent
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
-              href="/signup?role=employer"
+              href={employerSignupHref}
               className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-gray-200 text-gray-900 font-medium rounded-xl hover:border-gray-300 transition-colors"
             >
               I&apos;m an Employer
@@ -203,7 +286,7 @@ export default function Home() {
                 ))}
               </ul>
               <Link
-                href="/signup?role=employer"
+                href={employerSignupHref}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 font-medium rounded-xl hover:bg-blue-50 transition-colors"
               >
                 Create Employer Account
@@ -256,7 +339,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/signup"
+              href={signupHref}
               className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
             >
               Create Free Account
@@ -291,16 +374,16 @@ export default function Home() {
               <h4 className="text-white font-medium mb-4">For Talent</h4>
               <ul className="space-y-2 text-sm">
                 <li><Link href="/how-it-works/candidates" className="hover:text-white">How It Works</Link></li>
-                <li><Link href="/signup?role=talent" className="hover:text-white">Create Profile</Link></li>
-                <li><Link href="/login" className="hover:text-white">Log In</Link></li>
+                <li><Link href={talentSignupHref} className="hover:text-white">Create Profile</Link></li>
+                <li><Link href={loginHref} className="hover:text-white">Log In</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-medium mb-4">For Employers</h4>
               <ul className="space-y-2 text-sm">
                 <li><Link href="/how-it-works/employers" className="hover:text-white">How It Works</Link></li>
-                <li><Link href="/signup?role=employer" className="hover:text-white">Post Jobs</Link></li>
-                <li><Link href="/login" className="hover:text-white">Browse Talent</Link></li>
+                <li><Link href={employerSignupHref} className="hover:text-white">Post Jobs</Link></li>
+                <li><Link href={loginHref} className="hover:text-white">Browse Talent</Link></li>
               </ul>
             </div>
             <div>

@@ -17,12 +17,6 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Redirect homepage to demo page for demo deployment
-[[redirects]]
-  from = "/"
-  to = "/demo"
-  status = 302
-  force = true
 
 # Redirect all API routes to use demo mode handlers
 [[redirects]]
