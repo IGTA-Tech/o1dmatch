@@ -36,7 +36,6 @@ export default function AgencyProfilePage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const supabase = createClient();
-
   useEffect(() => {
     async function loadProfile() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -50,7 +49,6 @@ export default function AgencyProfilePage() {
         .select('*')
         .eq('user_id', user.id)
         .single();
-
       if (data) {
         setProfile(data);
       }
@@ -82,10 +80,13 @@ export default function AgencyProfilePage() {
   });
 
   const handleSave = async (data: AgencyProfileFormData) => {
+    console.log("Start saving records");
     if (!profile) return;
 
     setSaving(true);
     setMessage(null);
+    console.log("profile.id=======>");
+    console.log(profile.id);
 
     const { error } = await supabase
       .from('agency_profiles')
@@ -137,7 +138,7 @@ export default function AgencyProfilePage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(handleSave)} className="space-y-6">
+      <form onSubmit={handleSubmit(handleSave)} className="space-y-6 testing">
         {/* Agency Info */}
         <Card>
           <CardHeader>

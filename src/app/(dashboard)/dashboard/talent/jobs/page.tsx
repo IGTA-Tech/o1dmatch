@@ -19,12 +19,14 @@ import {
   Target,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from "next/image";
 
 export default async function TalentJobsPage() {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
-
+  console.log("user ======>");
+  console.log(user);
   if (!user) {
     redirect('/login');
   }
@@ -35,6 +37,8 @@ export default async function TalentJobsPage() {
     .select('*')
     .eq('user_id', user.id)
     .single();
+  console.log("talentProfile ===========>");
+  console.log(talentProfile);
 
   if (!talentProfile) {
     redirect('/dashboard/talent');
@@ -48,19 +52,23 @@ export default async function TalentJobsPage() {
       employer:employer_profiles(
         company_name,
         company_website,
-        logo_url,
         city,
         state
       )
     `)
     .eq('status', 'active')
     .order('created_at', { ascending: false });
+    console.log("jobs ===============> ");
+    console.log(jobs);
 
   // Get existing applications to filter out applied jobs
   const { data: applications } = await supabase
     .from('job_applications')
     .select('job_id')
     .eq('talent_id', talentProfile.id);
+
+  console.log("job_applications ===========> ");
+  console.log(applications);
 
   const appliedJobIds = new Set(applications?.map((a) => a.job_id) || []);
 
@@ -131,17 +139,9 @@ export default async function TalentJobsPage() {
         <CardContent className="flex flex-col h-full">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
-              {job.employer?.logo_url ? (
-                <img
-                  src={job.employer.logo_url}
-                  alt={job.employer.company_name}
-                  className="w-12 h-12 rounded-lg object-cover"
-                />
-              ) : (
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-gray-400" />
-                </div>
-              )}
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Building2 className="w-6 h-6 text-gray-400" />
+              </div>
               <div>
                 <h3 className="font-semibold text-gray-900">{job.title}</h3>
                 <p className="text-sm text-gray-600">{job.employer?.company_name}</p>

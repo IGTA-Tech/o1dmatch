@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { ApplicationStatus } from '@/types/enums';
+import Image from "next/image";
 
 const STATUS_CONFIG: Record<
   ApplicationStatus,
@@ -46,28 +47,27 @@ export default async function TalentApplicationsPage() {
     redirect('/dashboard/talent');
   }
 
-  const { data: applications } = await supabase
-    .from('job_applications')
-    .select(`
-      *,
-      job:job_listings(
-        id,
-        title,
-        department,
-        work_arrangement,
-        salary_min,
-        salary_max,
-        employer:employer_profiles(
-          company_name,
-          logo_url,
-          city,
-          state
-        )
+  const { data: applications, error: appError } = await supabase
+  .from('job_applications')
+  .select(`
+    *,
+    job:job_listings(
+      id,
+      title,
+      department,
+      work_arrangement,
+      salary_min,
+      salary_max,
+      employer:employer_profiles(
+        company_name,
+        city,
+        state
       )
-    `)
-    .eq('talent_id', talentProfile.id)
-    .neq('status', 'withdrawn')
-    .order('created_at', { ascending: false });
+    )
+  `)
+  .eq('talent_id', talentProfile.id)
+  .neq('status', 'withdrawn')
+  .order('created_at', { ascending: false });
 
   const stats = {
     total: applications?.length || 0,
@@ -148,17 +148,9 @@ export default async function TalentApplicationsPage() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      {application.job?.employer?.logo_url ? (
-                        <img
-                          src={application.job.employer.logo_url}
-                          alt={application.job.employer.company_name}
-                          className="w-12 h-12 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <Building2 className="w-6 h-6 text-gray-400" />
-                        </div>
-                      )}
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <Building2 className="w-6 h-6 text-gray-400" />
+                    </div>
                       <div>
                         <h3 className="font-medium text-gray-900">
                           {application.job?.title || 'Unknown Position'}

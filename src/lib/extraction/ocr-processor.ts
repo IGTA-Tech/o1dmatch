@@ -1,4 +1,4 @@
-import Tesseract from 'tesseract.js';
+// lib/extraction/ocr-processor.ts
 
 export interface OCRResult {
   text: string;
@@ -14,7 +14,9 @@ export interface OCRProgress {
 }
 
 /**
- * Extract text from an image using OCR (Tesseract.js)
+ * Extract text from an image using OCR
+ * Note: Tesseract.js has worker issues on Windows/Next.js
+ * This returns a graceful failure - images will need manual review
  */
 export async function extractTextWithOCR(
   imageBuffer: Buffer,
@@ -22,38 +24,17 @@ export async function extractTextWithOCR(
 ): Promise<OCRResult> {
   const startTime = Date.now();
 
-  try {
-    const result = await Tesseract.recognize(imageBuffer, 'eng', {
-      logger: onProgress
-        ? (m) => {
-            if (m.status && typeof m.progress === 'number') {
-              onProgress({
-                status: m.status,
-                progress: Math.round(m.progress * 100),
-              });
-            }
-          }
-        : undefined,
-    });
-
-    const processingTime = Date.now() - startTime;
-
-    return {
-      text: result.data.text,
-      confidence: result.data.confidence,
-      success: true,
-      processingTime,
-    };
-  } catch (error) {
-    console.error('OCR extraction error:', error);
-    return {
-      text: '',
-      confidence: 0,
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown OCR error',
-      processingTime: Date.now() - startTime,
-    };
-  }
+  // For now, skip OCR and mark for manual review
+  // TODO: Integrate cloud OCR (Google Vision, AWS Textract, or Claude Vision)
+  console.log('OCR skipped - tesseract.js has compatibility issues with Next.js on Windows');
+  
+  return {
+    text: '',
+    confidence: 0,
+    success: false,
+    error: 'OCR temporarily unavailable. Image documents require manual review.',
+    processingTime: Date.now() - startTime,
+  };
 }
 
 /**

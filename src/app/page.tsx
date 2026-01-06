@@ -16,6 +16,7 @@ import {
   X,
   Info,
 } from 'lucide-react';
+import Navbar from "@/components/Navbar";
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
@@ -40,7 +41,8 @@ export default function Home() {
       )}
 
       {/* Header */}
-      <header className={`fixed ${isDemoMode ? 'top-10' : 'top-0'} left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50`}>
+      <Navbar />
+      {/*<header className={`fixed ${isDemoMode ? 'top-10' : 'top-0'} left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
@@ -50,7 +52,7 @@ export default function Home() {
               <span className="font-semibold text-gray-900">O1DMatch</span>
             </div>
 
-            {/* Desktop Navigation */}
+            {/* Desktop Navigation 
             <nav className="hidden md:flex items-center gap-8">
               <Link href="/how-it-works/candidates" className="text-gray-600 hover:text-gray-900">
                 For Candidates
@@ -60,6 +62,9 @@ export default function Home() {
               </Link>
               <Link href="/lawyers" className="text-gray-600 hover:text-gray-900">
                 Lawyer Directory
+              </Link>
+              <Link href="/pricing" className="text-gray-600 hover:text-gray-900">
+                Pricing
               </Link>
               <Link href={loginHref} className="text-gray-600 hover:text-gray-900">
                 Log In
@@ -72,7 +77,7 @@ export default function Home() {
               </Link>
             </nav>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button 
             <button
               className="md:hidden p-2 rounded-lg hover:bg-gray-100"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -86,7 +91,7 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Mobile Navigation */}
+          {/* Mobile Navigation 
           {isMobileMenuOpen && (
             <div className="md:hidden py-4 border-t border-gray-100">
               <nav className="flex flex-col gap-4">
@@ -129,7 +134,7 @@ export default function Home() {
             </div>
           )}
         </div>
-      </header>
+      </header>*/}
 
       {/* Hero */}
       <section className={`${isDemoMode ? 'pt-40' : 'pt-32'} pb-20 px-4 sm:px-6 lg:px-8`}>

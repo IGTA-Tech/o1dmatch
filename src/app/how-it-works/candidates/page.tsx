@@ -10,12 +10,14 @@ import {
   Star,
   Eye,
 } from 'lucide-react';
+import Navbar from "@/components/Navbar";
 
 export default function HowItWorksCandidatesPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50">
+      <Navbar />
+      {/*<header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
@@ -46,7 +48,7 @@ export default function HowItWorksCandidatesPage() {
             </nav>
           </div>
         </div>
-      </header>
+      </header>*/}
 
       {/* Hero */}
       <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white">

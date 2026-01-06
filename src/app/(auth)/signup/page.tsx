@@ -69,7 +69,7 @@ export default function SignupPage() {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
-
+      console.log(error);
       if (signUpError) {
         setError(signUpError.message);
         return;

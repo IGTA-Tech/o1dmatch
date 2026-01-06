@@ -11,6 +11,7 @@ import {
   MoreVertical,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from "next/image";
 
 export default async function AgencyClientsPage() {
   const supabase = await createClient();
@@ -116,7 +117,7 @@ export default async function AgencyClientsPage() {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                       {client.logo_url ? (
-                        <img
+                        <Image
                           src={client.logo_url}
                           alt={client.company_name}
                           className="w-12 h-12 rounded-lg object-cover"
