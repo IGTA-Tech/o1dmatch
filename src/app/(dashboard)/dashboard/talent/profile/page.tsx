@@ -59,7 +59,7 @@ function FieldError({ message }: { message?: string }) {
 function FormErrorSummary({ errors }: { errors: Record<string, { message?: string }> }) {
   const errorEntries = Object.entries(errors);
   if (errorEntries.length === 0) return null;
-  
+
   return (
     <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
       <p className="text-sm text-red-700 flex items-center gap-2 font-medium">
@@ -84,7 +84,7 @@ export default function TalentProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  
+
   // Skills input state
   const [skillInput, setSkillInput] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
@@ -130,8 +130,26 @@ export default function TalentProfilePage() {
     } : undefined,
   });
 
+  // const locationForm = useForm<TalentLocationFormData>({
+  //   resolver: zodResolver(talentLocationSchema),
+  //   mode: 'onSubmit',
+  //   values: profile ? {
+  //     city: profile.city || '',
+  //     state: profile.state || '',
+  //     country: profile.country || 'USA',
+  //     willing_to_relocate: profile.willing_to_relocate || false,
+  //     preferred_locations: profile.preferred_locations || [],
+  //     work_arrangement: profile.work_arrangement as TalentLocationFormData['work_arrangement'],
+  //     engagement_type: profile.engagement_type as TalentLocationFormData['engagement_type'],
+  //     salary_min: profile.salary_min || undefined,
+  //     salary_preferred: profile.salary_preferred || undefined,
+  //     available_start: profile.available_start as TalentLocationFormData['available_start'],
+  //     available_start_date: profile.available_start_date || undefined,
+  //   } : undefined,
+  // });
+
   const locationForm = useForm<TalentLocationFormData>({
-    resolver: zodResolver(talentLocationSchema),
+    resolver: zodResolver(talentLocationSchema) as any,
     mode: 'onSubmit',
     values: profile ? {
       city: profile.city || '',
@@ -147,7 +165,7 @@ export default function TalentProfilePage() {
       available_start_date: profile.available_start_date || undefined,
     } : undefined,
   });
-
+  
   const professionalForm = useForm<TalentProfessionalFormData>({
     resolver: zodResolver(talentProfessionalSchema),
     mode: 'onSubmit',
@@ -282,11 +300,10 @@ export default function TalentProfilePage() {
 
       {message && (
         <div
-          className={`p-4 rounded-lg ${
-            message.type === 'success'
+          className={`p-4 rounded-lg ${message.type === 'success'
               ? 'bg-green-50 text-green-700 border border-green-200'
               : 'bg-red-50 text-red-700 border border-red-200'
-          }`}
+            }`}
         >
           {message.text}
         </div>
@@ -298,11 +315,10 @@ export default function TalentProfilePage() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
-              activeTab === tab.key
+            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${activeTab === tab.key
                 ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-gray-900'
-            }`}
+              }`}
           >
             {tab.icon}
             {tab.label}
@@ -326,9 +342,8 @@ export default function TalentProfilePage() {
                   </label>
                   <input
                     {...basicForm.register('first_name')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      basicForm.formState.errors.first_name ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${basicForm.formState.errors.first_name ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={basicForm.formState.errors.first_name?.message} />
                 </div>
@@ -338,9 +353,8 @@ export default function TalentProfilePage() {
                   </label>
                   <input
                     {...basicForm.register('last_name')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      basicForm.formState.errors.last_name ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${basicForm.formState.errors.last_name ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={basicForm.formState.errors.last_name?.message} />
                 </div>
@@ -353,9 +367,8 @@ export default function TalentProfilePage() {
                 <input
                   {...basicForm.register('phone')}
                   type="tel"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    basicForm.formState.errors.phone ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${basicForm.formState.errors.phone ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 <FieldError message={basicForm.formState.errors.phone?.message} />
               </div>
@@ -368,9 +381,8 @@ export default function TalentProfilePage() {
                   {...basicForm.register('professional_headline')}
                   placeholder="e.g., Senior AI Researcher with 10+ years of experience"
                   maxLength={140}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    basicForm.formState.errors.professional_headline ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${basicForm.formState.errors.professional_headline ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 <FieldError message={basicForm.formState.errors.professional_headline?.message} />
                 <p className="mt-1 text-xs text-gray-500">
@@ -425,9 +437,8 @@ export default function TalentProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
                   <input
                     {...locationForm.register('city')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      locationForm.formState.errors.city ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.city ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={locationForm.formState.errors.city?.message} />
                 </div>
@@ -435,9 +446,8 @@ export default function TalentProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
                   <input
                     {...locationForm.register('state')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      locationForm.formState.errors.state ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.state ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={locationForm.formState.errors.state?.message} />
                 </div>
@@ -445,9 +455,8 @@ export default function TalentProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
                   <input
                     {...locationForm.register('country')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      locationForm.formState.errors.country ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.country ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={locationForm.formState.errors.country?.message} />
                 </div>
@@ -471,9 +480,8 @@ export default function TalentProfilePage() {
                 </label>
                 <select
                   {...locationForm.register('work_arrangement')}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    locationForm.formState.errors.work_arrangement ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.work_arrangement ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Select preference</option>
                   <option value="on_site">On-site</option>
@@ -490,9 +498,8 @@ export default function TalentProfilePage() {
                 </label>
                 <select
                   {...locationForm.register('engagement_type')}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    locationForm.formState.errors.engagement_type ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.engagement_type ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Select type</option>
                   <option value="full_time">Full-time</option>
@@ -512,9 +519,8 @@ export default function TalentProfilePage() {
                   <input
                     {...locationForm.register('salary_min', { valueAsNumber: true })}
                     type="number"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      locationForm.formState.errors.salary_min ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.salary_min ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={locationForm.formState.errors.salary_min?.message} />
                 </div>
@@ -525,9 +531,8 @@ export default function TalentProfilePage() {
                   <input
                     {...locationForm.register('salary_preferred', { valueAsNumber: true })}
                     type="number"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      locationForm.formState.errors.salary_preferred ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.salary_preferred ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={locationForm.formState.errors.salary_preferred?.message} />
                 </div>
@@ -564,9 +569,8 @@ export default function TalentProfilePage() {
                   </label>
                   <input
                     {...professionalForm.register('current_job_title')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      professionalForm.formState.errors.current_job_title ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${professionalForm.formState.errors.current_job_title ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={professionalForm.formState.errors.current_job_title?.message} />
                 </div>
@@ -576,9 +580,8 @@ export default function TalentProfilePage() {
                   </label>
                   <input
                     {...professionalForm.register('current_employer')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      professionalForm.formState.errors.current_employer ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${professionalForm.formState.errors.current_employer ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={professionalForm.formState.errors.current_employer?.message} />
                 </div>
@@ -589,9 +592,8 @@ export default function TalentProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
                   <input
                     {...professionalForm.register('industry')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      professionalForm.formState.errors.industry ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${professionalForm.formState.errors.industry ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={professionalForm.formState.errors.industry?.message} />
                 </div>
@@ -604,9 +606,8 @@ export default function TalentProfilePage() {
                     type="number"
                     min="0"
                     max="50"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      professionalForm.formState.errors.years_experience ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${professionalForm.formState.errors.years_experience ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={professionalForm.formState.errors.years_experience?.message} />
                 </div>
@@ -616,9 +617,8 @@ export default function TalentProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Seniority Level</label>
                 <select
                   {...professionalForm.register('seniority')}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    professionalForm.formState.errors.seniority ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${professionalForm.formState.errors.seniority ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Select level</option>
                   <option value="entry">Entry Level</option>
@@ -655,7 +655,7 @@ export default function TalentProfilePage() {
                 <p className="mt-1 text-xs text-gray-500">
                   Add skills relevant to your expertise (e.g., Python, Machine Learning, Data Analysis)
                 </p>
-                
+
                 {/* Skills Tags */}
                 {skills.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
@@ -708,9 +708,8 @@ export default function TalentProfilePage() {
                 </label>
                 <select
                   {...educationForm.register('education')}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    educationForm.formState.errors.education ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${educationForm.formState.errors.education ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 >
                   <option value="">Select level</option>
                   <option value="high_school">High School</option>
@@ -726,9 +725,8 @@ export default function TalentProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">University</label>
                 <input
                   {...educationForm.register('university')}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    educationForm.formState.errors.university ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${educationForm.formState.errors.university ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 <FieldError message={educationForm.formState.errors.university?.message} />
               </div>
@@ -738,9 +736,8 @@ export default function TalentProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Field of Study</label>
                   <input
                     {...educationForm.register('field_of_study')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      educationForm.formState.errors.field_of_study ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${educationForm.formState.errors.field_of_study ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={educationForm.formState.errors.field_of_study?.message} />
                 </div>
@@ -753,9 +750,8 @@ export default function TalentProfilePage() {
                     type="number"
                     min="1950"
                     max="2030"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      educationForm.formState.errors.graduation_year ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${educationForm.formState.errors.graduation_year ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                   <FieldError message={educationForm.formState.errors.graduation_year?.message} />
                 </div>
@@ -791,9 +787,8 @@ export default function TalentProfilePage() {
                   {...onlineForm.register('linkedin_url')}
                   type="url"
                   placeholder="https://linkedin.com/in/username"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    onlineForm.formState.errors.linkedin_url ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${onlineForm.formState.errors.linkedin_url ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 <FieldError message={onlineForm.formState.errors.linkedin_url?.message} />
               </div>
@@ -804,9 +799,8 @@ export default function TalentProfilePage() {
                   {...onlineForm.register('github_url')}
                   type="url"
                   placeholder="https://github.com/username"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    onlineForm.formState.errors.github_url ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${onlineForm.formState.errors.github_url ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 <FieldError message={onlineForm.formState.errors.github_url?.message} />
               </div>
@@ -819,9 +813,8 @@ export default function TalentProfilePage() {
                   {...onlineForm.register('google_scholar_url')}
                   type="url"
                   placeholder="https://scholar.google.com/citations?user=..."
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    onlineForm.formState.errors.google_scholar_url ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${onlineForm.formState.errors.google_scholar_url ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 <FieldError message={onlineForm.formState.errors.google_scholar_url?.message} />
               </div>
@@ -832,9 +825,8 @@ export default function TalentProfilePage() {
                   {...onlineForm.register('personal_website')}
                   type="url"
                   placeholder="https://example.com"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    onlineForm.formState.errors.personal_website ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${onlineForm.formState.errors.personal_website ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 <FieldError message={onlineForm.formState.errors.personal_website?.message} />
               </div>
