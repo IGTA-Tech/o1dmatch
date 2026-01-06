@@ -46,7 +46,7 @@ interface EditClientFormProps {
   agencyName: string;
 }
 
-export function EditClientForm({ client, agencyName: _agencyName }: EditClientFormProps) {
+export function EditClientForm({ client, agencyName }: EditClientFormProps) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -108,6 +108,9 @@ export function EditClientForm({ client, agencyName: _agencyName }: EditClientFo
     setError(null);
 
     try {
+      if(agencyName){
+        console.log(agencyName);
+      }
       const { error: updateError } = await supabase
         .from('agency_clients')
         .update({
