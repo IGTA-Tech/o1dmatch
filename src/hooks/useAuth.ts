@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/models';
 import { UserRole } from '@/types/enums';
@@ -43,12 +43,11 @@ export function useAuth() {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }: { data: { session: Session | null } }) => {
       let profile = null;
       if (session?.user) {
         profile = await fetchProfile(session.user.id);
       }
-
       setState({
         user: session?.user ?? null,
         session,
@@ -57,16 +56,15 @@ export function useAuth() {
         error: null,
       });
     });
-
+  
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       let profile = null;
       if (session?.user) {
         profile = await fetchProfile(session.user.id);
       }
-
       setState({
         user: session?.user ?? null,
         session,
@@ -75,7 +73,7 @@ export function useAuth() {
         error: null,
       });
     });
-
+  
     return () => subscription.unsubscribe();
   }, [supabase, fetchProfile]);
 
