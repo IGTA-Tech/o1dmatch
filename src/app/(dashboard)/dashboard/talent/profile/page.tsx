@@ -32,6 +32,7 @@ import {
   TalentOnlineProfilesFormData,
 } from '@/types/forms';
 import { TalentProfile } from '@/types/models';
+import { Resolver } from 'react-hook-form';
 
 type TabKey = 'basic' | 'location' | 'professional' | 'education' | 'online';
 
@@ -149,7 +150,7 @@ export default function TalentProfilePage() {
   // });
 
   const locationForm = useForm<TalentLocationFormData>({
-    resolver: zodResolver(talentLocationSchema) as any,
+    resolver: zodResolver(talentLocationSchema) as Resolver<TalentLocationFormData>,
     mode: 'onSubmit',
     values: profile ? {
       city: profile.city || '',
@@ -165,7 +166,7 @@ export default function TalentProfilePage() {
       available_start_date: profile.available_start_date || undefined,
     } : undefined,
   });
-  
+
   const professionalForm = useForm<TalentProfessionalFormData>({
     resolver: zodResolver(talentProfessionalSchema),
     mode: 'onSubmit',
