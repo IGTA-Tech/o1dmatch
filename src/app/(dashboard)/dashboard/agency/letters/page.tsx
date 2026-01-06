@@ -64,7 +64,7 @@ export default async function AgencyLettersPage() {
     const talent = Array.isArray(l.talent) ? l.talent[0] : l.talent;
     return talent?.user_id;
   }).filter(Boolean) || [];
-  console.log("talentUserIds===> ",talentUserIds);
+  console.log("talentUserIds===> ", talentUserIds);
   const userInfo: Record<string, string> = {};
 
   if (talentUserIds.length > 0) {
@@ -161,7 +161,13 @@ export default async function AgencyLettersPage() {
           {letters.map((letter) => {
             const status = getStatusBadge(letter.status || 'draft');
             const commitment = getCommitmentBadge(letter.commitment_level);
-            const talentName = letter.talent?.user_id ? userInfo[letter.talent.user_id] : 'Unknown';
+
+            // Handle array responses from Supabase joins
+            const talent = Array.isArray(letter.talent) ? letter.talent[0] : letter.talent;
+            const client = Array.isArray(letter.client) ? letter.client[0] : letter.client;
+
+            const talentName = talent?.user_id ? userInfo[talent.user_id] : 'Unknown';
+            const clientName = (client as { company_name?: string })?.company_name || 'No client';
             const salary = formatSalary(letter.salary_min, letter.salary_max);
 
             return (
@@ -185,7 +191,7 @@ export default async function AgencyLettersPage() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Building2 className="w-4 h-4" />
-                        {letter.client?.company_name || 'No client'}
+                        {clientName}
                       </span>
                     </div>
 
