@@ -67,11 +67,11 @@ export default async function TalentProfilePage({
     .order('created_at', { ascending: false });
 
   // Get agency clients for interest letter dropdown
-  const { data: _clients } = await supabase
-    .from('agency_clients')
-    .select('id, company_name')
-    .eq('agency_id', agencyProfile.id)
-    .eq('is_active', true);
+  // const { data: clients } = await supabase
+  //   .from('agency_clients')
+  //   .select('id, company_name')
+  //   .eq('agency_id', agencyProfile.id)
+  //   .eq('is_active', true);
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
