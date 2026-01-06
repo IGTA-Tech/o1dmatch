@@ -11,6 +11,8 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from "next/image";
+import Navbar from "@/components/Navbar";
 
 interface LawyerProfile {
   id: string;
@@ -85,6 +87,7 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
+      <Navbar />
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
@@ -204,7 +207,7 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
                   <CardContent>
                     <div className="flex items-start gap-4">
                       {lawyer.photo_url ? (
-                        <img
+                        <Image
                           src={lawyer.photo_url}
                           alt={lawyer.name}
                           className="w-16 h-16 rounded-lg object-cover"

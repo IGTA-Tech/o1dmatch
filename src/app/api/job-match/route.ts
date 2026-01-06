@@ -9,13 +9,15 @@ import {
 } from '@/lib/matching';
 import { O1Criterion } from '@/types/enums';
 
+export const dynamic = 'force-dynamic';
+
 // Get match score between a specific talent and job
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

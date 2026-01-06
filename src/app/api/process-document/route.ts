@@ -155,6 +155,7 @@ export async function POST(request: NextRequest) {
         .insert({
           talent_id: talentProfile.id,
           title,
+          file_name: file.name,
           description: description || null,
           file_url: fileUrl,
           file_type: file.type,
@@ -205,6 +206,7 @@ export async function POST(request: NextRequest) {
         .insert({
           talent_id: talentProfile.id,
           title,
+          file_name: file.name,
           description: description || null,
           file_url: fileUrl,
           file_type: file.type,
@@ -254,6 +256,7 @@ export async function POST(request: NextRequest) {
       .insert({
         talent_id: talentProfile.id,
         title,
+        file_name: file.name,
         description: description || null,
         file_url: fileUrl,
         file_type: file.type,

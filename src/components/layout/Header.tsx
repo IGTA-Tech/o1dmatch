@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuthContext } from '@/components/providers/AuthProvider';
 import { cn } from '@/lib/utils';
+import Image from "next/image";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -90,7 +91,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               >
                 <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                   {profile?.avatar_url ? (
-                    <img
+                    <Image
                       src={profile.avatar_url}
                       alt=""
                       className="w-8 h-8 rounded-full object-cover"
