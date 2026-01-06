@@ -19,7 +19,7 @@ import Navbar from "@/components/Navbar";
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
 export default function Home() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const loginHref = isDemoMode ? '/demo' : '/login';
   const signupHref = isDemoMode ? '/demo' : '/signup';
