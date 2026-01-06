@@ -9,7 +9,6 @@ import {
   MapPin,
   Eye,
   Mail,
-  Filter,
 } from 'lucide-react';
 import Link from 'next/link';
 
