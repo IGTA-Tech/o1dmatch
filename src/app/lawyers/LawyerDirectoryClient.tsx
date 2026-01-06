@@ -16,14 +16,16 @@ import Navbar from "@/components/Navbar";
 
 interface LawyerProfile {
   id: string;
-  name: string;
-  firm_name: string | null;
-  photo_url: string | null;
-  city: string | null;
-  state: string | null;
+  attorney_name: string;
+  attorney_title: string | null;
+  firm_name: string;
+  firm_logo_url: string | null;
+  office_location: string | null;
   bio: string | null;
   specializations: string[] | null;
-  years_experience: number | null;
+  visa_types: string[] | null;
+  tier: string | null;
+  profile_views: number | null;
 }
 
 interface LawyerDirectoryClientProps {
@@ -36,11 +38,20 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
   const [visaTypeFilter, setVisaTypeFilter] = useState('all');
   const [showMoreFilters, setShowMoreFilters] = useState(false);
 
-  // Extract unique states from data
-  const states = useMemo(() => {
+  // Extract unique locations from data
+  const locations = useMemo(() => {
     const set = new Set<string>();
     lawyers.forEach(l => {
-      if (l.state) set.add(l.state);
+      if (l.office_location) set.add(l.office_location);
+    });
+    return Array.from(set).sort();
+  }, [lawyers]);
+
+  // Extract unique visa types
+  const allVisaTypes = useMemo(() => {
+    const set = new Set<string>();
+    lawyers.forEach(l => {
+      l.visa_types?.forEach(v => set.add(v));
     });
     return Array.from(set).sort();
   }, [lawyers]);
@@ -53,23 +64,24 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(l =>
-        l.name?.toLowerCase().includes(query) ||
+        l.attorney_name?.toLowerCase().includes(query) ||
         l.firm_name?.toLowerCase().includes(query) ||
         l.bio?.toLowerCase().includes(query) ||
-        l.city?.toLowerCase().includes(query) ||
-        l.state?.toLowerCase().includes(query)
+        l.office_location?.toLowerCase().includes(query) ||
+        l.specializations?.some(s => s.toLowerCase().includes(query)) ||
+        l.visa_types?.some(v => v.toLowerCase().includes(query))
       );
     }
 
     // Location filter
     if (locationFilter !== 'all') {
-      result = result.filter(l => l.state === locationFilter);
+      result = result.filter(l => l.office_location === locationFilter);
     }
 
     // Visa type filter
     if (visaTypeFilter !== 'all') {
       result = result.filter(l =>
-        l.specializations?.some(s => s.toLowerCase().includes(visaTypeFilter.toLowerCase()))
+        l.visa_types?.some(v => v.toLowerCase().includes(visaTypeFilter.toLowerCase()))
       );
     }
 
@@ -102,7 +114,7 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search and Filters */}
-        <Card padding="sm" className="mb-6">
+        <Card className="mb-6">
           <CardContent>
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
@@ -122,8 +134,8 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
                   className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Locations</option>
-                  {states.map(state => (
-                    <option key={state} value={state}>{state}</option>
+                  {locations.map(location => (
+                    <option key={location} value={location}>{location}</option>
                   ))}
                 </select>
                 <select
@@ -132,9 +144,9 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
                   className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Visa Types</option>
-                  <option value="O-1A">O-1A (Sciences/Business)</option>
-                  <option value="O-1B">O-1B (Arts)</option>
-                  <option value="EB-1A">EB-1A</option>
+                  {allVisaTypes.map(visa => (
+                    <option key={visa} value={visa}>{visa}</option>
+                  ))}
                 </select>
                 <button
                   onClick={() => setShowMoreFilters(!showMoreFilters)}
@@ -147,7 +159,7 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
             </div>
 
             {hasActiveFilters && (
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
                 <span className="text-sm text-gray-500">Active filters:</span>
                 {searchQuery && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
@@ -178,7 +190,7 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
         {/* Results */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-gray-600">
-            {filteredLawyers.length} attorneys found
+            {filteredLawyers.length} attorney{filteredLawyers.length !== 1 ? 's' : ''} found
             {hasActiveFilters && ` (of ${lawyers.length} total)`}
           </p>
         </div>
@@ -206,10 +218,12 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
                 <Card hover className="h-full">
                   <CardContent>
                     <div className="flex items-start gap-4">
-                      {lawyer.photo_url ? (
+                      {lawyer.firm_logo_url ? (
                         <Image
-                          src={lawyer.photo_url}
-                          alt={lawyer.name}
+                          src={lawyer.firm_logo_url}
+                          alt={lawyer.attorney_name}
+                          width={64}
+                          height={64}
                           className="w-16 h-16 rounded-lg object-cover"
                         />
                       ) : (
@@ -218,16 +232,15 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
                         </div>
                       )}
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{lawyer.name}</h3>
-                        {lawyer.firm_name && (
-                          <p className="text-sm text-gray-600">{lawyer.firm_name}</p>
+                        <h3 className="font-semibold text-gray-900">{lawyer.attorney_name}</h3>
+                        {lawyer.attorney_title && (
+                          <p className="text-sm text-gray-500">{lawyer.attorney_title}</p>
                         )}
-                        {(lawyer.city || lawyer.state) && (
+                        <p className="text-sm text-blue-600">{lawyer.firm_name}</p>
+                        {lawyer.office_location && (
                           <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                             <MapPin className="w-3.5 h-3.5" />
-                            {lawyer.city && lawyer.state
-                              ? `${lawyer.city}, ${lawyer.state}`
-                              : lawyer.city || lawyer.state}
+                            {lawyer.office_location}
                           </p>
                         )}
                       </div>
@@ -239,8 +252,28 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
                       </p>
                     )}
 
-                    {lawyer.specializations && lawyer.specializations.length > 0 && (
+                    {/* Visa Types */}
+                    {lawyer.visa_types && lawyer.visa_types.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-3">
+                        {lawyer.visa_types.slice(0, 4).map((visa: string) => (
+                          <span
+                            key={visa}
+                            className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full"
+                          >
+                            {visa}
+                          </span>
+                        ))}
+                        {lawyer.visa_types.length > 4 && (
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                            +{lawyer.visa_types.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Specializations */}
+                    {lawyer.specializations && lawyer.specializations.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
                         {lawyer.specializations.slice(0, 3).map((spec: string) => (
                           <span
                             key={spec}
@@ -259,8 +292,10 @@ export default function LawyerDirectoryClient({ lawyers }: LawyerDirectoryClient
 
                     <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
                       <div className="flex items-center gap-2 text-sm text-gray-500">
-                        {lawyer.years_experience && (
-                          <span>{lawyer.years_experience}+ years exp</span>
+                        {lawyer.tier && lawyer.tier !== 'basic' && (
+                          <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full capitalize">
+                            {lawyer.tier}
+                          </span>
                         )}
                       </div>
                       <span className="flex items-center gap-1 text-blue-600 text-sm font-medium">
