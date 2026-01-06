@@ -19,13 +19,15 @@ export interface OCRProgress {
  * This returns a graceful failure - images will need manual review
  */
 export async function extractTextWithOCR(
-  _imageBuffer: Buffer,
-  _onProgress?: (progress: OCRProgress) => void
+  imageBuffer: Buffer,
+  onProgress?: (progress: OCRProgress) => void
 ): Promise<OCRResult> {
   const startTime = Date.now();
 
   // For now, skip OCR and mark for manual review
   // TODO: Integrate cloud OCR (Google Vision, AWS Textract, or Claude Vision)
+  if(imageBuffer){console.log(imageBuffer);}
+  if(onProgress){console.log(onProgress);}
   console.log('OCR skipped - tesseract.js has compatibility issues with Next.js on Windows');
   
   return {
