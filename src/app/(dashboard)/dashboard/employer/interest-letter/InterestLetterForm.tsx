@@ -41,8 +41,8 @@ export function InterestLetterForm({
     preselectedJobId,
 }: InterestLetterFormProps) {
     const router = useRouter();
-    const _supabase = createClient();
-
+    const supabase = createClient();
+    if(supabase){console.log(supabase);}
     const [sending, setSending] = useState(false);
     const [savingDraft, setSavingDraft] = useState(false);
     const [error, setError] = useState<string | null>(null);

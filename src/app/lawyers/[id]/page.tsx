@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
 import {
   ArrowLeft,
-  Building2,
   Mail,
   Phone,
   Globe,
@@ -15,6 +14,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -84,7 +84,7 @@ try {
             {/* Logo/Avatar */}
             <div className="flex-shrink-0">
               {lawyer.firm_logo_url ? (
-                <img
+                <Image
                   src={lawyer.firm_logo_url}
                   alt={lawyer.firm_name}
                   className="w-24 h-24 object-contain rounded-lg border"

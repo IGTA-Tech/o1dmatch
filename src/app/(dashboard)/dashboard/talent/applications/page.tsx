@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { ApplicationStatus } from '@/types/enums';
-import _Image from "next/image";
+// import Image from "next/image";
 
 const STATUS_CONFIG: Record<
   ApplicationStatus,
@@ -70,7 +70,7 @@ export default async function TalentApplicationsPage() {
   .order('created_at', { ascending: false });
 
   if(appError){ console.log(appError); }
-  
+
   const stats = {
     total: applications?.length || 0,
     pending: applications?.filter((a) =>

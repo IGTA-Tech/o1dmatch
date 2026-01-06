@@ -19,8 +19,8 @@ export interface OCRProgress {
  * This returns a graceful failure - images will need manual review
  */
 export async function extractTextWithOCR(
-  imageBuffer: Buffer,
-  onProgress?: (progress: OCRProgress) => void
+  // imageBuffer: Buffer,
+  // onProgress?: (progress: OCRProgress) => void
 ): Promise<OCRResult> {
   const startTime = Date.now();
 

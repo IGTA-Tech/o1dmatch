@@ -3,18 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  FileCheck,
-  Users,
-  Shield,
-  Star,
-  ArrowRight,
-  CheckCircle,
-  Building2,
-  Briefcase,
-  Scale,
   Menu,
   X,
-  Info,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 
@@ -25,8 +15,8 @@ export default function Navbar() {
 
     const loginHref = isDemoMode ? '/demo' : '/login';
     const signupHref = isDemoMode ? '/demo' : '/signup';
-    const talentSignupHref = isDemoMode ? '/demo' : '/signup?role=talent';
-    const employerSignupHref = isDemoMode ? '/demo' : '/signup?role=employer';
+    // const talentSignupHref = isDemoMode ? '/demo' : '/signup?role=talent';
+    // const employerSignupHref = isDemoMode ? '/demo' : '/signup?role=employer';
     return (
     <header className={`fixed ${isDemoMode ? 'top-10' : 'top-0'} left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

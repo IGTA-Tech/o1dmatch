@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
-import { ArrowLeft, Scale, Building2, MapPin } from 'lucide-react';
+import { ArrowLeft, Scale, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import ConnectForm from './ConnectForm';
+import Image from 'next/image';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -45,7 +46,7 @@ export default async function LawyerConnectPage({ params }: PageProps) {
         <Card>
           <CardContent className="flex items-center gap-4">
             {lawyer.firm_logo_url ? (
-              <img
+              <Image
                 src={lawyer.firm_logo_url}
                 alt={lawyer.firm_name}
                 className="w-16 h-16 object-contain rounded-lg border"

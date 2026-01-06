@@ -7,7 +7,6 @@ import {
   Calendar,
   DollarSign,
   MapPin,
-  Eye,
 } from 'lucide-react';
 import Link from 'next/link';
 

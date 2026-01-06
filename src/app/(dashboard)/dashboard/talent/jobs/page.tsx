@@ -19,7 +19,7 @@ import {
   Target,
 } from 'lucide-react';
 import Link from 'next/link';
-import _Image from "next/image";
+// import Image from "next/image";
 
 export default async function TalentJobsPage() {
   const supabase = await createClient();

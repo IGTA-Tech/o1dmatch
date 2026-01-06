@@ -4,7 +4,6 @@ import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui
 import {
   ArrowLeft,
   Building2,
-  User,
   Briefcase,
   DollarSign,
   MapPin,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import LetterResponseActions from './LetterResponseActions';
+import Image from 'next/image';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -177,7 +177,7 @@ export default async function TalentLetterDetailPage({ params, searchParams }: P
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center">
               {letter.employer?.company_logo_url ? (
-                <img
+                <Image
                   src={letter.employer.company_logo_url}
                   alt={senderCompany}
                   className="w-12 h-12 object-contain rounded"

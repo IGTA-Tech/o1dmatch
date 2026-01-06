@@ -64,7 +64,7 @@ interface NewLetterFormProps {
 
 export default function NewLetterForm({
   agencyId,
-  agencyName:_agencyName,
+  agencyName,
   clients,
   jobs,
   talents,
@@ -74,6 +74,7 @@ export default function NewLetterForm({
   preselectedJobId,
   preselectedClientId,
 }: NewLetterFormProps) {
+  if(agencyName){console.log(agencyName);}
   const router = useRouter();
   const supabase = createClient();
 
