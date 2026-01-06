@@ -99,13 +99,17 @@ export default async function NewLetterPage({
     full_name: t.user_id ? userInfo[t.user_id]?.full_name : null,
     email: t.user_id ? userInfo[t.user_id]?.email : null,
   })) || [];
+  const transformedJobs = jobs?.map(job => ({
+    ...job,
+    client: Array.isArray(job.client) ? job.client[0] : job.client
+  })) || [];
 
   return (
     <NewLetterForm
       agencyId={agencyProfile.id}
       agencyName={agencyProfile.agency_name}
       clients={clients || []}
-      jobs={jobs || []}
+      jobs={transformedJobs}
       talents={talentsWithNames}
       preselectedTalentId={params.talent}
       preselectedTalent={talentProfile}
