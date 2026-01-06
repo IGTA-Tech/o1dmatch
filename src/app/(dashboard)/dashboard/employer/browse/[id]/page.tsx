@@ -4,7 +4,6 @@ import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui
 import {
   ArrowLeft,
   Mail,
-  Phone,
   MapPin,
   Briefcase,
   GraduationCap,
@@ -46,6 +45,10 @@ export default async function TalentProfilePage({
     .select('*')
     .eq('id', id)
     .single();
+
+  if(error){
+    console.log(error);
+  }
 
   if (!talent) {
     redirect('/dashboard/employer/browse');

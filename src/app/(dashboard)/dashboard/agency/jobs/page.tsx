@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
+// import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
+import { Card, CardContent, Badge } from '@/components/ui';
 import {
   Plus,
   Briefcase,
@@ -48,7 +49,7 @@ export default async function AgencyJobsPage() {
 
   // Get application counts
   const jobIds = jobs?.map(j => j.id) || [];
-  let applicationCounts: Record<string, number> = {};
+  const applicationCounts: Record<string, number> = {};
   
   if (jobIds.length > 0) {
     const { data: applications } = await supabase

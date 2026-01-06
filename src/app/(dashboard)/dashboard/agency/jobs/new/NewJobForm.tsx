@@ -28,7 +28,7 @@ interface NewJobFormProps {
   clients: Client[];
 }
 
-export function NewJobForm({ agencyId, agencyName, clients }: NewJobFormProps) {
+export function NewJobForm({ agencyId, agencyName: _agencyName, clients }: NewJobFormProps) {
   const router = useRouter();
   const supabase = createClient();
 

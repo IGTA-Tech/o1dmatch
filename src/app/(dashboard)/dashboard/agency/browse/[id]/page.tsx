@@ -67,7 +67,7 @@ export default async function TalentProfilePage({
     .order('created_at', { ascending: false });
 
   // Get agency clients for interest letter dropdown
-  const { data: clients } = await supabase
+  const { data: _clients } = await supabase
     .from('agency_clients')
     .select('id, company_name')
     .eq('agency_id', agencyProfile.id)

@@ -81,7 +81,7 @@ export default async function NewLetterPage({
 
   // Get user info for talents
   const talentUserIds = allTalents?.map(t => t.user_id).filter(Boolean) || [];
-  let userInfo: Record<string, { full_name: string; email: string }> = {};
+  const userInfo: Record<string, { full_name: string; email: string }> = {};
 
   if (talentUserIds.length > 0) {
     const { data: profiles } = await supabase

@@ -71,7 +71,7 @@ console.log("error =================>");
 console.log(error);
   // Get talent emails
   const talentUserIds = applications?.map(a => a.talent?.user_id).filter(Boolean) || [];
-  let talentEmails: Record<string, string> = {};
+  const talentEmails: Record<string, string> = {};
 
   if (talentUserIds.length > 0) {
     const { data: profiles } = await supabase

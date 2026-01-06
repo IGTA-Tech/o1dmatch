@@ -2,12 +2,10 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Card, CardContent, Badge } from '@/components/ui';
 import {
-  Search,
   MapPin,
   Briefcase,
   Award,
   Users,
-  Filter,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -50,7 +48,7 @@ export default async function AgencyBrowsePage() {
 
   // Get user info for talents
   const talentUserIds = talents?.map(t => t.user_id).filter(Boolean) || [];
-  let userInfo: Record<string, { email: string; full_name: string }> = {};
+  const userInfo: Record<string, { email: string; full_name: string }> = {};
 
   if (talentUserIds.length > 0) {
     const { data: profiles } = await supabase

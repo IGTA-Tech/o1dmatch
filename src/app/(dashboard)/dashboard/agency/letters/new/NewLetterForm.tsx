@@ -64,7 +64,7 @@ interface NewLetterFormProps {
 
 export default function NewLetterForm({
   agencyId,
-  agencyName,
+  agencyName:_agencyName,
   clients,
   jobs,
   talents,

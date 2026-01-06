@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
+import { Card, CardContent, Badge } from '@/components/ui';
 import {
   Mail,
   MailOpen,
@@ -8,7 +8,6 @@ import {
   Calendar,
   Paperclip,
   ArrowRight,
-  Briefcase,
   DollarSign,
 } from 'lucide-react';
 import Link from 'next/link';

@@ -10,7 +10,6 @@ import {
   Clock,
   Briefcase,
   CheckCircle,
-  Send,
 } from 'lucide-react';
 import Link from 'next/link';
 import { ApplyButton } from './ApplyButton';

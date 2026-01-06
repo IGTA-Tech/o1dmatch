@@ -46,7 +46,7 @@ interface EditClientFormProps {
   agencyName: string;
 }
 
-export function EditClientForm({ client, agencyName }: EditClientFormProps) {
+export function EditClientForm({ client, agencyName: _agencyName }: EditClientFormProps) {
   const router = useRouter();
   const supabase = createClient();
 

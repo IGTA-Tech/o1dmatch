@@ -78,8 +78,12 @@ export default async function JobApplicationsPage({
     .eq('job_id', id)
     .order('created_at', { ascending: false });
 
+  if(appError){
+    console.log(appError);
+  }
+
   // Get user emails for talents
-  let talentEmails: Record<string, string> = {};
+  const talentEmails: Record<string, string> = {};
   if (applications && applications.length > 0) {
     const userIds = applications
       .map(a => a.talent?.user_id)

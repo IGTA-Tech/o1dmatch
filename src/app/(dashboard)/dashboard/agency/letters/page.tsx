@@ -65,7 +65,7 @@ export default async function AgencyLettersPage() {
     return talent?.user_id;
   }).filter(Boolean) || [];
   console.log("talentUserIds===> ",talentUserIds);
-  let userInfo: Record<string, string> = {};
+  const userInfo: Record<string, string> = {};
 
   if (talentUserIds.length > 0) {
     const { data: profiles } = await supabase

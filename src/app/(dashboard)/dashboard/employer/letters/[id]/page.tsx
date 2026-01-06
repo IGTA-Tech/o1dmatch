@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { redirect, notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
 import {
     ArrowLeft,
