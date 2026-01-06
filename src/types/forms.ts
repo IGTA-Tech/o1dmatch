@@ -72,12 +72,12 @@ export const talentLocationSchema = z.object({
   state: z.string().optional(),
   country: z.string().optional(),
   willing_to_relocate: z.boolean().optional(),
-  preferred_locations: z.array(z.string()).optional().default([]),
-  work_arrangement: z.enum(['on_site', 'hybrid', 'remote', 'flexible']).optional().nullable(),
-  engagement_type: z.enum(['full_time', 'part_time', 'contract_w2', 'consulting_1099', 'project_based']).optional().nullable(),
+  preferred_locations: z.array(z.string()).default([]),  // Remove .optional()
+  work_arrangement: z.enum(['on_site', 'hybrid', 'remote', 'flexible', '']).optional().nullable(),
+  engagement_type: z.enum(['full_time', 'part_time', 'contract_w2', 'consulting_1099', 'project_based', '']).optional().nullable(),
   salary_min: z.number().optional().nullable(),
   salary_preferred: z.number().optional().nullable(),
-  available_start: z.enum(['immediately', '2_weeks', '1_month', '2_months', '3_months', 'specific_date']).optional().nullable(),
+  available_start: z.enum(['immediately', '2_weeks', '1_month', '2_months', '3_months', 'specific_date', '']).optional().nullable(),
   available_start_date: z.string().optional().nullable(),
 });
 
