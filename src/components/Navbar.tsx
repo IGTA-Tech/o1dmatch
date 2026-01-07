@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { createClient } from '@/lib/supabase/client';
+import { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
@@ -46,21 +47,23 @@ export default function Navbar() {
     getUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user || null);
-      
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .maybeSingle();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event: AuthChangeEvent, session: Session | null) => {
+        setUser(session?.user || null);
         
-        setUserRole(profile?.role || null);
-      } else {
-        setUserRole(null);
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          
+          setUserRole(profile?.role || null);
+        } else {
+          setUserRole(null);
+        }
       }
-    });
+    );
 
     return () => subscription.unsubscribe();
   }, [supabase]);
