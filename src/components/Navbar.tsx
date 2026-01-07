@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import {
   Menu,
   X,
-  User,
   LogOut,
   LayoutDashboard,
 } from 'lucide-react';
