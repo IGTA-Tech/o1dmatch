@@ -285,7 +285,7 @@ export default function PricingPage() {
                     >
                       Create Free Profile
                     </Link>
-                  ) : key === 'igta_member' ? (
+                  ) : key === 'igta_member' ? ( 
                     <Link
                       href="/auth/register?type=talent&igta=true"
                       className="block w-full text-center py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
