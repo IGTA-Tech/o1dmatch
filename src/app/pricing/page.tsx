@@ -38,7 +38,7 @@ export default function PricingPage() {
           message += `${data.promo.discountPercent}% discount applied.`;
         }
         if (data.promo.grantsIGTAMember) {
-          message = 'IGTA member code verified! You qualify for free full access.';
+          message = 'Innovative Automations member code verified! You qualify for free full access.';
         }
         setPromoStatus({ valid: true, message });
       } else {
@@ -80,24 +80,6 @@ export default function PricingPage() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header */}
       <Navbar />
-      {/* <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-blue-600">
-            O1DMatch
-          </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/how-it-works/candidates" className="text-gray-600 hover:text-gray-900">
-              For Candidates
-            </Link>
-            <Link href="/how-it-works/employers" className="text-gray-600 hover:text-gray-900">
-              For Employers
-            </Link>
-            <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 font-medium">
-              Sign In
-            </Link>
-          </nav>
-        </div>
-      </header> */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Hero */}
@@ -266,7 +248,7 @@ export default function PricingPage() {
                   {key === 'igta_member' && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <span className="bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                        IGTA Clients
+                        Clients
                       </span>
                     </div>
                   )}
@@ -277,7 +259,7 @@ export default function PricingPage() {
                     {key === 'igta_member' ? (
                       <>
                         <span className="text-3xl font-bold text-green-600">FREE</span>
-                        <p className="text-sm text-gray-500">For verified IGTA clients</p>
+                        <p className="text-sm text-gray-500">For verified Innovative Automations clients</p>
                       </>
                     ) : (
                       <>
@@ -308,7 +290,7 @@ export default function PricingPage() {
                       href="/auth/register?type=talent&igta=true"
                       className="block w-full text-center py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
                     >
-                      Verify IGTA Membership
+                      Verify Membership
                     </Link>
                   ) : (
                     <button
@@ -352,9 +334,9 @@ export default function PricingPage() {
             </div>
 
             <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">I&apos;m an IGTA client. How do I get free access?</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">I&apos;m an Innovative Automations client. How do I get free access?</h3>
               <p className="text-gray-600">
-                If you&apos;re enrolled in an IGTA visa program, you&apos;ll receive a verification code via
+                If you&apos;re enrolled in an Innovative Automations visa program, you&apos;ll receive a verification code via
                 email. Use this code during signup to unlock full access at no cost.
               </p>
             </div>
