@@ -73,7 +73,7 @@ export default function EmployerWaitlistPage() {
                 </div>
               </div>
             </div>
-
+ 
             <p className="text-sm text-gray-500">
               Are you a professional seeking opportunities?{' '}
               <Link href="/waitlist/talent" className="text-blue-600 hover:underline font-medium">
