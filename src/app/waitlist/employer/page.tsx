@@ -1,237 +1,117 @@
-'use client';
-
-import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui';
+import { Building2, Globe, Shield, Zap } from 'lucide-react';
 import Link from 'next/link';
-import { WaitlistForm, FormInput, FormSelect, FormTextarea } from '@/components/waitlist/WaitlistForm';
-import { Mail, User, Building2, Globe, ArrowLeft } from 'lucide-react';
-
-const COMPANY_SIZE_OPTIONS = [
-  { value: '1-10', label: '1-10 employees' },
-  { value: '11-50', label: '11-50 employees' },
-  { value: '51-100', label: '51-100 employees' },
-  { value: '100-499', label: '100-499 employees' },
-  { value: '500+', label: '500+ employees' },
-  { value: '1000+', label: '1000+ employees' },
-];
-
-const INDUSTRY_OPTIONS = [
-  { value: 'technology', label: 'Technology / Software' },
-  { value: 'ai_ml', label: 'AI / Machine Learning' },
-  { value: 'finance', label: 'Finance / Fintech' },
-  { value: 'healthcare', label: 'Healthcare / Biotech' },
-  { value: 'research', label: 'Research / Academia' },
-  { value: 'media', label: 'Media / Entertainment' },
-  { value: 'consulting', label: 'Consulting' },
-  { value: 'manufacturing', label: 'Manufacturing' },
-  { value: 'other', label: 'Other' },
-];
-
-const HIRING_TIMELINE_OPTIONS = [
-  { value: 'immediately', label: 'Actively hiring now' },
-  { value: 'within_30_days', label: 'Within 30 days' },
-  { value: 'within_90_days', label: 'Within 3 months' },
-  { value: 'within_6_months', label: 'Within 6 months' },
-  { value: 'exploring', label: 'Just exploring' },
-];
-
-const ROLES_COUNT_OPTIONS = [
-  { value: '1', label: '1 role' },
-  { value: '2-5', label: '2-5 roles' },
-  { value: '6-10', label: '6-10 roles' },
-  { value: '10+', label: '10+ roles' },
-];
-
-const REFERRAL_OPTIONS = [
-  { value: 'google', label: 'Google search' },
-  { value: 'linkedin', label: 'LinkedIn' },
-  { value: 'twitter', label: 'Twitter/X' },
-  { value: 'referral', label: 'Referral from another company' },
-  { value: 'lawyer', label: 'Immigration lawyer' },
-  { value: 'conference', label: 'Conference / Event' },
-  { value: 'other', label: 'Other' },
-];
+import WaitlistForm from '../WaitlistForm';
 
 export default function EmployerWaitlistPage() {
-  const [formData, setFormData] = useState<Record<string, unknown>>({
-    full_name: '',
-    email: '',
-    phone: '',
-    company_name: '',
-    company_website: '',
-    company_size: '',
-    industry: '',
-    hiring_timeline: '',
-    roles_count: '',
-    referral_source: '',
-    notes: '',
-  });
-
-  const updateField = (field: string) => (value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (data: Record<string, unknown>) => {
-    const response = await fetch('/api/waitlist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || 'Failed to join waitlist');
-    }
-
-    return result;
-  };
-
-  const steps = [
-    {
-      title: 'Contact Info',
-      fields: (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Your contact information</h3>
-          <FormInput
-            label="Full Name"
-            name="full_name"
-            placeholder="Jane Smith"
-            required
-            value={formData.full_name as string}
-            onChange={updateField('full_name')}
-            icon={User}
-          />
-          <FormInput
-            label="Work Email"
-            name="email"
-            type="email"
-            placeholder="you@company.com"
-            required
-            value={formData.email as string}
-            onChange={updateField('email')}
-            icon={Mail}
-          />
-          <FormInput
-            label="Phone Number"
-            name="phone"
-            type="tel"
-            placeholder="+1 (555) 123-4567"
-            value={formData.phone as string}
-            onChange={updateField('phone')}
-          />
-        </div>
-      ),
-    },
-    {
-      title: 'Company',
-      fields: (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">About your company</h3>
-          <FormInput
-            label="Company Name"
-            name="company_name"
-            placeholder="Acme Inc."
-            required
-            value={formData.company_name as string}
-            onChange={updateField('company_name')}
-            icon={Building2}
-          />
-          <FormInput
-            label="Company Website"
-            name="company_website"
-            placeholder="https://company.com"
-            value={formData.company_website as string}
-            onChange={updateField('company_website')}
-            icon={Globe}
-          />
-          <FormSelect
-            label="Company Size"
-            name="company_size"
-            options={COMPANY_SIZE_OPTIONS}
-            value={formData.company_size as string}
-            onChange={updateField('company_size')}
-          />
-          <FormSelect
-            label="Industry"
-            name="industry"
-            options={INDUSTRY_OPTIONS}
-            value={formData.industry as string}
-            onChange={updateField('industry')}
-          />
-        </div>
-      ),
-    },
-    {
-      title: 'Hiring Plans',
-      fields: (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Your O-1 hiring plans</h3>
-          <FormSelect
-            label="When do you plan to hire O-1 talent?"
-            name="hiring_timeline"
-            options={HIRING_TIMELINE_OPTIONS}
-            value={formData.hiring_timeline as string}
-            onChange={updateField('hiring_timeline')}
-          />
-          <FormSelect
-            label="How many O-1 roles are you looking to fill?"
-            name="roles_count"
-            options={ROLES_COUNT_OPTIONS}
-            value={formData.roles_count as string}
-            onChange={updateField('roles_count')}
-          />
-          <FormSelect
-            label="How did you hear about O1DMatch?"
-            name="referral_source"
-            options={REFERRAL_OPTIONS}
-            value={formData.referral_source as string}
-            onChange={updateField('referral_source')}
-          />
-          <FormTextarea
-            label="What type of roles are you looking to fill?"
-            name="notes"
-            placeholder="Tell us about the positions, required skills, or any specific requirements..."
-            value={formData.notes as string}
-            onChange={updateField('notes')}
-            rows={4}
-          />
-        </div>
-      ),
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
-      <div className="max-w-2xl mx-auto px-4 py-12">
-        {/* Back Link */}
-        <Link
-          href="/waitlist"
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to waitlist options
-        </Link>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+      
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left - Benefits */}
+          <div>
+            <span className="inline-block px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full mb-4">
+              For Employers
+            </span>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Hire Extraordinary Global Talent
+            </h1>
+            <p className="text-lg text-gray-600 mb-8">
+              Access a curated pool of exceptional professionals who are pre-qualified 
+              for O-1 visa sponsorship. Hire the world&apos;s best without the guesswork.
+            </p>
 
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-8 h-8 text-green-600" />
+            <div className="space-y-4 mb-8">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Pre-Qualified Candidates</h3>
+                  <p className="text-gray-600 text-sm">
+                    Every candidate is scored and verified for O-1 eligibility
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Zap className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Streamlined Process</h3>
+                  <p className="text-gray-600 text-sm">
+                    Generate interest letters and support documentation instantly
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Globe className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Global Talent Pool</h3>
+                  <p className="text-gray-600 text-sm">
+                    Access exceptional talent from around the world
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Building2 className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Attorney Connections</h3>
+                  <p className="text-gray-600 text-sm">
+                    Partner with experienced O-1 immigration attorneys
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-500">
+              Are you a professional seeking opportunities?{' '}
+              <Link href="/waitlist/talent" className="text-blue-600 hover:underline font-medium">
+                Join the talent waitlist →
+              </Link>
+            </p>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Employer Waitlist</h1>
-          <p className="text-gray-600">
-            Get early access to our pool of pre-vetted O-1 ready talent.
-          </p>
+
+          {/* Right - Form */}
+          <div>
+            <Card className="shadow-xl">
+              <CardContent className="p-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Join the Waitlist
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Get early access to hire extraordinary global talent for your team.
+                </p>
+                <WaitlistForm defaultRole="employer" />
+              </CardContent>
+            </Card>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-500">
+                🏢 <span className="font-medium">500+</span> companies already on the waitlist
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
-          <WaitlistForm
-            userType="employer"
-            steps={steps}
-            onSubmit={handleSubmit}
-            formData={formData}
-            
-          />
+        {/* Logos Section */}
+        <div className="mt-16 text-center">
+          <p className="text-sm text-gray-500 mb-6">Trusted by innovative companies</p>
+          <div className="flex items-center justify-center gap-8 opacity-50">
+            {/* Placeholder for company logos */}
+            <div className="w-24 h-8 bg-gray-200 rounded" />
+            <div className="w-24 h-8 bg-gray-200 rounded" />
+            <div className="w-24 h-8 bg-gray-200 rounded" />
+            <div className="w-24 h-8 bg-gray-200 rounded" />
+          </div>
         </div>
       </div>
     </div>

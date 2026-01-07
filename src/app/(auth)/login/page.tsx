@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { signInSchema, SignInFormData } from '@/types/forms';
 import { createClient } from '@/lib/supabase/client';
 import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
+import Navbar from "@/components/Navbar";
 
 function LoginForm() {
   const router = useRouter();
@@ -51,6 +52,7 @@ function LoginForm() {
 
   return (
     <div>
+      <Navbar />
       <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
         Sign in to your account
       </h2>

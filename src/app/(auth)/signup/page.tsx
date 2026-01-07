@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { signUpSchema, SignUpFormData } from '@/types/forms';
 import { createClient } from '@/lib/supabase/client';
 import { Loader2, Mail, Lock, User, AlertCircle, Check } from 'lucide-react';
+import Navbar from "@/components/Navbar";
 
 const ROLE_OPTIONS = [
   {
@@ -105,6 +106,7 @@ export default function SignupPage() {
 
   return (
     <div>
+      <Navbar />
       <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
         Create your account
       </h2>

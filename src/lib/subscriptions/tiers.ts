@@ -148,7 +148,7 @@ export const TALENT_TIERS: Record<TalentTier, TalentTierConfig> = {
       'Receive interest letters from employers',
       'Apply to job postings',
       'Appear in employer talent search',
-      'Direct messaging with employers',
+      // 'Direct messaging with employers',
       'Email notifications for opportunities',
     ],
   },
@@ -168,14 +168,14 @@ export const TALENT_TIERS: Record<TalentTier, TalentTierConfig> = {
   },
   igta_member: {
     id: 'igta_member',
-    name: 'IGTA Member',
+    name: 'Innovative Automations Member',
     price: 0,
     features: [
       'All Active Match features included FREE',
-      'Verified IGTA program participant badge',
-      'Direct integration with IGTA case management',
+      'Verified Innovative Automations program participant badge',
+      'Direct integration with Innovative Automations case management',
       'Priority access to new features',
-      'Exclusive IGTA member events',
+      'Exclusive Innovative Automations member events',
     ],
   },
 };
