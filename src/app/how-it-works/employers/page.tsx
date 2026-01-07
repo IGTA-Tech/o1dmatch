@@ -11,43 +11,13 @@ import {
   Filter,
   UserCheck,
 } from 'lucide-react';
+import Navbar from "@/components/Navbar";
 
 export default function HowItWorksEmployersPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">O1</span>
-              </div>
-              <span className="font-semibold text-gray-900">O1DMatch</span>
-            </Link>
-            <nav className="hidden md:flex items-center gap-8">
-              <Link href="/how-it-works/candidates" className="text-gray-600 hover:text-gray-900">
-                For Candidates
-              </Link>
-              <Link href="/how-it-works/employers" className="text-blue-600 font-medium">
-                For Employers
-              </Link>
-              <Link href="/lawyers" className="text-gray-600 hover:text-gray-900">
-                Lawyer Directory
-              </Link>
-              <Link href="/login" className="text-gray-600 hover:text-gray-900">
-                Log In
-              </Link>
-              <Link
-                href="/signup?role=employer"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Get Started
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Hero */}
       <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-green-50 to-white">
