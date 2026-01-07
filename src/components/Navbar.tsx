@@ -36,9 +36,9 @@ export default function Navbar() {
               <Link href="/how-it-works/employers" className={`py-2 hover:text-gray-900 ${pathname === "/how-it-works/employers"? "text-blue-600": "text-gray-600"}`}>
                 For Employers
               </Link>
-              <Link href="/lawyers" className={`py-2 hover:text-gray-900 ${pathname === "/lawyers"? "text-blue-600": "text-gray-600"}`}>
+              {/* <Link href="/lawyers" className={`py-2 hover:text-gray-900 ${pathname === "/lawyers"? "text-blue-600": "text-gray-600"}`}>
                 Lawyer Directory
-              </Link>
+              </Link> */}
               <Link href="/pricing" className={`py-2 hover:text-gray-900 ${pathname === "/pricing"? "text-blue-600": "text-gray-600"}`}>
                 Pricing
               </Link>
