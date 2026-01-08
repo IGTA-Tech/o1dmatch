@@ -21,7 +21,6 @@ const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 export default function Home() {
   // const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const loginHref = isDemoMode ? '/demo' : '/login';
   const signupHref = isDemoMode ? '/demo' : '/signup';
   const talentSignupHref = isDemoMode ? '/demo' : '/signup?role=talent';
   const employerSignupHref = isDemoMode ? '/demo' : '/signup?role=employer';
