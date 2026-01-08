@@ -92,7 +92,7 @@ export default function WaitlistForm({ defaultRole }: WaitlistFormProps) {
           </Link>
           <p className="text-sm text-gray-500">
             Follow us on{' '}
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+            <a href="https://www.linkedin.com/newsletters/7219380171684876288/?displayConfirmation=true" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
               LinkedIn
             </a>
             {' '}for updates

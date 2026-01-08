@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Check, Building2, User, Sparkles, ArrowRight } from 'lucide-react';
 import { EMPLOYER_TIERS, TALENT_TIERS, EmployerTier, TalentTier } from '@/lib/subscriptions/tiers';
 import Navbar from "@/components/Navbar";
+import { Check, Building2, User, Sparkles, ArrowRight } from 'lucide-react';
 
 type ViewType = 'employers' | 'talent';
 
@@ -78,8 +78,10 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Header */}
       <Navbar />
+
+      {/* Spacer for fixed navbar */}
+      <div className="pt-24" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Hero */}
@@ -97,22 +99,20 @@ export default function PricingPage() {
           <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1">
             <button
               onClick={() => setView('employers')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-md text-sm font-medium transition-colors ${
-                view === 'employers'
+              className={`flex items-center gap-2 px-6 py-3 rounded-md text-sm font-medium transition-colors ${view === 'employers'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               <Building2 className="w-4 h-4" />
               For Employers
             </button>
             <button
               onClick={() => setView('talent')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-md text-sm font-medium transition-colors ${
-                view === 'talent'
+              className={`flex items-center gap-2 px-6 py-3 rounded-md text-sm font-medium transition-colors ${view === 'talent'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               <User className="w-4 h-4" />
               For Talent
@@ -155,11 +155,10 @@ export default function PricingPage() {
               ([key, tier]) => (
                 <div
                   key={key}
-                  className={`relative bg-white rounded-2xl border-2 p-6 ${
-                    key === 'growth'
+                  className={`relative bg-white rounded-2xl border-2 p-6 ${key === 'growth'
                       ? 'border-blue-600 shadow-xl scale-105'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   {key === 'growth' && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -179,20 +178,8 @@ export default function PricingPage() {
                     )}
                   </div>
 
-                  <div className="mb-4 pb-4 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900">
-                      {tier.limits.activeJobs === Infinity ? 'Unlimited' : tier.limits.activeJobs} active jobs
-                    </p>
-                    <p className="text-sm font-medium text-gray-900">
-                      {tier.limits.lettersPerMonth === Infinity
-                        ? 'Unlimited'
-                        : tier.limits.lettersPerMonth}{' '}
-                      letters/mo
-                    </p>
-                  </div>
-
                   <ul className="space-y-2 mb-6">
-                    {tier.features.slice(0, 4).map((feature, i) => (
+                    {tier.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
                         <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
                         {feature}
@@ -210,11 +197,10 @@ export default function PricingPage() {
                   ) : (
                     <button
                       onClick={() => handleSubscribe(key)}
-                      className={`w-full py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 ${
-                        key === 'growth'
+                      className={`w-full py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 ${key === 'growth'
                           ? 'bg-blue-600 text-white hover:bg-blue-700'
                           : 'bg-gray-900 text-white hover:bg-gray-800'
-                      }`}
+                        }`}
                     >
                       Subscribe <ArrowRight className="w-4 h-4" />
                     </button>
@@ -229,13 +215,12 @@ export default function PricingPage() {
               ([key, tier]) => (
                 <div
                   key={key}
-                  className={`relative bg-white rounded-2xl border-2 p-6 ${
-                    key === 'active_match'
+                  className={`relative bg-white rounded-2xl border-2 p-6 ${key === 'active_match'
                       ? 'border-blue-600 shadow-xl scale-105'
                       : key === 'igta_member'
-                      ? 'border-green-600'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                        ? 'border-green-600'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
                 >
                   {key === 'active_match' && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -295,11 +280,10 @@ export default function PricingPage() {
                   ) : (
                     <button
                       onClick={() => handleSubscribe(key)}
-                      className={`w-full py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 ${
-                        key === 'active_match'
+                      className={`w-full py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 ${key === 'active_match'
                           ? 'bg-blue-600 text-white hover:bg-blue-700'
                           : 'bg-gray-900 text-white hover:bg-gray-800'
-                      }`}
+                        }`}
                     >
                       Subscribe <ArrowRight className="w-4 h-4" />
                     </button>
@@ -353,23 +337,26 @@ export default function PricingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-gray-50 mt-20">
+      <footer className="bg-gray-900 text-white mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-500 text-sm">
-              © 2024 O1DMatch. All rights reserved.
-            </p>
-            <div className="flex gap-6">
-              <Link href="/terms" className="text-sm text-gray-500 hover:text-gray-900">
-                Terms of Service
-              </Link>
-              <Link href="/privacy" className="text-sm text-gray-500 hover:text-gray-900">
-                Privacy Policy
-              </Link>
-              <Link href="/contact" className="text-sm text-gray-500 hover:text-gray-900">
-                Contact
-              </Link>
+            {/* Left - Logo */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">O1</span>
+              </div>
+              <span className="font-semibold text-white">O1DMatch</span>
             </div>
+
+            {/* Center - Tagline */}
+            <p className="text-gray-400 text-sm text-center">
+              Connecting exceptional talent with opportunities for O-1 visa sponsorship.
+            </p>
+
+            {/* Right - Copyright */}
+            <p className="text-gray-400 text-sm">
+              © {new Date().getFullYear()} O1DMatch. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>

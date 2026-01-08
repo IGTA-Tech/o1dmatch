@@ -41,6 +41,8 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
   const [searchQuery, setSearchQuery] = useState('');
   const [industryFilter, setIndustryFilter] = useState('all');
   const [minScoreFilter, setMinScoreFilter] = useState(0);
+  const [experienceFilter, setExperienceFilter] = useState('all');
+  const [skillFilter, setSkillFilter] = useState('all');
   const [sortOption, setSortOption] = useState('score-desc');
   const [showMoreFilters, setShowMoreFilters] = useState(false);
 
@@ -49,6 +51,15 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
     const set = new Set<string>();
     talents.forEach(t => {
       if (t.industry) set.add(t.industry);
+    });
+    return Array.from(set).sort();
+  }, [talents]);
+
+  // Extract unique skills from data
+  const allSkills = useMemo(() => {
+    const set = new Set<string>();
+    talents.forEach(t => {
+      t.skills?.forEach(skill => set.add(skill));
     });
     return Array.from(set).sort();
   }, [talents]);
@@ -78,6 +89,32 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
       result = result.filter(t => (t.o1_score || 0) >= minScoreFilter);
     }
 
+    // Experience filter
+    if (experienceFilter !== 'all') {
+      result = result.filter(t => {
+        const exp = t.years_experience || 0;
+        switch (experienceFilter) {
+          case '0-2':
+            return exp >= 0 && exp <= 2;
+          case '3-5':
+            return exp >= 3 && exp <= 5;
+          case '6-10':
+            return exp >= 6 && exp <= 10;
+          case '10+':
+            return exp > 10;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Skill filter
+    if (skillFilter !== 'all') {
+      result = result.filter(t =>
+        t.skills?.some(s => s.toLowerCase() === skillFilter.toLowerCase())
+      );
+    }
+
     // Sort
     result = [...result].sort((a, b) => {
       switch (sortOption) {
@@ -87,20 +124,39 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
           return (a.o1_score || 0) - (b.o1_score || 0);
         case 'experience-desc':
           return (b.years_experience || 0) - (a.years_experience || 0);
+        case 'experience-asc':
+          return (a.years_experience || 0) - (b.years_experience || 0);
         default:
           return 0;
       }
     });
 
     return result;
-  }, [talents, searchQuery, industryFilter, minScoreFilter, sortOption]);
+  }, [talents, searchQuery, industryFilter, minScoreFilter, experienceFilter, skillFilter, sortOption]);
 
-  const hasActiveFilters = searchQuery || industryFilter !== 'all' || minScoreFilter > 0;
+  const hasActiveFilters = searchQuery || industryFilter !== 'all' || minScoreFilter > 0 || experienceFilter !== 'all' || skillFilter !== 'all';
 
   const clearFilters = () => {
     setSearchQuery('');
     setIndustryFilter('all');
     setMinScoreFilter(0);
+    setExperienceFilter('all');
+    setSkillFilter('all');
+  };
+
+  const getExperienceLabel = (value: string) => {
+    switch (value) {
+      case '0-2':
+        return '0-2 years';
+      case '3-5':
+        return '3-5 years';
+      case '6-10':
+        return '6-10 years';
+      case '10+':
+        return '10+ years';
+      default:
+        return value;
+    }
   };
 
   return (
@@ -113,10 +169,11 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
       </div>
 
       {/* Search and Filters */}
-      <Card padding="sm">
+      <Card>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
+          <div className="flex flex-col gap-4">
+            {/* Search Bar */}
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
@@ -126,6 +183,8 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
+
+            {/* Primary Filters */}
             <div className="flex gap-2 flex-wrap">
               <select
                 value={industryFilter}
@@ -137,6 +196,19 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
                   <option key={ind} value={ind}>{ind}</option>
                 ))}
               </select>
+
+              <select
+                value={experienceFilter}
+                onChange={(e) => setExperienceFilter(e.target.value)}
+                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Experience</option>
+                <option value="0-2">0-2 years</option>
+                <option value="3-5">3-5 years</option>
+                <option value="6-10">6-10 years</option>
+                <option value="10+">10+ years</option>
+              </select>
+
               <select
                 value={minScoreFilter}
                 onChange={(e) => setMinScoreFilter(Number(e.target.value))}
@@ -148,6 +220,7 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
                 <option value={70}>Min Score: 70%</option>
                 <option value={80}>Min Score: 80%</option>
               </select>
+
               <button
                 onClick={() => setShowMoreFilters(!showMoreFilters)}
                 className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg hover:bg-gray-50 ${showMoreFilters ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
@@ -156,34 +229,63 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
                 More Filters
               </button>
             </div>
-          </div>
 
-          {hasActiveFilters && (
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-sm text-gray-500">Active filters:</span>
-              {searchQuery && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
-                  Search: {searchQuery}
-                  <button onClick={() => setSearchQuery('')}><X className="w-3 h-3" /></button>
-                </span>
-              )}
-              {industryFilter !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
-                  {industryFilter}
-                  <button onClick={() => setIndustryFilter('all')}><X className="w-3 h-3" /></button>
-                </span>
-              )}
-              {minScoreFilter > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
-                  Min: {minScoreFilter}%
-                  <button onClick={() => setMinScoreFilter(0)}><X className="w-3 h-3" /></button>
-                </span>
-              )}
-              <button onClick={clearFilters} className="text-sm text-red-600 hover:underline">
-                Clear all
-              </button>
-            </div>
-          )}
+            {/* More Filters (expanded) */}
+            {showMoreFilters && (
+              <div className="flex gap-2 flex-wrap pt-2 border-t border-gray-200">
+                <select
+                  value={skillFilter}
+                  onChange={(e) => setSkillFilter(e.target.value)}
+                  className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Skills</option>
+                  {allSkills.map(skill => (
+                    <option key={skill} value={skill}>{skill}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Active Filters */}
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-gray-200">
+                <span className="text-sm text-gray-500">Active filters:</span>
+                {searchQuery && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
+                    Search: {searchQuery}
+                    <button onClick={() => setSearchQuery('')}><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                {industryFilter !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
+                    {industryFilter}
+                    <button onClick={() => setIndustryFilter('all')}><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                {experienceFilter !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-sm rounded-full">
+                    {getExperienceLabel(experienceFilter)}
+                    <button onClick={() => setExperienceFilter('all')}><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                {minScoreFilter > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 text-sm rounded-full">
+                    Min: {minScoreFilter}%
+                    <button onClick={() => setMinScoreFilter(0)}><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                {skillFilter !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-sm rounded-full">
+                    Skill: {skillFilter}
+                    <button onClick={() => setSkillFilter('all')}><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                <button onClick={clearFilters} className="text-sm text-red-600 hover:underline">
+                  Clear all
+                </button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -205,7 +307,7 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
       {/* Results */}
       <div className="flex items-center justify-between">
         <p className="text-gray-600">
-          {filteredTalents.length} candidates found
+          {filteredTalents.length} candidate{filteredTalents.length !== 1 ? 's' : ''} found
           {hasActiveFilters && ` (of ${talents.length} total)`}
         </p>
         <select
@@ -215,7 +317,8 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
         >
           <option value="score-desc">Sort by: Score (High to Low)</option>
           <option value="score-asc">Sort by: Score (Low to High)</option>
-          <option value="experience-desc">Sort by: Experience</option>
+          <option value="experience-desc">Sort by: Experience (High to Low)</option>
+          <option value="experience-asc">Sort by: Experience (Low to High)</option>
         </select>
       </div>
 
@@ -281,6 +384,25 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
                       </span>
                     )}
                   </div>
+
+                  {/* Skills */}
+                  {talent.skills && talent.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {talent.skills.slice(0, 3).map((skill) => (
+                        <span
+                          key={skill}
+                          className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                      {talent.skills.length > 3 && (
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
+                          +{talent.skills.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {talent.criteria_met && talent.criteria_met.length > 0 && (
                     <div className="mb-4">

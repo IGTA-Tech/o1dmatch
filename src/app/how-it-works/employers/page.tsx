@@ -16,39 +16,8 @@ import Navbar from "@/components/Navbar";
 export default function HowItWorksEmployersPage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */} <Navbar />
-      {/* <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">O1</span>
-              </div>
-              <span className="font-semibold text-gray-900">O1DMatch</span>
-            </Link>
-            <nav className="hidden md:flex items-center gap-8">
-              <Link href="/how-it-works/candidates" className="text-gray-600 hover:text-gray-900">
-                For Candidates
-              </Link>
-              <Link href="/how-it-works/employers" className="text-blue-600 font-medium">
-                For Employers
-              </Link>
-              <Link href="/lawyers" className="text-gray-600 hover:text-gray-900">
-                Lawyer Directory
-              </Link>
-              <Link href="/login" className="text-gray-600 hover:text-gray-900">
-                Log In
-              </Link>
-              <Link
-                href="/signup?role=employer"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Get Started
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header> */}
+      {/* Header */} 
+      <Navbar />
 
       {/* Hero */}
       <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-green-50 to-white">
@@ -564,45 +533,26 @@ export default function HowItWorksEmployersPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">O1</span>
-                </div>
-                <span className="font-semibold text-white">O1DMatch</span>
+      <footer className="bg-gray-900 text-white mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            {/* Left - Logo */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">O1</span>
               </div>
-              <p className="text-sm">
-                The marketplace connecting extraordinary talent with U.S. employers for O-1 visa opportunities.
-              </p>
+              <span className="font-semibold text-white">O1DMatch</span>
             </div>
-            <div>
-              <h4 className="text-white font-medium mb-4">For Talent</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/how-it-works/candidates" className="hover:text-white">How It Works</Link></li>
-                <li><Link href="/signup?role=talent" className="hover:text-white">Create Profile</Link></li>
-                <li><Link href="/login" className="hover:text-white">Log In</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-medium mb-4">For Employers</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/how-it-works/employers" className="hover:text-white">How It Works</Link></li>
-                <li><Link href="/signup?role=employer" className="hover:text-white">Post Jobs</Link></li>
-                <li><Link href="/login" className="hover:text-white">Browse Talent</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-medium mb-4">Resources</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/lawyers" className="hover:text-white">Lawyer Directory</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p>&copy; {new Date().getFullYear()} O1DMatch. All rights reserved.</p>
+
+            {/* Center - Tagline */}
+            <p className="text-gray-400 text-sm text-center">
+              Connecting exceptional talent with opportunities for O-1 visa sponsorship.
+            </p>
+
+            {/* Right - Copyright */}
+            <p className="text-gray-400 text-sm">
+              © {new Date().getFullYear()} O1DMatch. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -8,6 +8,9 @@ import {
   X,
   LogOut,
   LayoutDashboard,
+  ChevronDown,
+  Users,
+  Building2,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { createClient } from '@/lib/supabase/client';
@@ -21,9 +24,24 @@ export default function Navbar() {
   const supabase = createClient();
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const waitlistRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (waitlistRef.current && !waitlistRef.current.contains(event.target as Node)) {
+        setIsWaitlistOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     // Get initial session
@@ -96,6 +114,8 @@ export default function Navbar() {
   const loginHref = isDemoMode ? '/demo' : '/login';
   const signupHref = isDemoMode ? '/demo' : '/signup';
 
+  const isWaitlistActive = pathname.startsWith('/waitlist');
+
   return (
     <header className={`fixed ${isDemoMode ? 'top-10' : 'top-0'} left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -127,6 +147,38 @@ export default function Navbar() {
             >
               Pricing
             </Link>
+
+            {/* Waitlist Dropdown */}
+            <div className="relative" ref={waitlistRef}>
+              <button
+                onClick={() => setIsWaitlistOpen(!isWaitlistOpen)}
+                className={`flex items-center gap-1 py-2 hover:text-gray-900 ${isWaitlistActive ? "text-blue-600" : "text-gray-600"}`}
+              >
+                Waitlist
+                <ChevronDown className={`w-4 h-4 transition-transform ${isWaitlistOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isWaitlistOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <Link
+                    href="/waitlist/talent"
+                    onClick={() => setIsWaitlistOpen(false)}
+                    className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/waitlist/talent" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                  >
+                    <Users className="w-4 h-4" />
+                    For Talent
+                  </Link>
+                  <Link
+                    href="/waitlist/employer"
+                    onClick={() => setIsWaitlistOpen(false)}
+                    className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/waitlist/employer" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                  >
+                    <Building2 className="w-4 h-4" />
+                    For Employers
+                  </Link>
+                </div>
+              )}
+            </div>
 
             {!loading && (
               <>
@@ -184,7 +236,7 @@ export default function Navbar() {
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-100">
-            <nav className="flex flex-col gap-4">
+            <nav className="flex flex-col gap-2">
               <Link
                 href="/how-it-works/candidates"
                 className="text-gray-600 hover:text-gray-900 py-2"
@@ -200,24 +252,45 @@ export default function Navbar() {
                 For Employers
               </Link>
               <Link
-                href="/lawyers"
-                className="text-gray-600 hover:text-gray-900 py-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Lawyer Directory
-              </Link>
-              <Link
                 href="/pricing"
                 className="text-gray-600 hover:text-gray-900 py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Pricing
               </Link>
+              <Link
+                href="/lawyers"
+                className="text-gray-600 hover:text-gray-900 py-2"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Lawyer Directory
+              </Link>
+
+              {/* Mobile Waitlist Links */}
+              <div className="py-2 border-t border-gray-100 mt-2">
+                <p className="text-sm font-medium text-gray-500 mb-2">Waitlist</p>
+                <Link
+                  href="/waitlist/talent"
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Users className="w-4 h-4" />
+                  For Talent
+                </Link>
+                <Link
+                  href="/waitlist/employer"
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Building2 className="w-4 h-4" />
+                  For Employers
+                </Link>
+              </div>
 
               {!loading && (
                 <>
                   {user ? (
-                    <>
+                    <div className="border-t border-gray-100 pt-2 mt-2">
                       <Link
                         href={getDashboardLink()}
                         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
@@ -231,29 +304,29 @@ export default function Navbar() {
                           handleSignOut();
                           setIsMobileMenuOpen(false);
                         }}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 text-left"
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 text-left w-full"
                       >
                         <LogOut className="w-4 h-4" />
                         Sign Out
                       </button>
-                    </>
+                    </div>
                   ) : (
-                    <>
+                    <div className="border-t border-gray-100 pt-2 mt-2 space-y-2">
                       <Link
                         href={loginHref}
-                        className="text-gray-600 hover:text-gray-900 py-2"
+                        className="text-gray-600 hover:text-gray-900 py-2 block"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         Log In
                       </Link>
                       <Link
                         href={signupHref}
-                        className="px-4 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-4 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors block"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         Get Started
                       </Link>
-                    </>
+                    </div>
                   )}
                 </>
               )}
