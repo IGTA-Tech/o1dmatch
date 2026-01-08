@@ -27,6 +27,9 @@ interface InterestLetterFormProps {
         name: string;
         email: string;
         headline?: string;
+        designation?: string;
+        employer?: string;
+        skills?: string[];
     };
     jobs: { id: string; title: string }[];
     preselectedJobId?: string;
@@ -216,59 +219,6 @@ export function InterestLetterForm({
                 setError(`Failed to save: ${insertResult}`);
             }
 
-
-            /*if (attachment) {
-              console.log("Start file Uploading");
-              setUploading(true);
-              const fileExt = attachment.name.split('.').pop();
-              const fileName = `${employerProfile.id}/${talent.id}/${Date.now()}.${fileExt}`;
-              console.log("Start file Uploading - 2");
-              const { error: uploadError } = await supabase.storage
-                .from('interest-letters')
-                .upload(fileName, attachment);
-              console.log("Supa file Uploading Done");
-              if (uploadError) {
-                console.error('Upload error:', uploadError);
-                // Continue without attachment if upload fails
-              } else {
-                const { data: urlData } = supabase.storage
-                  .from('interest-letters')
-                  .getPublicUrl(fileName);
-                pdfUrl = urlData.publicUrl;
-              }
-              setUploading(false);
-            }*/
-
-            // Insert interest letter
-            /*const { error: insertError } = await supabase
-                .from('interest_letters')
-                .insert({
-                    employer_id: employerProfile.id,
-                    talent_id: talent.id,
-                    source_type: 'employer',
-                    job_id: selectedJob || null,
-                    job_title: jobTitle.trim(),
-                    department: department.trim() || null,
-                    commitment_level: commitmentLevel,
-                    salary_min: salaryMin || null,
-                    salary_max: salaryMax || null,
-                    salary_negotiable: salaryNegotiable,
-                    engagement_type: engagementType,
-                    work_arrangement: workArrangement,
-                    locations: locations ? locations.split(',').map(l => l.trim()).filter(Boolean) : [],
-                    start_timing: startTiming || null,
-                    duties_description: dutiesDescription.trim(),
-                    why_o1_required: whyO1Required.trim(),
-                    letter_content: letterContent.trim() || null,
-                    pdf_url: pdfUrl,
-                    status: isDraft ? 'draft' : 'sent',
-                    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                });
-
-            if (insertError) {
-                throw new Error(insertError.message);
-            }*/
-
             if (isDraft) {
                 setError(null);
                 alert('Draft saved successfully!');
@@ -301,7 +251,8 @@ export function InterestLetterForm({
                             Interest Letter Sent!
                         </h2>
                         <p className="text-gray-600 mb-4">
-                            Your interest letter has been sent to {talent.name}.
+                            {/* Your interest letter has been sent to {talent.name}. */}
+                            Your interest letter has been sent to Talent.
                         </p>
                         <p className="text-sm text-gray-500">
                             Redirecting back to profile...
@@ -311,7 +262,6 @@ export function InterestLetterForm({
             </div>
         );
     }
-
     return (
         <div className="max-w-3xl mx-auto space-y-6">
             {/* Header */}
@@ -335,11 +285,26 @@ export function InterestLetterForm({
                         <User className="w-6 h-6 text-blue-600" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{talent.name}</h3>
                         {talent.headline && (
-                            <p className="text-sm text-gray-600">{talent.headline}</p>
+                            <h3 className="font-semibold text-gray-900">{talent.headline}</h3>
                         )}
-                        <p className="text-sm text-gray-500">{talent.email}</p>
+                        {talent.skills && talent.skills.length > 0 && (
+                            <div className="mt-4">
+                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Skills</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {talent.skills.map((skill, index) => (
+                                        <span
+                                            key={index}
+                                            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                                        >
+                                            {skill}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {/* <h3 className="font-semibold text-gray-900">{talent.skills}</h3> */}
+                        {/* <p className="text-sm text-gray-500">{talent.employer}</p> */}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Building2 className="w-4 h-4" />

@@ -308,12 +308,12 @@ export default async function TalentProfilePage({
                 Send Interest Letter
               </Link>
               
-                <a href={`mailto:${userProfile?.email}`}
+                {/* <a href={`mailto:${userProfile?.email}`}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <Mail className="w-4 h-4" />
                 Contact Directly
-              </a>
+              </a> */}
             </CardContent>
           </Card>
         </div>

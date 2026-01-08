@@ -37,7 +37,7 @@ export default async function InterestLetterPage({
   // Get talent info
   const { data: talent } = await supabase
     .from('talent_profiles')
-    .select('id, first_name, last_name, professional_headline, email, user_id')
+    .select('id, first_name, last_name, professional_headline, email, user_id, current_job_title, current_employer, skills')
     .eq('id', talentId)
     .single();
 
@@ -71,6 +71,9 @@ export default async function InterestLetterPage({
         name: talentUser?.full_name || `${talent.first_name} ${talent.last_name}`,
         email: talentUser?.email || talent.email,
         headline: talent.professional_headline,
+        designation: talent.current_job_title,
+        employer: talent.current_employer,
+        skills: talent.skills || [],
       }}
       jobs={jobs || []}
       preselectedJobId={jobId}

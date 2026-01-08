@@ -47,7 +47,8 @@ export default async function LetterDetailPage({
       *,
       talent:talent_profiles(
         id,
-        user_id
+        user_id,
+        skills
       ),
       job:job_listings(
         id,
@@ -63,7 +64,7 @@ export default async function LetterDetailPage({
     if (error || !letter) {
         console.log("error ====> ", error);
     }
-    console.log("letter ====> ", letter);
+    console.log("letter ====> ", letter.talent);
 
     let talentUser: { full_name: string; email: string } | null = null;
     if (letter.talent?.user_id) {
@@ -162,14 +163,20 @@ export default async function LetterDetailPage({
                                         <span>{letter.talent.years_experience} years exp</span>
                                     )}
                                 </div>
-                                {talentUser.email && (
-
-                                    <a href={`mailto:${talentUser.email}`}
-                                        className="inline-flex items-center gap-1 mt-2 text-blue-600 hover:underline text-sm"
-                                    >
-                                        <Mail className="w-4 h-4" />
-                                        {talentUser.email}
-                                    </a>
+                                {letter.talent.skills && letter.talent.skills.length > 0 && (
+                                    <div className="mt-0">
+                                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Skills</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {letter.talent.skills.map((skill:string, index:number) => (
+                                                <span
+                                                    key={index}
+                                                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                                                >
+                                                    {skill}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -341,14 +348,14 @@ export default async function LetterDetailPage({
                         <Calendar className="w-4 h-4" />
                         Created {formatDate(letter.created_at)}
                     </div>
-                    {letter.job && (
+                    {/* {letter.job && (
                         <Link
                             href={`/dashboard/employer/jobs/${letter.job.id}`}
                             className="text-blue-600 hover:underline"
                         >
                             View Linked Job: {letter.job.title}
                         </Link>
-                    )}
+                    )} */}
                 </CardContent>
             </Card>
         </div>
