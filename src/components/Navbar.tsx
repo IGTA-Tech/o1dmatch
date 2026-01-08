@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,18 +14,17 @@ import {
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { createClient } from '@/lib/supabase/client';
-import { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
-  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -43,55 +42,116 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    // Get initial session
-    const getUser = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      setUser(authUser);
-
-      if (authUser) {
-        // Get user role
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', authUser.id)
-          .maybeSingle();
-        
-        setUserRole(profile?.role || null);
+  // Fetch user role
+  const fetchUserRole = useCallback(async (userId: string) => {
+    try {
+      const supabase = createClient();
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching user role:', error);
+        return null;
       }
-      setLoading(false);
-    };
+      
+      return profile?.role || null;
+    } catch (err) {
+      console.error('Error in fetchUserRole:', err);
+      return null;
+    }
+  }, []);
 
-    getUser();
+  useEffect(() => {
+    const supabase = createClient();
+    let mounted = true;
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: AuthChangeEvent, session: Session | null) => {
-        setUser(session?.user || null);
+    // Get initial session
+    const initAuth = async () => {
+      try {
+        // Try getSession first (faster, uses cached session)
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (session?.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .maybeSingle();
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+        }
+
+        if (session?.user && mounted) {
+          setUser(session.user);
+          const role = await fetchUserRole(session.user.id);
+          if (mounted) {
+            setUserRole(role);
+          }
+        } else if (mounted) {
+          // Double-check with getUser if no session (handles edge cases)
+          const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
           
-          setUserRole(profile?.role || null);
-        } else {
-          setUserRole(null);
+          if (userError) {
+            console.error('User error:', userError);
+          }
+
+          if (authUser && mounted) {
+            setUser(authUser);
+            const role = await fetchUserRole(authUser.id);
+            if (mounted) {
+              setUserRole(role);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Auth initialization error:', err);
+      } finally {
+        if (mounted) {
+          setLoading(false);
         }
       }
-    );
+    };
 
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+    initAuth();
+
+    // Listen for auth changes
+// Listen for auth changes
+const { data: { subscription } } = supabase.auth.onAuthStateChange(
+  async (event: AuthChangeEvent, session: Session | null) => {
+    console.log('Auth state changed:', event);
+    
+    if (!mounted) return;
+
+    if (event === 'SIGNED_OUT') {
+      setUser(null);
+      setUserRole(null);
+    } else if (session?.user) {
+      setUser(session.user);
+      const role = await fetchUserRole(session.user.id);
+      if (mounted) {
+        setUserRole(role);
+      }
+    } else {
+      setUser(null);
+      setUserRole(null);
+    }
+  }
+);
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchUserRole]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setUserRole(null);
-    router.push('/');
-    router.refresh();
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      setUser(null);
+      setUserRole(null);
+      router.push('/');
+      router.refresh();
+    } catch (err) {
+      console.error('Sign out error:', err);
+    }
   };
 
   const getDashboardLink = () => {
@@ -115,6 +175,9 @@ export default function Navbar() {
   const signupHref = isDemoMode ? '/demo' : '/signup';
 
   const isWaitlistActive = pathname.startsWith('/waitlist');
+
+  // Show logged-in state if we have a user, even if role is still loading
+  const isLoggedIn = !!user;
 
   return (
     <header className={`fixed ${isDemoMode ? 'top-10' : 'top-0'} left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50`}>
@@ -180,41 +243,44 @@ export default function Navbar() {
               )}
             </div>
 
-            {!loading && (
+            {/* Auth Links - Show based on user state, not loading */}
+            {loading ? (
+              // Show skeleton while loading
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-8 bg-gray-200 rounded animate-pulse" />
+                <div className="w-24 h-8 bg-gray-200 rounded animate-pulse" />
+              </div>
+            ) : isLoggedIn ? (
               <>
-                {user ? (
-                  <>
-                    <Link
-                      href={getDashboardLink()}
-                      className={`flex items-center gap-1 py-2 hover:text-gray-900 ${pathname.startsWith("/dashboard") ? "text-blue-600" : "text-gray-600"}`}
-                    >
-                      <LayoutDashboard className="w-4 h-4" />
-                      Dashboard
-                    </Link>
-                    <button
-                      onClick={handleSignOut}
-                      className="flex items-center gap-1 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign Out
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link 
-                      href={loginHref} 
-                      className={`py-2 hover:text-gray-900 ${pathname === "/login" ? "text-blue-600" : "text-gray-600"}`}
-                    >
-                      Log In
-                    </Link>
-                    <Link
-                      href={signupHref}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Get Started
-                    </Link>
-                  </>
-                )}
+                <Link
+                  href={getDashboardLink()}
+                  className={`flex items-center gap-1 py-2 hover:text-gray-900 ${pathname.startsWith("/dashboard") ? "text-blue-600" : "text-gray-600"}`}
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-1 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link 
+                  href={loginHref} 
+                  className={`py-2 hover:text-gray-900 ${pathname === "/login" ? "text-blue-600" : "text-gray-600"}`}
+                >
+                  Log In
+                </Link>
+                <Link
+                  href={signupHref}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Get Started
+                </Link>
               </>
             )}
           </nav>
@@ -287,48 +353,49 @@ export default function Navbar() {
                 </Link>
               </div>
 
-              {!loading && (
-                <>
-                  {user ? (
-                    <div className="border-t border-gray-100 pt-2 mt-2">
-                      <Link
-                        href={getDashboardLink()}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <LayoutDashboard className="w-4 h-4" />
-                        Dashboard
-                      </Link>
-                      <button
-                        onClick={() => {
-                          handleSignOut();
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 text-left w-full"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Sign Out
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="border-t border-gray-100 pt-2 mt-2 space-y-2">
-                      <Link
-                        href={loginHref}
-                        className="text-gray-600 hover:text-gray-900 py-2 block"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Log In
-                      </Link>
-                      <Link
-                        href={signupHref}
-                        className="px-4 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors block"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Get Started
-                      </Link>
-                    </div>
-                  )}
-                </>
+              {/* Mobile Auth Links */}
+              {loading ? (
+                <div className="border-t border-gray-100 pt-2 mt-2">
+                  <div className="w-full h-10 bg-gray-200 rounded animate-pulse" />
+                </div>
+              ) : isLoggedIn ? (
+                <div className="border-t border-gray-100 pt-2 mt-2">
+                  <Link
+                    href={getDashboardLink()}
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 text-left w-full"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <div className="border-t border-gray-100 pt-2 mt-2 space-y-2">
+                  <Link
+                    href={loginHref}
+                    className="text-gray-600 hover:text-gray-900 py-2 block"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Log In
+                  </Link>
+                  <Link
+                    href={signupHref}
+                    className="px-4 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors block"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Get Started
+                  </Link>
+                </div>
               )}
             </nav>
           </div>
