@@ -1,12 +1,12 @@
 import { Card, CardContent } from '@/components/ui';
-import { Building2, Globe, Shield, Zap, Gift, Sparkles, Clock } from 'lucide-react';
+import { User, Award, Briefcase, TrendingUp, Gift, Sparkles, Clock, Shield, Star } from 'lucide-react';
 import Link from 'next/link';
 import WaitlistForm from '../WaitlistForm';
 import Navbar from '@/components/Navbar';
 
-export default function EmployerWaitlistPage() {
+export default function TalentWaitlistPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Navbar />
       
       {/* Spacer for fixed navbar */}
@@ -15,7 +15,7 @@ export default function EmployerWaitlistPage() {
       <div className="max-w-6xl mx-auto px-4 py-12">
         {/* FREE During Beta Banner */}
         <div className="mb-12 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-green-600 via-emerald-500 to-teal-500 rounded-2xl" />
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500 rounded-2xl" />
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtOS45NDEgMC0xOCA4LjA1OS0xOCAxOHM4LjA1OSAxOCAxOCAxOGMxMS4wNDYgMCAyMC03Ljg4IDIwLTE5LjUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBzdHJva2Utd2lkdGg9IjIiLz48L2c+PC9zdmc+')] opacity-30" />
           
           <div className="relative px-6 py-8 md:px-12 md:py-10">
@@ -72,82 +72,82 @@ export default function EmployerWaitlistPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left - Benefits */}
           <div>
-            <span className="inline-block px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full mb-4">
-              For Employers
+            <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full mb-4">
+              For Talent
             </span>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Hire Extraordinary Global Talent
+              Launch Your O-1 Visa Journey
             </h1>
             <p className="text-lg text-gray-600 mb-8">
-              Access a curated pool of exceptional professionals who are pre-qualified 
-              for O-1 visa sponsorship. Hire the world&apos;s best without the guesswork.
+              Showcase your extraordinary abilities to top US employers actively 
+              seeking O-1 visa candidates. Get matched with companies ready to sponsor.
             </p>
 
             <div className="space-y-4 mb-8">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Pre-Qualified Candidates</h3>
-                  <p className="text-gray-600 text-sm">
-                    Every candidate is scored and verified for O-1 eligibility
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Zap className="w-5 h-5 text-blue-600" />
+                  <Award className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Streamlined Process</h3>
+                  <h3 className="font-semibold text-gray-900">AI-Powered O-1 Assessment</h3>
                   <p className="text-gray-600 text-sm">
-                    Generate interest letters and support documentation instantly
+                    Get an instant score showing your O-1 visa eligibility strength
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Globe className="w-5 h-5 text-purple-600" />
+                  <Briefcase className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Global Talent Pool</h3>
+                  <h3 className="font-semibold text-gray-900">Direct Employer Access</h3>
                   <p className="text-gray-600 text-sm">
-                    Access exceptional talent from around the world
+                    Connect with companies actively looking to sponsor O-1 talent
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Profile Optimization</h3>
+                  <p className="text-gray-600 text-sm">
+                    AI-guided suggestions to strengthen your O-1 case
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Building2 className="w-5 h-5 text-yellow-600" />
+                  <Star className="w-5 h-5 text-yellow-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Attorney Connections</h3>
+                  <h3 className="font-semibold text-gray-900">Attorney Network</h3>
                   <p className="text-gray-600 text-sm">
-                    Partner with experienced O-1 immigration attorneys
+                    Connect with experienced O-1 immigration attorneys
                   </p>
                 </div>
               </div>
             </div>
 
             <p className="text-sm text-gray-500">
-              Are you a professional seeking opportunities?{' '}
-              <Link href="/waitlist/talent" className="text-blue-600 hover:underline font-medium">
-                Join the talent waitlist →
+              Are you an employer looking to hire?{' '}
+              <Link href="/waitlist/employer" className="text-blue-600 hover:underline font-medium">
+                Join the employer waitlist →
               </Link>
             </p>
           </div>
 
           {/* Right - Form */}
           <div>
-            <Card className="shadow-xl border-2 border-green-100">
+            <Card className="shadow-xl border-2 border-blue-100">
               <CardContent className="p-8">
                 {/* Beta Badge */}
                 <div className="flex items-center justify-center mb-4">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold rounded-full">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-semibold rounded-full">
                     <Sparkles className="w-4 h-4" />
                     Free Beta Access
                   </span>
@@ -157,15 +157,15 @@ export default function EmployerWaitlistPage() {
                   Join the Waitlist
                 </h2>
                 <p className="text-gray-600 mb-6 text-center">
-                  Get early access to hire extraordinary global talent for your team.
+                  Get early access and start your O-1 visa journey today.
                 </p>
-                <WaitlistForm defaultRole="employer" />
+                <WaitlistForm defaultRole="talent" />
               </CardContent>
             </Card>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-500">
-                🏢 <span className="font-medium">500+</span> companies already on the waitlist
+                🚀 <span className="font-medium">2,000+</span> professionals already on the waitlist
               </p>
             </div>
           </div>
