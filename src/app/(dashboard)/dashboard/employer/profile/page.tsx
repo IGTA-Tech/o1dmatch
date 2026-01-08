@@ -92,6 +92,8 @@ export default function EmployerProfilePage() {
     } : undefined,
   });
 
+
+
   const handleSave = async (data: EmployerProfileFormData) => {
     if (!profile) return;
 

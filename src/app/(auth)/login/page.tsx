@@ -51,6 +51,7 @@ function LoginForm() {
 
   return (
     <div>
+      
       <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
         Sign in to your account
       </h2>

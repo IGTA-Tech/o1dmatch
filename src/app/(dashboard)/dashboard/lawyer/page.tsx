@@ -83,7 +83,7 @@ export default async function LawyerDashboardPage() {
         </div>
         {!lawyerProfile.is_public && (
           <Link
-            href="/dashboard/lawyer/profile"
+            href="/dashboard/lawyer/profile" 
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Publish Profile
@@ -92,7 +92,7 @@ export default async function LawyerDashboardPage() {
       </div>
 
       {/* Profile Status */}
-      {!lawyerProfile.is_public && (
+      {!lawyerProfile.is_active && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <User className="w-5 h-5 text-yellow-600 mt-0.5" />

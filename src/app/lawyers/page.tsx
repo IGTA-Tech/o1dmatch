@@ -8,9 +8,9 @@ export default async function LawyerDirectoryPage() {
   const { data: lawyers } = await supabase
     .from('lawyer_profiles')
     .select('*')
-    .eq('is_public', true)
-    .eq('is_verified', true)
-    .order('view_count', { ascending: false });
-
+    .eq('is_active', true)
+    // .eq('is_verified', true)
+    .order('updated_at', { ascending: false });
+console.log(lawyers);
   return <LawyerDirectoryClient lawyers={lawyers || []} />;
 }

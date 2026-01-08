@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import Navbar from "@/components/Navbar";
 
 export default async function AgencyDashboardLayout({
   children,
@@ -24,5 +25,13 @@ export default async function AgencyDashboardLayout({
     redirect('/dashboard');
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <div className="space-y-6 pt-20"><Navbar />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          {children}
+        </main>
+      </div>
+    </>
+  );
 }

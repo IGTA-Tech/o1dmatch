@@ -45,17 +45,17 @@ export default async function EmployerJobsPage() {
     redirect('/dashboard/employer');
   }
 
-  // Get all jobs with application counts
+  // Get all jobs with application counts  
   const { data: jobs } = await supabase
-    .from('job_listings')
-    .select(`
-      *,
-      applications:job_applications(count)
-    `)
-    .eq('employer_id', employerProfile.id)
-    .order('created_at', { ascending: false });
-
-  const stats = {
+  .from('job_listings')  // Use job_listings
+  .select(`
+    *,
+    applications:job_applications(count)
+  `)
+  .eq('employer_id', employerProfile.id)
+  .order('created_at', { ascending: false });
+  
+    const stats = {
     total: jobs?.length || 0,
     active: jobs?.filter((j) => j.status === 'active').length || 0,
     totalApplications: jobs?.reduce(

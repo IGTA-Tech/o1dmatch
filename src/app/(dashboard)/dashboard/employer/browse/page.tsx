@@ -24,10 +24,7 @@ export default async function BrowseTalentPage() {
   // Get public talent profiles with score >= 40
   const { data: talents } = await supabase
     .from('talent_profiles')
-    .select('*')
-    .eq('is_public', true)
-    .gte('o1_score', 40)
-    .order('o1_score', { ascending: false });
+    .select('*');
 
   // Check which talents already have letters from this employer
   const { data: existingLetters } = await supabase
