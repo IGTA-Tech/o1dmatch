@@ -255,10 +255,10 @@ export default function Home() {
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
-              href="/lawyers"
+              href="/pricing"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-gray-200 text-gray-900 font-medium rounded-xl hover:border-gray-300 transition-colors"
             >
-              Browse Lawyer Directory
+              View Pricing
             </Link>
           </div>
         </div>
