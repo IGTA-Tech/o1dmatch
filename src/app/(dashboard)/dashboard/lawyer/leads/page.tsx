@@ -7,6 +7,7 @@ import {
   Phone,
   Calendar,
   ArrowRight,
+  ArrowLeft,
   Clock,
   CheckCircle,
   XCircle,
@@ -73,10 +74,23 @@ export default async function LawyerLeadsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
-        <p className="text-gray-600">Manage connection requests from potential clients</p>
+
+
+      <div className="flex items-center gap-4">
+        <Link
+          href="/dashboard/employer"
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
+          <p className="text-gray-600">Manage connection requests from potential clients</p>
+        </div>
       </div>
+
+
+      
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -12,6 +12,7 @@ import {
   Clock,
   Eye,
   PenTool,
+  ArrowLeft,
 } from 'lucide-react';
 import Link from 'next/link';
 import { LetterStatus, COMMITMENT_LEVELS } from '@/types/enums';
@@ -84,10 +85,22 @@ export default async function EmployerLettersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Sent Letters</h1>
-        <p className="text-gray-600">Track interest letters sent to candidates</p>
+
+      <div className="flex items-center gap-4">
+        <Link
+          href="/dashboard/employer"
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Sent Letters</h1>
+          <p className="text-gray-600">Track interest letters sent to candidates</p>
+        </div>
       </div>
+
+
+
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

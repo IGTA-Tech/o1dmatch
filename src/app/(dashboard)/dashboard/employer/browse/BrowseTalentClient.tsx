@@ -11,6 +11,7 @@ import {
   Briefcase,
   GraduationCap,
   ArrowRight,
+  ArrowLeft,
   Users,
   Mail,
   X,
@@ -161,13 +162,20 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Browse Talent</h1>
-        <p className="text-gray-600">
-          Discover O-1 candidates that match your hiring needs
-        </p>
+      <div className="flex items-center gap-4">
+        <Link
+          href="/dashboard/employer"
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Browse Talent</h1>
+          <p className="text-gray-600">
+            Discover O-1 candidates that match your hiring needs
+          </p>
+        </div>
       </div>
-
       {/* Search and Filters */}
       <Card>
         <CardContent>

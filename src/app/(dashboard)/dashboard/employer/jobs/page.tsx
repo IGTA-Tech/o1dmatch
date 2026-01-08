@@ -11,12 +11,12 @@ import {
   MapPin,
   DollarSign,
   Calendar,
+  ArrowLeft,
 } from 'lucide-react';
 import Link from 'next/link';
 import { JobStatus } from '@/types/enums';
 
-const STATUS_CONFIG: Record<
-  JobStatus,
+const STATUS_CONFIG: Record <JobStatus,
   { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'default' }
 > = {
   draft: { label: 'Draft', variant: 'default' },
@@ -47,15 +47,15 @@ export default async function EmployerJobsPage() {
 
   // Get all jobs with application counts  
   const { data: jobs } = await supabase
-  .from('job_listings')  // Use job_listings
-  .select(`
-    *,
-    applications:job_applications(count)
-  `)
-  .eq('employer_id', employerProfile.id)
-  .order('created_at', { ascending: false });
-  
-    const stats = {
+    .from('job_listings')
+    .select(`
+      *,
+      applications:job_applications(count)
+    `)
+    .eq('employer_id', employerProfile.id)
+    .order('created_at', { ascending: false });
+
+  const stats = {
     total: jobs?.length || 0,
     active: jobs?.filter((j) => j.status === 'active').length || 0,
     totalApplications: jobs?.reduce(
@@ -73,10 +73,19 @@ export default async function EmployerJobsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header with Back Link */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Jobs</h1>
-          <p className="text-gray-600">Manage your job listings</p>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/dashboard/employer"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">My Jobs</h1>
+            <p className="text-gray-600">Manage your job listings</p>
+          </div>
         </div>
         <Link
           href="/dashboard/employer/jobs/new"
