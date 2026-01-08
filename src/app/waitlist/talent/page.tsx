@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui';
-import { User, Award, Briefcase, TrendingUp, Gift, Sparkles, Clock, Shield, Star } from 'lucide-react';
+import { Award, Briefcase, TrendingUp, Gift, Sparkles, Clock, Shield, Star } from 'lucide-react';
 import Link from 'next/link';
 import WaitlistForm from '../WaitlistForm';
 import Navbar from '@/components/Navbar';
