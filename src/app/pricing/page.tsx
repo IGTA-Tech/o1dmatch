@@ -374,7 +374,7 @@ export default function PricingPage() {
                     {key === 'igta_member' && (
                       <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                         <span className="bg-green-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
-                          ✨ IGTA Clients
+                          ✨ Our Clients
                         </span>
                       </div>
                     )}
@@ -388,7 +388,7 @@ export default function PricingPage() {
                         {key === 'igta_member' ? (
                           <>
                             <span className="text-4xl font-bold text-green-600">FREE</span>
-                            <p className="text-sm text-gray-500 mt-1">For verified IGTA clients</p>
+                            <p className="text-sm text-gray-500 mt-1">For verified Innovative Automations clients</p>
                           </>
                         ) : (
                           <div className="flex items-baseline">
@@ -497,7 +497,7 @@ export default function PricingPage() {
             </div>
 
             <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-2">I&apos;m an IGTA client. How do I get free access?</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">I&apos;m an Innovative Automations client. How do I get free access?</h3>
               <p className="text-gray-600">
                 If you&apos;re enrolled in an Innovative Global Talent Agency visa program, you&apos;ll receive a verification code via
                 email. Use this code during signup to unlock full access at no cost.
