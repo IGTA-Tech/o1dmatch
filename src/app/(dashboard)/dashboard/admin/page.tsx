@@ -14,6 +14,15 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+// Define type for pending letters with relationships
+interface PendingLetter {
+  id: string;
+  job_title: string;
+  created_at: string;
+  employer: { company_name: string } | null;
+  talent: { first_name: string; last_name: string } | null;
+}
+
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
 
@@ -65,7 +74,7 @@ export default async function AdminDashboardPage() {
   ]);
 
   // Get recent pending letters
-  const { data: pendingLetters } = await supabase
+  const { data: pendingLettersData } = await supabase
     .from('interest_letters')
     .select(`
       id,
@@ -77,6 +86,9 @@ export default async function AdminDashboardPage() {
     .eq('admin_status', 'pending_review')
     .order('created_at', { ascending: false })
     .limit(5);
+
+  // Cast to proper type
+  const pendingLetters = pendingLettersData as unknown as PendingLetter[] | null;
 
   const stats = [
     {
