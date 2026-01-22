@@ -14,9 +14,7 @@ import {
   CheckCircle,
   XCircle,
   MapPin,
-  Globe,
   Briefcase,
-  GraduationCap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { ChangeRoleButton } from './ChangeRoleButton';

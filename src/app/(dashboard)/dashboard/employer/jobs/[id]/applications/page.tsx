@@ -4,8 +4,6 @@ import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui
 import {
   ArrowLeft,
   Users,
-  Mail,
-  Phone,
   FileText,
   Calendar,
 } from 'lucide-react';

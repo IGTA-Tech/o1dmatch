@@ -2,8 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
-import { Bell, Mail, Briefcase, FileText, CheckCircle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui';
+import { Bell, Mail, Briefcase, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { MarkAllReadButton } from './MarkAllReadButton';
 

@@ -3,7 +3,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, X, Check, Loader2, Mail, FileText, Briefcase } from 'lucide-react';
+import { Bell, Check, Loader2, Mail, FileText, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
 

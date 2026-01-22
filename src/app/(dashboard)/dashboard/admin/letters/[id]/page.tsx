@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { AdminReviewActions } from './AdminReviewActions';
-// import { AdminSignatureActions } from './AdminSignatureActions';
+import { AdminSignatureActions } from './AdminSignatureActions';
 
 export default async function AdminLetterDetailPage({
   params,

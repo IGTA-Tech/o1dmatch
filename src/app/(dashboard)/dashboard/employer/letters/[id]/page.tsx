@@ -65,7 +65,7 @@ export default async function LetterDetailPage({
     if (error || !letter) {
         console.log("error ====> ", error);
     }
-    console.log("letter ====> ", letter.talent);
+    // console.log("letter ====> ", letter.talent);
 
     let talentUser: { full_name: string; email: string } | null = null;
     if (letter.talent?.user_id) {
