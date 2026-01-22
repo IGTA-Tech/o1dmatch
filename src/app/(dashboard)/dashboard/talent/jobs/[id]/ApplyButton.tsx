@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { Send, Loader2 } from 'lucide-react';
+import { getSupabaseAuthData } from '@/lib/supabase/getToken';
 
 interface ApplyButtonProps {
   jobId: string;
@@ -18,34 +18,70 @@ export function ApplyButton({ jobId, talentId, talentScore }: ApplyButtonProps) 
   const [coverMessage, setCoverMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = createClient();
-
   const handleApply = async () => {
     setIsApplying(true);
     setError(null);
 
-    try {
-      const { error: insertError } = await supabase
-        .from('job_applications')
-        .insert({
-          job_id: jobId,
-          talent_id: talentId,
-          cover_message: coverMessage || null,
-          score_at_application: talentScore,
-          status: 'pending',
-        });
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-      if (insertError) {
-        if (insertError.code === '23505') {
-          setError('You have already applied to this job.');
-        } else {
-          setError(insertError.message);
-        }
+    try {
+      // Get auth data from cookie
+      const authData = getSupabaseAuthData();
+
+      if (!authData) {
+        setError('Session expired. Please log out and log in again.');
+        setIsApplying(false);
         return;
       }
 
+      const accessToken = authData.access_token;
+
+      // Prepare application data
+      const applicationData = {
+        job_id: jobId,
+        talent_id: talentId,
+        cover_message: coverMessage || null,
+        score_at_application: talentScore,
+        status: 'pending',
+      };
+
+      console.log("Submitting application:", applicationData);
+
+      // Insert application
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/job_applications`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': anonKey,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify(applicationData),
+        }
+      );
+
+      console.log("Response status:", response.status);
+      const responseText = await response.text();
+      console.log("Response body:", responseText);
+
+      if (!response.ok) {
+        // Check for duplicate application error
+        if (response.status === 409 || responseText.includes('23505')) {
+          setError('You have already applied to this job.');
+        } else {
+          setError(`Failed to apply: ${responseText}`);
+        }
+        setIsApplying(false);
+        return;
+      }
+
+      console.log("Application submitted successfully!");
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error("Error:", err);
       setError('An unexpected error occurred');
     } finally {
       setIsApplying(false);

@@ -19,6 +19,7 @@ import {
 import Link from 'next/link';
 import { employerProfileSchema, EmployerProfileFormData } from '@/types/forms';
 import { EmployerProfile } from '@/types/models';
+import { getSupabaseToken } from '@/lib/supabase/getToken';
 
 type TabKey = 'company' | 'address' | 'signatory';
 
@@ -93,10 +94,75 @@ export default function EmployerProfilePage() {
   });
 
 
-
   const handleSave = async (data: EmployerProfileFormData) => {
     if (!profile) return;
+  
+    setSaving(true);
+    setMessage(null);
+  
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  
+    try {
+      const accessToken = getSupabaseToken();
+  
+      if (!accessToken) {
+        setMessage({ type: 'error', text: 'Session expired. Please log out and log in again.' });
+        setSaving(false);
+        return;
+      }
+  
+      // Clean data
+      const cleanedData: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(data)) {
+        if (value === '' && !['company_name', 'signatory_name', 'signatory_email'].includes(key)) {
+          cleanedData[key] = null;
+        } else {
+          cleanedData[key] = value;
+        }
+      }
+      cleanedData.updated_at = new Date().toISOString();
+  
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/employer_profiles?id=eq.${profile.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': anonKey,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify(cleanedData),
+        }
+      );
+  
+      const responseText = await response.text();
+  
+      if (response.ok && responseText && responseText !== '[]') {
+        const result = JSON.parse(responseText);
+        if (result?.[0]) {
+          setMessage({ type: 'success', text: 'Profile updated successfully!' });
+          setProfile(result[0] as EmployerProfile);
+        }
+      } else if (response.status === 401) {
+        setMessage({ type: 'error', text: 'Session expired. Please log out and log in again.' });
+      } else {
+        setMessage({ type: 'error', text: 'Failed to save. Please try again.' });
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+      setMessage({ type: 'error', text: 'Failed to save changes.' });
+    } finally {
+      setSaving(false);
+    }
+  };
 
+
+  /* CODE issue
+  const handleSave = async (data: EmployerProfileFormData) => {
+    if (!profile) return;
+    console.log(data);
     setSaving(true);
     setMessage(null);
 
@@ -113,7 +179,7 @@ export default function EmployerProfilePage() {
     }
 
     setSaving(false);
-  };
+  };*/
 
   const isProfileComplete =
     watch('company_name') &&
@@ -162,11 +228,10 @@ export default function EmployerProfilePage() {
 
       {message && (
         <div
-          className={`p-4 rounded-lg ${
-            message.type === 'success'
-              ? 'bg-green-50 text-green-700 border border-green-200'
-              : 'bg-red-50 text-red-700 border border-red-200'
-          }`}
+          className={`p-4 rounded-lg ${message.type === 'success'
+            ? 'bg-green-50 text-green-700 border border-green-200'
+            : 'bg-red-50 text-red-700 border border-red-200'
+            }`}
         >
           {message.text}
         </div>
@@ -178,11 +243,10 @@ export default function EmployerProfilePage() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
-              activeTab === tab.key
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${activeTab === tab.key
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+              }`}
           >
             {tab.icon}
             {tab.label}

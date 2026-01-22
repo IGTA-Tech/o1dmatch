@@ -78,7 +78,7 @@ export default async function JobApplicationsPage({
     .eq('job_id', id)
     .order('created_at', { ascending: false });
 
-  if(appError){
+  if (appError) {
     console.log(appError);
   }
 
@@ -88,13 +88,13 @@ export default async function JobApplicationsPage({
     const userIds = applications
       .map(a => a.talent?.user_id)
       .filter(Boolean);
-    
+
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, email, full_name')
         .in('id', userIds);
-      
+
       if (profiles) {
         profiles.forEach(p => {
           talentEmails[p.id] = p.email;
@@ -173,16 +173,20 @@ export default async function JobApplicationsPage({
             {applications.map((application) => {
               const statusConfig = STATUS_CONFIG[application.status] || STATUS_CONFIG.pending;
               const talent = application.talent;
-              const talentEmail = talent?.user_id ? talentEmails[talent.user_id] : null;
+              // const talentEmail = talent?.user_id ? talentEmails[talent.user_id] : null;
+              const talentProfileUrl = `/dashboard/employer/browse/${application.talent_id}`;
 
               return (
                 <div key={application.id} className="py-4 first:pt-0 last:pb-0">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-gray-900">
-                          Applicant #{application.id.slice(0, 8)}
-                        </h3>
+
+                      <a href={talentProfileUrl} target="_blank">
+                          <h3 className="font-semibold text-gray-900">
+                            Applicant #{application.id.slice(0, 8)}
+                          </h3>
+                        </a>
                         <Badge variant={statusConfig.variant}>
                           {statusConfig.label}
                         </Badge>
@@ -201,7 +205,7 @@ export default async function JobApplicationsPage({
                       )}
 
                       <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                        {talentEmail && (
+                        {/* {talentEmail && (
                           <span className="flex items-center gap-1">
                             <Mail className="w-4 h-4" />
                             {talentEmail}
@@ -212,7 +216,7 @@ export default async function JobApplicationsPage({
                             <Phone className="w-4 h-4" />
                             {talent.phone}
                           </span>
-                        )}
+                        )} */}
                         <span className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           Applied {new Date(application.applied_at || application.created_at).toLocaleDateString()}

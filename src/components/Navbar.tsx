@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   Menu,
   X,
@@ -13,21 +12,30 @@ import {
   Building2,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
-import { createClient } from '@/lib/supabase/client';
-import { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { resetClient } from '@/lib/supabase/client';
+import { getSupabaseAuthData } from '@/lib/supabase/getToken';
+
+// Define User interface locally
+interface AuthUser {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+    role?: string;
+  };
+}
+
+// const [user, setUser] = useState<AuthUser | null>(null);
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
-  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  
   const waitlistRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -42,116 +50,111 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch user role
-  const fetchUserRole = useCallback(async (userId: string) => {
+  // Fetch user role using direct fetch
+  const fetchUserRole = useCallback(async (userId: string, accessToken: string) => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
     try {
-      const supabase = createClient();
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error fetching user role:', error);
-        return null;
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=role`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': anonKey,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const profiles = await response.json();
+        if (profiles && profiles[0]) {
+          setUserRole(profiles[0].role);
+        }
       }
-      
-      return profile?.role || null;
     } catch (err) {
-      console.error('Error in fetchUserRole:', err);
-      return null;
+      console.error('Error fetching user role:', err);
     }
   }, []);
 
   useEffect(() => {
-    const supabase = createClient();
-    let mounted = true;
-
-    // Get initial session
-    const initAuth = async () => {
+    const checkAuth = async () => {
       try {
-        // Try getSession first (faster, uses cached session)
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-        }
+        // Get auth data directly from cookie
+        const authData = getSupabaseAuthData();
 
-        if (session?.user && mounted) {
-          setUser(session.user);
-          const role = await fetchUserRole(session.user.id);
-          if (mounted) {
-            setUserRole(role);
-          }
-        } else if (mounted) {
-          // Double-check with getUser if no session (handles edge cases)
-          const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
-          
-          if (userError) {
-            console.error('User error:', userError);
-          }
-
-          if (authUser && mounted) {
-            setUser(authUser);
-            const role = await fetchUserRole(authUser.id);
-            if (mounted) {
-              setUserRole(role);
-            }
-          }
+        if (authData?.user) {
+          setUser(authData.user as AuthUser);
+          await fetchUserRole(authData.user.id, authData.access_token);
+        } else {
+          setUser(null);
+          setUserRole(null);
         }
-      } catch (err) {
-        console.error('Auth initialization error:', err);
+      } catch (error) {
+        console.log('Auth check error:', error);
+        setUser(null);
+        setUserRole(null);
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
-    initAuth();
-
-    // Listen for auth changes
-// Listen for auth changes
-const { data: { subscription } } = supabase.auth.onAuthStateChange(
-  async (event: AuthChangeEvent, session: Session | null) => {
-    console.log('Auth state changed:', event);
-    
-    if (!mounted) return;
-
-    if (event === 'SIGNED_OUT') {
-      setUser(null);
-      setUserRole(null);
-    } else if (session?.user) {
-      setUser(session.user);
-      const role = await fetchUserRole(session.user.id);
-      if (mounted) {
-        setUserRole(role);
-      }
-    } else {
-      setUser(null);
-      setUserRole(null);
-    }
-  }
-);
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    checkAuth();
   }, [fetchUserRole]);
 
   const handleSignOut = async () => {
+    // Clear UI state immediately
+    setUser(null);
+    setUserRole(null);
+
     try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      setUser(null);
-      setUserRole(null);
-      router.push('/');
-      router.refresh();
-    } catch (err) {
-      console.error('Sign out error:', err);
+      const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL
+        ?.replace('https://', '')
+        ?.split('.')[0];
+
+      if (projectRef) {
+        // Clear all sb- cookies
+        const cookies = document.cookie.split(';');
+        for (const cookie of cookies) {
+          const cookieName = cookie.split('=')[0].trim();
+          if (cookieName.startsWith(`sb-${projectRef}`)) {
+            document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+            document.cookie = `${cookieName}=; path=/; domain=${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+            document.cookie = `${cookieName}=; path=/; domain=.${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+          }
+        }
+
+        // Clear localStorage
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith(`sb-${projectRef}`)) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+
+        // Clear sessionStorage
+        const sessionKeysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key?.startsWith(`sb-${projectRef}`)) {
+            sessionKeysToRemove.push(key);
+          }
+        }
+        sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
+      }
+    } catch (error) {
+      console.log('Sign out cleanup error:', error);
     }
+
+    // Reset the cached client
+    resetClient();
+
+    // Hard redirect to home page
+    window.location.href = '/';
   };
 
   const getDashboardLink = () => {
@@ -192,20 +195,20 @@ const { data: { subscription } } = supabase.auth.onAuthStateChange(
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link 
-              href="/how-it-works/candidates" 
+            <Link
+              href="/how-it-works/candidates"
               className={`py-2 hover:text-gray-900 ${pathname === "/how-it-works/candidates" ? "text-blue-600" : "text-gray-600"}`}
             >
               For Candidates
             </Link>
-            <Link 
-              href="/how-it-works/employers" 
+            <Link
+              href="/how-it-works/employers"
               className={`py-2 hover:text-gray-900 ${pathname === "/how-it-works/employers" ? "text-blue-600" : "text-gray-600"}`}
             >
               For Employers
             </Link>
-            <Link 
-              href="/pricing" 
+            <Link
+              href="/pricing"
               className={`py-2 hover:text-gray-900 ${pathname === "/pricing" ? "text-blue-600" : "text-gray-600"}`}
             >
               Pricing
@@ -269,8 +272,8 @@ const { data: { subscription } } = supabase.auth.onAuthStateChange(
               </>
             ) : (
               <>
-                <Link 
-                  href={loginHref} 
+                <Link
+                  href={loginHref}
                   className={`py-2 hover:text-gray-900 ${pathname === "/login" ? "text-blue-600" : "text-gray-600"}`}
                 >
                   Log In

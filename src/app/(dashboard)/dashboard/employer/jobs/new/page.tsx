@@ -5,10 +5,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { createClient } from '@/lib/supabase/client';
+// import { createClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
+import { getSupabaseAuthData  } from '@/lib/supabase/getToken';
 
 interface JobFormData {
     title: string;
@@ -25,7 +26,7 @@ export default function NewJobPage() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const supabase = createClient();
+    // const supabase = createClient();
 
     const {
         register,
@@ -38,55 +39,170 @@ export default function NewJobPage() {
     });
 
     const onSubmit = async (data: JobFormData) => {
-        setSaving(true);
-        setError(null);
-
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                router.push('/login');
-                return;
-            }
-
-            const { data: employerProfile } = await supabase
-                .from('employer_profiles')
-                .select('id')
-                .eq('user_id', user.id)
-                .single();
-
-            if (!employerProfile) {
-                setError('Employer profile not found');
-                return;
-            }
-
-            const { error: insertError } = await supabase
-                .from('job_listings')
-                .insert({
-                    employer_id: employerProfile.id,
-                    title: data.title,
-                    description: data.description,
-                    locations: data.locations ? [data.locations] : [],  // Convert string to array
-                    salary_min: data.salary_min || null,
-                    salary_max: data.salary_max || null,
-                    engagement_type: data.engagement_type,
-                    required_skills: data.required_skills
-                        ? data.required_skills.split(',').map(s => s.trim()).filter(Boolean)  // Convert comma-separated string to array
-                        : [],
-                    status: 'active',
-                });
-
-            if (insertError) {
-                setError(insertError.message);
-                return;
-            }
-
-            router.push('/dashboard/employer/jobs');
-        } catch {
-            setError('An unexpected error occurred');
-        } finally {
-            setSaving(false);
+      console.log("=== SUBMIT START ===");
+      setSaving(true);
+      setError(null);
+    
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    
+      try {
+        // Get auth data from cookie
+        const authData = getSupabaseAuthData();
+    
+        if (!authData) {
+          setError('Session expired. Please log out and log in again.');
+          setSaving(false);
+          return;
         }
+    
+        const accessToken = authData.access_token;
+        const userId = authData.user.id;
+    
+        console.log("User ID:", userId);
+    
+        // Get employer profile
+        console.log("Fetching employer profile...");
+        const profileResponse = await fetch(
+          `${supabaseUrl}/rest/v1/employer_profiles?user_id=eq.${userId}&select=id`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'apikey': anonKey,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+    
+        console.log("Profile response status:", profileResponse.status);
+    
+        if (!profileResponse.ok) {
+          const errText = await profileResponse.text();
+          setError(`Failed to get profile: ${errText}`);
+          setSaving(false);
+          return;
+        }
+    
+        const profiles = await profileResponse.json();
+        console.log("Employer profiles:", profiles);
+    
+        if (!profiles || profiles.length === 0) {
+          setError('Employer profile not found. Please complete your profile first.');
+          setSaving(false);
+          return;
+        }
+    
+        const employerId = profiles[0].id;
+        console.log("Employer ID:", employerId);
+    
+        // Prepare job data
+        const jobData = {
+          employer_id: employerId,
+          title: data.title,
+          description: data.description,
+          locations: data.locations ? [data.locations] : [],
+          salary_min: data.salary_min || null,
+          salary_max: data.salary_max || null,
+          engagement_type: data.engagement_type,
+          required_skills: data.required_skills
+            ? data.required_skills.split(',').map(s => s.trim()).filter(Boolean)
+            : [],
+          status: 'active',
+        };
+    
+        console.log("Inserting job:", jobData);
+    
+        // Insert job
+        const insertResponse = await fetch(
+          `${supabaseUrl}/rest/v1/job_listings`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'apikey': anonKey,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation',
+            },
+            body: JSON.stringify(jobData),
+          }
+        );
+    
+        console.log("Insert response status:", insertResponse.status);
+        const responseText = await insertResponse.text();
+        console.log("Insert response body:", responseText);
+    
+        if (!insertResponse.ok) {
+          console.error("Insert error:", responseText);
+          setError(`Failed to create job: ${responseText}`);
+          setSaving(false);
+          return;
+        }
+    
+        console.log("Job created successfully!");
+        router.push('/dashboard/employer/jobs');
+      } catch (err) {
+        console.error("Error:", err);
+        setError('An unexpected error occurred');
+      } finally {
+        console.log("=== SUBMIT END ===");
+        setSaving(false);
+      }
     };
+
+    // const onSubmit = async (data: JobFormData) => {
+    //     console.log("I am calling");
+    //     setSaving(true);
+    //     setError(null);
+
+    //     try {
+    //         const { data: { user } } = await supabase.auth.getUser();
+    //         if (!user) {
+    //             router.push('/login');
+    //             return;
+    //         }
+    //         console.log(user);
+    //         const { data: employerProfile } = await supabase
+    //             .from('employer_profiles')
+    //             .select('id')
+    //             .eq('user_id', user.id)
+    //             .single();
+    //         console.log(employerProfile);
+    //         if (!employerProfile) {
+    //             setError('Employer profile not found');
+    //             return;
+    //         }
+    //         console.log("I am calling -62");
+    //         console.log("employerProfile.id => ", employerProfile.id);
+    //         console.log("data ==> ", data);
+    //         const { error: insertError } = await supabase
+    //             .from('job_listings')
+    //             .insert({
+    //                 employer_id: employerProfile.id,
+    //                 title: data.title,
+    //                 description: data.description,
+    //                 locations: data.locations ? [data.locations] : [],  // Convert string to array
+    //                 salary_min: data.salary_min || null,
+    //                 salary_max: data.salary_max || null,
+    //                 engagement_type: data.engagement_type,
+    //                 required_skills: data.required_skills
+    //                     ? data.required_skills.split(',').map(s => s.trim()).filter(Boolean)  // Convert comma-separated string to array
+    //                     : [],
+    //                 status: 'active',
+    //             });
+
+    //         if (insertError) {
+    //             setError(insertError.message);
+    //             return;
+    //         }
+
+    //         router.push('/dashboard/employer/jobs');
+    //     } catch {
+    //         setError('An unexpected error occurred');
+    //     } finally {
+    //         setSaving(false);
+    //     }
+    // };
 
     return (
         <div className="space-y-6">

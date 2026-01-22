@@ -1,3 +1,5 @@
+// src/app/(dashboard)/dashboard/talent/jobs/page.tsx
+
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui';
@@ -8,25 +10,17 @@ import {
   JobMatchProfile,
 } from '@/lib/matching';
 import { O1Criterion } from '@/types/enums';
-import {
-  Briefcase,
-  MapPin,
-  DollarSign,
-  Calendar,
-  ArrowRight,
-  Building2,
-  Sparkles,
-  Target,
-} from 'lucide-react';
+import { Briefcase, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-// import Image from "next/image";
+import { JobsList } from './JobsList';
+
+export const dynamic = 'force-dynamic';
 
 export default async function TalentJobsPage() {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
-  console.log("user ======>");
-  console.log(user);
+
   if (!user) {
     redirect('/login');
   }
@@ -37,8 +31,6 @@ export default async function TalentJobsPage() {
     .select('*')
     .eq('user_id', user.id)
     .single();
-  console.log("talentProfile ===========>");
-  console.log(talentProfile);
 
   if (!talentProfile) {
     redirect('/dashboard/talent');
@@ -58,17 +50,12 @@ export default async function TalentJobsPage() {
     `)
     .eq('status', 'active')
     .order('created_at', { ascending: false });
-    console.log("jobs ===============> ");
-    console.log(jobs);
 
   // Get existing applications to filter out applied jobs
   const { data: applications } = await supabase
     .from('job_applications')
     .select('job_id')
     .eq('talent_id', talentProfile.id);
-
-  console.log("job_applications ===========> ");
-  console.log(applications);
 
   const appliedJobIds = new Set(applications?.map((a) => a.job_id) || []);
 
@@ -103,94 +90,13 @@ export default async function TalentJobsPage() {
   // Sort by match score
   const sortedJobs = jobsWithMatches.sort((a, b) => b.match.overall_score - a.match.overall_score);
 
-  // Categorize by match quality
-  const categorizedJobs = {
-    excellent: sortedJobs.filter((job) => job.match.category === 'excellent'),
-    good: sortedJobs.filter((job) => job.match.category === 'good'),
-    fair: sortedJobs.filter((job) => job.match.category === 'fair'),
-    poor: sortedJobs.filter((job) => job.match.category === 'poor'),
-  };
-
-  const formatSalary = (min?: number | null, max?: number | null) => {
-    if (!min && !max) return 'Not specified';
-    if (min && max) return `$${(min / 1000).toFixed(0)}k - $${(max / 1000).toFixed(0)}k`;
-    if (min) return `$${(min / 1000).toFixed(0)}k+`;
-    return `Up to $${((max || 0) / 1000).toFixed(0)}k`;
-  };
-
-  const getMatchBadgeColor = (category: string) => {
-    switch (category) {
-      case 'excellent':
-        return 'bg-green-100 text-green-700 border-green-200';
-      case 'good':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'fair':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      default:
-        return 'bg-gray-100 text-gray-600 border-gray-200';
-    }
-  };
-
-  type JobWithMatch = typeof sortedJobs[number];
-
-  const renderJobCard = (job: JobWithMatch) => (
-    <Link key={job.id} href={`/dashboard/talent/jobs/${job.id}`}>
-      <Card hover className="h-full">
-        <CardContent className="flex flex-col h-full">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-gray-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">{job.title}</h3>
-                <p className="text-sm text-gray-600">{job.employer?.company_name}</p>
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              <span
-                className={`text-xs font-medium px-2 py-0.5 rounded-full border ${getMatchBadgeColor(job.match.category)}`}
-              >
-                {job.match.overall_score}% match
-              </span>
-              <span className="text-xs text-gray-500">Min: {job.min_score}%</span>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-3 text-sm text-gray-600 mb-4">
-            {job.employer?.city && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
-                {job.employer.city}, {job.employer.state}
-              </span>
-            )}
-            <span className="flex items-center gap-1">
-              <DollarSign className="w-4 h-4" />
-              {formatSalary(job.salary_min, job.salary_max)}
-            </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              {job.work_arrangement?.replace('_', ' ')}
-            </span>
-          </div>
-
-          <p className="text-sm text-gray-600 line-clamp-2 flex-grow">
-            {job.description?.substring(0, 150)}...
-          </p>
-
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-            <span className="text-xs text-gray-500">
-              Posted {new Date(job.created_at).toLocaleDateString()}
-            </span>
-            <span className="flex items-center gap-1 text-blue-600 text-sm font-medium">
-              View Details
-              <ArrowRight className="w-4 h-4" />
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
+  // Extract all unique skills from jobs for filter options
+  const allSkills = new Set<string>();
+  sortedJobs.forEach((job) => {
+    (job.required_skills || []).forEach((skill: string) => allSkills.add(skill));
+    (job.preferred_skills || []).forEach((skill: string) => allSkills.add(skill));
+  });
+  const availableSkills = Array.from(allSkills).sort();
 
   return (
     <div className="space-y-6">
@@ -222,68 +128,7 @@ export default async function TalentJobsPage() {
         </div>
       </div>
 
-      {/* Excellent Matches */}
-      {categorizedJobs.excellent.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Target className="w-5 h-5 text-green-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Excellent Matches</h2>
-            <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full">
-              {categorizedJobs.excellent.length} jobs
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categorizedJobs.excellent.map(renderJobCard)}
-          </div>
-        </section>
-      )}
-
-      {/* Good Matches */}
-      {categorizedJobs.good.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Good Matches</h2>
-            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
-              {categorizedJobs.good.length} jobs
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categorizedJobs.good.map(renderJobCard)}
-          </div>
-        </section>
-      )}
-
-      {/* Fair Matches */}
-      {categorizedJobs.fair.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Fair Matches</h2>
-            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded-full">
-              {categorizedJobs.fair.length} jobs
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categorizedJobs.fair.map(renderJobCard)}
-          </div>
-        </section>
-      )}
-
-      {/* Limited Matches */}
-      {categorizedJobs.poor.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Other Opportunities</h2>
-            <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
-              {categorizedJobs.poor.length} jobs
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categorizedJobs.poor.map(renderJobCard)}
-          </div>
-        </section>
-      )}
-
-      {/* No Jobs */}
+      {/* Jobs List with Filters */}
       {!jobs || jobs.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
@@ -326,7 +171,9 @@ export default async function TalentJobsPage() {
             </p>
           </CardContent>
         </Card>
-      ) : null}
+      ) : (
+        <JobsList jobs={sortedJobs} availableSkills={availableSkills} />
+      )}
     </div>
   );
 }

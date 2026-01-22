@@ -46,6 +46,7 @@ export default async function TalentLettersPage() {
       agency_client:agency_clients(company_name)
     `)
     .eq('talent_id', talentProfile.id)
+    .eq('admin_status', 'approved') // Only show letters approved by admin
     .in('status', ['sent', 'viewed', 'accepted', 'declined'])
     .order('created_at', { ascending: false });
 

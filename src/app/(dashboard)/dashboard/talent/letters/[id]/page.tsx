@@ -10,6 +10,7 @@ import {
   Calendar,
   FileText,
   Download,
+  Clock,
 } from 'lucide-react';
 import Link from 'next/link';
 import LetterResponseActions from './LetterResponseActions';
@@ -125,11 +126,25 @@ export default async function TalentLetterDetailPage({ params, searchParams }: P
     }
   }
 
+  function getSignatureStatusBadge(signatureStatus: string | null) {
+    switch (signatureStatus) {
+      case 'admin_reviewing':
+        return { label: 'Pending Admin Review', variant: 'warning' as const };
+      case 'approved':
+        return { label: 'Signature Approved', variant: 'success' as const };
+      case 'forwarded_to_employer':
+        return { label: 'Sent to Employer', variant: 'success' as const };
+      default:
+        return null;
+    }
+  }
+
   function getCommitmentLabel(level: string) {
     return level.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   }
 
   const status = getStatusBadge(letter.status || 'sent');
+  const signatureStatus = getSignatureStatusBadge(letter.signature_status);
   const canRespond = ['sent', 'viewed'].includes(letter.status || '');
 
   return (
@@ -148,9 +163,11 @@ export default async function TalentLetterDetailPage({ params, searchParams }: P
             <p className="text-gray-600">From {senderName}</p>
           </div>
         </div>
-        <Badge variant={status.variant} className="text-sm px-3 py-1">
-          {status.label}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant={status.variant} className="text-sm px-3 py-1">
+            {status.label}
+          </Badge>
+        </div>
       </div>
 
       {/* Action Banner */}
@@ -180,6 +197,8 @@ export default async function TalentLetterDetailPage({ params, searchParams }: P
                 <Image
                   src={letter.employer.company_logo_url}
                   alt={senderCompany}
+                  width={48}
+                  height={48}
                   className="w-12 h-12 object-contain rounded"
                 />
               ) : (
@@ -192,8 +211,8 @@ export default async function TalentLetterDetailPage({ params, searchParams }: P
                 <p className="text-gray-600">Represented by {letter.agency.agency_name}</p>
               )}
               {letter.employer?.company_website && (
-                
-                  <a href={letter.employer.company_website}
+                <a 
+                  href={letter.employer.company_website}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:underline text-sm"
@@ -335,8 +354,8 @@ export default async function TalentLetterDetailPage({ params, searchParams }: P
             <CardTitle>Attachment</CardTitle>
           </CardHeader>
           <CardContent>
-            
-              <a href={letter.pdf_url}
+            <a 
+              href={letter.pdf_url}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
@@ -356,7 +375,7 @@ export default async function TalentLetterDetailPage({ params, searchParams }: P
         />
       )}
 
-      {/* Already Responded */}
+      {/* Already Responded - Accepted */}
       {letter.status === 'accepted' && (
         <Card>
           <CardContent className="bg-green-50 border-green-200">
@@ -366,22 +385,64 @@ export default async function TalentLetterDetailPage({ params, searchParams }: P
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <div>
-                <p className="font-medium text-green-800">You accepted this letter</p>
+              <div className="flex-1">
+                <p className="font-medium text-green-800">You accepted and signed this letter</p>
                 {letter.responded_at && (
                   <p className="text-sm text-green-600">on {formatDate(letter.responded_at)}</p>
                 )}
               </div>
+              {signatureStatus && (
+                <Badge variant={signatureStatus.variant} className="text-xs">
+                  {signatureStatus.label}
+                </Badge>
+              )}
             </div>
+            
+            {/* Show signature status info */}
+            {letter.signature_status === 'admin_reviewing' && (
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center gap-2 text-yellow-800">
+                  <Clock className="w-4 h-4" />
+                  <p className="text-sm font-medium">Your signed letter is being reviewed by the admin team.</p>
+                </div>
+                <p className="text-xs text-yellow-600 mt-1">
+                  Once approved, it will be forwarded to the employer.
+                </p>
+              </div>
+            )}
+
+            {letter.signature_status === 'forwarded_to_employer' && (
+              <div className="mt-3 p-3 bg-green-100 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  ✓ Your signed letter has been approved and forwarded to the employer.
+                </p>
+              </div>
+            )}
+
             {letter.talent_response_message && (
               <p className="mt-3 text-gray-700 bg-white p-3 rounded border">
                 {letter.talent_response_message}
               </p>
             )}
+
+            {/* Show signature preview */}
+            {letter.talent_signature_data && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-500 mb-2">Your Signature</p>
+                <div className="bg-white p-2 rounded border inline-block">
+                  <img 
+                    src={letter.talent_signature_data} 
+                    alt="Your signature" 
+                    className="h-16 object-contain"
+                  />
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
+      {/* Already Responded - Declined */}
       {letter.status === 'declined' && (
         <Card>
           <CardContent className="bg-red-50 border-red-200">

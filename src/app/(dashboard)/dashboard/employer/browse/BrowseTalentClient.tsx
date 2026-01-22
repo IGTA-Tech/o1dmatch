@@ -426,7 +426,7 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
                       <Badge variant="info">Letter Sent</Badge>
                     ) : (
                       <Link
-                        href={`/dashboard/employer/browse/${talent.id}/letter`}
+                        href={`/dashboard/employer/interest-letter?talent=${talent.id}`}
                         className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
                       >
                         <Mail className="w-4 h-4" />

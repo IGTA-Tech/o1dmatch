@@ -10,6 +10,8 @@ import {
     Calendar,
     FileText,
     Download,
+    Clock,
+    CheckCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -101,17 +103,20 @@ export default async function LetterDetailPage({
           case 'accepted':
             return { label: 'Accepted', variant: 'success' as const };
           case 'declined':
-            return { label: 'Declined', variant: 'error' as const };  // Changed from 'destructive' to 'error'
+            return { label: 'Declined', variant: 'error' as const };
           default:
             return { label: status, variant: 'default' as const };
         }
-      }
+    }
 
     function getCommitmentLabel(level: string) {
         return level.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
     }
 
     const status = getStatusBadge(letter.status || 'draft');
+    
+    // Check if signed letter has been forwarded to employer
+    const isSignedLetterForwarded = letter.signature_status === 'forwarded_to_employer';
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -304,19 +309,102 @@ export default async function LetterDetailPage({
                 </Card>
             )}
 
-            {letter.talent_response_message && (
+            {/* Talent Response Section */}
+            {letter.status === 'accepted' && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                            Talent Response
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-green-800 font-medium">
+                                The talent has accepted and signed this letter
+                            </p>
+                            {letter.responded_at && (
+                                <p className="text-sm text-green-600">
+                                    on {formatDate(letter.responded_at)}
+                                </p>
+                            )}
+                        </div>
+
+                        {letter.talent_response_message && (
+                            <div>
+                                <p className="text-sm text-gray-500 mb-1">Message from Talent</p>
+                                <p className="text-gray-900 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">
+                                    {letter.talent_response_message}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Only show signed letter if admin has forwarded it */}
+                        {isSignedLetterForwarded ? (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2 text-green-700">
+                                    <CheckCircle className="w-4 h-4" />
+                                    <p className="text-sm font-medium">Signed letter approved and forwarded by admin</p>
+                                </div>
+                                
+                                {/* Show signature */}
+                                {letter.talent_signature_data && (
+                                    <div>
+                                        <p className="text-sm text-gray-500 mb-2">Talent&apos;s Signature</p>
+                                        <div className="bg-white p-3 rounded-lg border inline-block">
+                                            <img 
+                                                src={letter.talent_signature_data} 
+                                                alt="Talent signature" 
+                                                className="h-20 object-contain"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {letter.forwarded_to_employer_at && (
+                                    <p className="text-xs text-gray-500">
+                                        Forwarded on {formatDate(letter.forwarded_to_employer_at)}
+                                    </p>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <div className="flex items-center gap-2 text-yellow-800">
+                                    <Clock className="w-4 h-4" />
+                                    <p className="text-sm font-medium">Signed letter pending admin review</p>
+                                </div>
+                                <p className="text-xs text-yellow-600 mt-1">
+                                    The signed letter will be available once the admin team reviews and forwards it.
+                                </p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+
+            {letter.status === 'declined' && (
                 <Card>
                     <CardHeader>
                         <CardTitle>Talent Response</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <p className="text-gray-900 whitespace-pre-wrap">
-                            {letter.talent_response_message}
-                        </p>
-                        {letter.responded_at && (
-                            <p className="text-sm text-gray-500 mt-2">
-                                Responded on {formatDate(letter.responded_at)}
+                    <CardContent className="space-y-3">
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-red-800 font-medium">
+                                The talent has declined this letter
                             </p>
+                            {letter.responded_at && (
+                                <p className="text-sm text-red-600">
+                                    on {formatDate(letter.responded_at)}
+                                </p>
+                            )}
+                        </div>
+                        {letter.talent_response_message && (
+                            <div>
+                                <p className="text-sm text-gray-500 mb-1">Message from Talent</p>
+                                <p className="text-gray-900 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">
+                                    {letter.talent_response_message}
+                                </p>
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -328,7 +416,6 @@ export default async function LetterDetailPage({
                         <CardTitle>Attachment</CardTitle>
                     </CardHeader>
                     <CardContent>
-
                         <a href={letter.pdf_url}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -347,14 +434,6 @@ export default async function LetterDetailPage({
                         <Calendar className="w-4 h-4" />
                         Created {formatDate(letter.created_at)}
                     </div>
-                    {/* {letter.job && (
-                        <Link
-                            href={`/dashboard/employer/jobs/${letter.job.id}`}
-                            className="text-blue-600 hover:underline"
-                        >
-                            View Linked Job: {letter.job.title}
-                        </Link>
-                    )} */}
                 </CardContent>
             </Card>
         </div>

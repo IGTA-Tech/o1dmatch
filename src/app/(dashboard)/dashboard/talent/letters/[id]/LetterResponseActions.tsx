@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, PenTool, RotateCcw } from 'lucide-react';
 
 interface LetterResponseActionsProps {
   letterId: string;
@@ -13,10 +13,11 @@ interface LetterResponseActionsProps {
 
 export default function LetterResponseActions({ 
   letterId, 
-  initialAction 
+  initialAction,
 }: LetterResponseActionsProps) {
   const router = useRouter();
   const supabase = createClient();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [responding, setResponding] = useState(false);
   const [responseMessage, setResponseMessage] = useState('');
@@ -24,6 +25,100 @@ export default function LetterResponseActions({
     initialAction === 'accept' ? 'accept' : initialAction === 'decline' ? 'decline' : null
   );
   const [error, setError] = useState<string | null>(null);
+  
+  // Signature state
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+
+  // Initialize canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas size
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * 2;
+    canvas.height = rect.height * 2;
+    ctx.scale(2, 2);
+
+    // Set drawing style
+    ctx.strokeStyle = '#1e40af';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Fill white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }, [selectedAction]);
+
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+
+    const rect = canvas.getBoundingClientRect();
+    
+    if ('touches' in e) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top,
+      };
+    }
+    
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  };
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+
+    setIsDrawing(true);
+    const { x, y } = getCoordinates(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!isDrawing) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+
+    const { x, y } = getCoordinates(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    setHasSignature(true);
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx || !canvas) return;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setHasSignature(false);
+  };
+
+  const getSignatureData = (): string | null => {
+    const canvas = canvasRef.current;
+    if (!canvas || !hasSignature) return null;
+    return canvas.toDataURL('image/png');
+  };
 
   const handleRespond = async () => {
     if (!selectedAction) {
@@ -31,16 +126,39 @@ export default function LetterResponseActions({
       return;
     }
 
+    // Require signature when accepting
+    if (selectedAction === 'accept' && !hasSignature) {
+      setError('Please sign the document to accept this letter');
+      return;
+    }
+
     setResponding(true);
     setError(null);
 
     try {
+      const signatureData = selectedAction === 'accept' ? getSignatureData() : null;
+
       const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
       // Get session for auth
       const { data: { session } } = await supabase.auth.getSession();
 
+      const updateData: Record<string, unknown> = {
+        status: selectedAction === 'accept' ? 'accepted' : 'declined',
+        talent_response_message: responseMessage.trim() || null,
+        responded_at: new Date().toISOString(),
+      };
+
+      // Add signature data if accepting
+      if (selectedAction === 'accept' && signatureData) {
+        updateData.talent_signature_data = signatureData;
+        updateData.talent_signed_at = new Date().toISOString();
+        updateData.signature_status = 'admin_reviewing'; // Routes to admin for review
+      }
+
+      console.log('Sending update with data:', updateData);
+      
       const response = await fetch(
         `${supabaseUrl}/rest/v1/interest_letters?id=eq.${letterId}`,
         {
@@ -51,19 +169,19 @@ export default function LetterResponseActions({
             'Content-Type': 'application/json',
             'Prefer': 'return=representation',
           },
-          body: JSON.stringify({
-            status: selectedAction === 'accept' ? 'accepted' : 'declined',
-            talent_response_message: responseMessage.trim() || null,
-            responded_at: new Date().toISOString(),
-          }),
+          body: JSON.stringify(updateData),
         }
       );
 
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
+        console.log('Update successful');
         router.refresh();
       } else {
         const errorText = await response.text();
-        throw new Error(errorText);
+        console.error('Update failed:', errorText);
+        throw new Error(errorText || `Request failed with status ${response.status}`);
       }
     } catch (err) {
       console.error('Error responding:', err);
@@ -107,6 +225,57 @@ export default function LetterResponseActions({
           </button>
         </div>
 
+        {/* Digital Signature - Only show when Accept is selected */}
+        {selectedAction === 'accept' && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-700">
+                <span className="flex items-center gap-2">
+                  <PenTool className="w-4 h-4" />
+                  Digital Signature <span className="text-red-500">*</span>
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={clearSignature}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Clear
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-2">
+              Please sign below to accept this letter. Your signed letter will be reviewed by admin before being sent to the employer.
+            </p>
+            
+            {/* Signature Canvas */}
+            <div className="border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-white">
+              <canvas
+                ref={canvasRef}
+                className="w-full h-32 cursor-crosshair touch-none"
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={draw}
+                onTouchEnd={stopDrawing}
+              />
+            </div>
+            
+            {hasSignature && (
+              <p className="text-xs text-green-600 flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" />
+                Signature captured
+              </p>
+            )}
+            
+            <p className="text-xs text-gray-400">
+              By signing, you agree to the terms outlined in this interest letter.
+            </p>
+          </div>
+        )}
+
         {/* Response Message */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -132,6 +301,13 @@ export default function LetterResponseActions({
           </div>
         )}
 
+        {/* Info about workflow */}
+        {selectedAction === 'accept' && (
+          <div className="p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
+            <strong>Note:</strong> After you sign and submit, your signed letter will be reviewed by the admin team before being forwarded to the employer.
+          </div>
+        )}
+
         {/* Submit */}
         <button
           type="button"
@@ -152,7 +328,7 @@ export default function LetterResponseActions({
             </>
           ) : (
             <>
-              {selectedAction === 'accept' ? 'Accept Letter' : selectedAction === 'decline' ? 'Decline Letter' : 'Select an option'}
+              {selectedAction === 'accept' ? 'Sign & Accept Letter' : selectedAction === 'decline' ? 'Decline Letter' : 'Select an option'}
             </>
           )}
         </button>

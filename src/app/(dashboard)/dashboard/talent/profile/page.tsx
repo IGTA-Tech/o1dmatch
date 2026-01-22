@@ -33,6 +33,7 @@ import {
 } from '@/types/forms';
 import { TalentProfile } from '@/types/models';
 import { Resolver } from 'react-hook-form';
+import { getSupabaseToken } from '@/lib/supabase/getToken';
 
 type TabKey = 'basic' | 'location' | 'professional' | 'education' | 'online';
 
@@ -203,47 +204,67 @@ export default function TalentProfilePage() {
   });
 
   const handleSave = async (data: Record<string, unknown>) => {
-    console.log("Save/update data");
     if (!profile) return;
-    console.log(data);
-    console.log("profile.id ==> ", profile.id);
+    
     setSaving(true);
     setMessage(null);
-
+  
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  
     try {
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-      const { data: { session } } = await supabase.auth.getSession();
-
+      const accessToken = getSupabaseToken();
+  
+      if (!accessToken) {
+        setMessage({ type: 'error', text: 'Session expired. Please log out and log in again.' });
+        setSaving(false);
+        return;
+      }
+  
+      // Clean data
+      const cleanedData: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(data)) {
+        if (value === '' && !['first_name', 'last_name', 'email'].includes(key)) {
+          cleanedData[key] = null;
+        } else {
+          cleanedData[key] = value;
+        }
+      }
+      cleanedData.updated_at = new Date().toISOString();
+  
       const response = await fetch(
         `${supabaseUrl}/rest/v1/talent_profiles?id=eq.${profile.id}`,
         {
           method: 'PATCH',
           headers: {
-            'Authorization': `Bearer ${session?.access_token || anonKey}`,
-            'apikey': anonKey!,
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': anonKey,
             'Content-Type': 'application/json',
             'Prefer': 'return=representation',
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify(cleanedData),
         }
       );
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Profile updated successfully!' });
-        setProfile({ ...profile, ...data } as TalentProfile);
+  
+      const responseText = await response.text();
+  
+      if (response.ok && responseText && responseText !== '[]') {
+        const result = JSON.parse(responseText);
+        if (result?.[0]) {
+          setMessage({ type: 'success', text: 'Profile updated successfully!' });
+          setProfile(result[0] as TalentProfile);
+        }
+      } else if (response.status === 401) {
+        setMessage({ type: 'error', text: 'Session expired. Please log out and log in again.' });
       } else {
-        const errorText = await response.text();
-        console.error('Update failed:', errorText);
-        setMessage({ type: 'error', text: 'Failed to save changes. Please try again.' });
+        setMessage({ type: 'error', text: 'Failed to save. Please try again.' });
       }
     } catch (err) {
-      console.error('Error:', err);
-      setMessage({ type: 'error', text: 'Failed to save changes. Please try again.' });
+      console.error("Save error:", err);
+      setMessage({ type: 'error', text: 'Failed to save changes.' });
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
   };
 
   // Handle basic info save with bio
