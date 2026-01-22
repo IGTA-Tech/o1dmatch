@@ -19,6 +19,22 @@ interface PageProps {
   searchParams: Promise<{ status?: string; signature?: string }>;
 }
 
+// Define types for the letter with relationships
+interface LetterWithRelations {
+  id: string;
+  job_title: string;
+  commitment_level: string | null;
+  admin_status: string | null;
+  status: string | null;
+  signature_status: string | null;
+  talent_signed_at: string | null;
+  forwarded_to_employer_at: string | null;
+  created_at: string;
+  admin_reviewed_at: string | null;
+  employer: { id: string; company_name: string } | null;
+  talent: { id: string; first_name: string; last_name: string } | null;
+}
+
 export default async function AdminLettersPage({ searchParams }: PageProps) {
   const { status, signature } = await searchParams;
   const supabase = await createClient();
@@ -60,7 +76,10 @@ export default async function AdminLettersPage({ searchParams }: PageProps) {
     query = query.eq('signature_status', signature);
   }
 
-  const { data: letters, error } = await query;
+  const { data, error } = await query;
+  
+  // Cast to proper type
+  const letters = data as unknown as LetterWithRelations[] | null;
 
   if (error) {
     console.error('Error fetching letters:', error);
