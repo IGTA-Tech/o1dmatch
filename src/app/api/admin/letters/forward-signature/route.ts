@@ -7,14 +7,14 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Get current user
-    const {
-      data: { user },
-    } = await (supabase as any).auth.getUser();
+    // Use getSession instead of getUser to avoid type issues
+    const { data: { session } } = await supabase.auth.getSession();
 
-    if (!user) {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const user = session.user;
 
     // Verify admin role
     const { data: profile } = await supabase
