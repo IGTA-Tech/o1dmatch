@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     // Get current user
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await (supabase as any).auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -65,6 +65,8 @@ export async function POST(request: NextRequest) {
       signature_reviewed_at: new Date().toISOString(),
       signature_reviewed_by: user.id,
       forwarded_to_employer_at: new Date().toISOString(),
+      // ADDED: This field is checked by employer page to reveal contact info
+      employer_received_signed_at: new Date().toISOString(),
     };
 
     // Append admin notes if provided

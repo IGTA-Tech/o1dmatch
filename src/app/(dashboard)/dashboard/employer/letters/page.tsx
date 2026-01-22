@@ -1,3 +1,5 @@
+// src/app/(dashboard)/dashboard/employer/letters/page.tsx
+
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
@@ -13,6 +15,7 @@ import {
   Eye,
   PenTool,
   ArrowLeft,
+  Lock,
 } from 'lucide-react';
 import Link from 'next/link';
 import { LetterStatus, COMMITMENT_LEVELS } from '@/types/enums';
@@ -35,7 +38,7 @@ const STATUS_CONFIG: Record<
 export default async function EmployerLettersPage() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await (supabase as any).auth.getUser();
 
   if (!user) {
     redirect('/login');
@@ -99,9 +102,6 @@ export default async function EmployerLettersPage() {
         </div>
       </div>
 
-
-
-
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card padding="sm">
@@ -138,8 +138,9 @@ export default async function EmployerLettersPage() {
             <p className="font-medium text-blue-900">About Interest Letters</p>
             <p className="text-sm text-blue-700 mt-1">
               Interest letters are formal expressions of your intent to sponsor or hire O-1 talent.
-              When a candidate accepts, their full contact information is revealed and you can
-              proceed with the hiring process.
+              When a candidate accepts and signs the letter, our admin will review and forward
+              the signed document to you. Contact information will be revealed once the signed
+              letter is delivered.
             </p>
           </div>
         </div>
@@ -172,7 +173,13 @@ export default async function EmployerLettersPage() {
               const statusConfig = STATUS_CONFIG[letter.status as LetterStatus];
               const commitmentLevel =
                 COMMITMENT_LEVELS[letter.commitment_level as keyof typeof COMMITMENT_LEVELS];
+              
+              // Contact info is only revealed when:
+              // 1. Letter is accepted AND
+              // 2. Admin has forwarded the signed letter (employer_received_signed_at is set)
               const isAccepted = letter.status === 'accepted';
+              const isSignedAndForwarded = letter.employer_received_signed_at !== null;
+              const canViewContactInfo = isAccepted && isSignedAndForwarded;
 
               return (
                 <div
@@ -183,7 +190,7 @@ export default async function EmployerLettersPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <h3 className="font-semibold text-gray-900">
-                          {isAccepted
+                          {canViewContactInfo
                             ? `${letter.talent?.first_name} ${letter.talent?.last_name}`
                             : letter.talent?.candidate_id || 'Unknown'}
                         </h3>
@@ -191,6 +198,13 @@ export default async function EmployerLettersPage() {
                           {statusConfig?.icon}
                           <span className="ml-1">{statusConfig?.label}</span>
                         </Badge>
+                        {/* Show signed badge if talent has signed */}
+                        {letter.talent_signed_at && (
+                          <Badge variant="success">
+                            <PenTool className="w-3 h-3" />
+                            <span className="ml-1">Signed</span>
+                          </Badge>
+                        )}
                       </div>
 
                       <div className="mt-1">
@@ -214,7 +228,8 @@ export default async function EmployerLettersPage() {
                         )}
                       </div>
 
-                      {isAccepted && letter.talent && (
+                      {/* Contact Information - Only shown after admin forwards signed letter */}
+                      {canViewContactInfo && letter.talent && (
                         <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                           <p className="text-sm font-medium text-green-800 mb-1">
                             Contact Information Revealed
@@ -223,11 +238,45 @@ export default async function EmployerLettersPage() {
                             <p>Email: {letter.talent.email}</p>
                             {letter.talent.phone && <p>Phone: {letter.talent.phone}</p>}
                           </div>
+                          {letter.employer_received_signed_at && (
+                            <p className="text-xs text-green-600 mt-2">
+                              Signed letter delivered on {new Date(letter.employer_received_signed_at).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Pending Signed Letter Delivery - Show when accepted but not yet forwarded */}
+                      {isAccepted && !isSignedAndForwarded && (
+                        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Lock className="w-4 h-4 text-yellow-600" />
+                            <p className="text-sm font-medium text-yellow-800">
+                              Contact Information Pending
+                            </p>
+                          </div>
+                          <p className="text-sm text-yellow-700 mt-1">
+                            {letter.talent_signed_at 
+                              ? "The candidate has signed the letter. Our admin is reviewing and will forward it to you shortly."
+                              : "Waiting for the candidate to sign the letter. Contact information will be revealed once the signed letter is delivered to you."}
+                          </p>
                         </div>
                       )}
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {/* Show signed PDF download if forwarded to employer */}
+                      {letter.signed_pdf_url && isSignedAndForwarded && (
+                        <a
+                          href={letter.signed_pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-3 py-1.5 text-sm text-green-600 hover:bg-green-50 rounded-lg"
+                        >
+                          <Download className="w-4 h-4" />
+                          Signed PDF
+                        </a>
+                      )}
                       {letter.pdf_url && (
                         <a
                           href={letter.pdf_url}
