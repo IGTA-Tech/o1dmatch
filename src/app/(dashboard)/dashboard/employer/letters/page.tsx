@@ -38,11 +38,14 @@ const STATUS_CONFIG: Record<
 export default async function EmployerLettersPage() {
   const supabase = await createClient();
 
-  const { data: { user } } = await (supabase as any).auth.getUser();
+  // Use getSession instead of getUser to avoid type issues
+  const { data: { session } } = await supabase.auth.getSession();
 
-  if (!user) {
+  if (!session?.user) {
     redirect('/login');
   }
+
+  const user = session.user;
 
   const { data: employerProfile } = await supabase
     .from('employer_profiles')
@@ -181,6 +184,18 @@ export default async function EmployerLettersPage() {
               const isSignedAndForwarded = letter.employer_received_signed_at !== null;
               const canViewContactInfo = isAccepted && isSignedAndForwarded;
 
+              // Type assertion for talent relationship
+              const talent = letter.talent as {
+                candidate_id?: string;
+                professional_headline?: string;
+                o1_score?: number;
+                industry?: string;
+                first_name?: string;
+                last_name?: string;
+                email?: string;
+                phone?: string;
+              } | null;
+
               return (
                 <div
                   key={letter.id}
@@ -191,8 +206,8 @@ export default async function EmployerLettersPage() {
                       <div className="flex items-center gap-3">
                         <h3 className="font-semibold text-gray-900">
                           {canViewContactInfo
-                            ? `${letter.talent?.first_name} ${letter.talent?.last_name}`
-                            : letter.talent?.candidate_id || 'Unknown'}
+                            ? `${talent?.first_name} ${talent?.last_name}`
+                            : talent?.candidate_id || 'Unknown'}
                         </h3>
                         <Badge variant={statusConfig?.variant || 'default'}>
                           {statusConfig?.icon}
@@ -223,20 +238,20 @@ export default async function EmployerLettersPage() {
                         <span>
                           {commitmentLevel?.name || letter.commitment_level}
                         </span>
-                        {letter.talent?.o1_score && (
-                          <span>Score: {letter.talent.o1_score}%</span>
+                        {talent?.o1_score && (
+                          <span>Score: {talent.o1_score}%</span>
                         )}
                       </div>
 
                       {/* Contact Information - Only shown after admin forwards signed letter */}
-                      {canViewContactInfo && letter.talent && (
+                      {canViewContactInfo && talent && (
                         <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                           <p className="text-sm font-medium text-green-800 mb-1">
                             Contact Information Revealed
                           </p>
                           <div className="text-sm text-green-700">
-                            <p>Email: {letter.talent.email}</p>
-                            {letter.talent.phone && <p>Phone: {letter.talent.phone}</p>}
+                            <p>Email: {talent.email}</p>
+                            {talent.phone && <p>Phone: {talent.phone}</p>}
                           </div>
                           {letter.employer_received_signed_at && (
                             <p className="text-xs text-green-600 mt-2">
