@@ -23,28 +23,31 @@ import {
 import { O1_CRITERIA, O1Criterion } from '@/types/enums';
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
 
+// Interface matching the EXACT database schema
 interface TalentDocument {
   id: string;
-  talent_id: string;
+  talent_id: string | null;
   title: string;
-  file_name: string;
   description: string | null;
   file_url: string;
-  file_type: string;
-  status: 'pending' | 'needs_review' | 'verified' | 'rejected';
+  file_name: string;
+  file_type: string | null;
+  file_size: number | null;
   criterion: O1Criterion | null;
-  score_impact: number | null;
-  extraction_method: string | null;
-  extraction_confidence: number | null;
-  classification_confidence: number | null;
-  extracted_text: string | null;
-  ai_reasoning: string | null;
-  ai_notes: string | null;
-  admin_notes: string | null;
+  auto_classified_criterion: O1Criterion | null;
+  classification_confidence: 'high' | 'medium' | 'low' | null; // This is an ENUM in DB
+  classification_notes: string | null;
+  status: 'pending' | 'needs_review' | 'verified' | 'rejected';
   reviewed_by: string | null;
   reviewed_at: string | null;
+  review_notes: string | null; // Correct field name from schema
   created_at: string;
   updated_at: string;
+  ai_notes: string | null;
+  ai_reasoning: string | null;
+  extraction_method: string | null;
+  extraction_confidence: number | null;
+  extracted_text: string | null;
   // Joined data
   talent?: {
     id: string;
@@ -64,7 +67,7 @@ export default function AdminDocumentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -109,8 +112,7 @@ export default function AdminDocumentsPage() {
 
   const updateDocumentStatus = async (
     docId: string, 
-    newStatus: 'verified' | 'rejected',
-    scoreImpact?: number
+    newStatus: 'verified' | 'rejected'
   ) => {
     const auth = getSupabaseAuthData();
     if (!auth?.user) return;
@@ -119,22 +121,13 @@ export default function AdminDocumentsPage() {
     setMessage(null);
 
     try {
+      // Build update data matching EXACT schema fields
       const updateData: Record<string, unknown> = {
         status: newStatus,
         reviewed_by: auth.user.id,
         reviewed_at: new Date().toISOString(),
-        admin_notes: adminNotes[docId] || null,
+        review_notes: reviewNotes[docId] || null, // Correct field name
       };
-
-      // If verifying, set the score impact
-      if (newStatus === 'verified' && scoreImpact) {
-        updateData.score_impact = scoreImpact;
-      }
-
-      // If rejecting, clear score impact
-      if (newStatus === 'rejected') {
-        updateData.score_impact = null;
-      }
 
       const response = await fetch(
         `${supabaseUrl}/rest/v1/talent_documents?id=eq.${docId}`,
@@ -160,10 +153,23 @@ export default function AdminDocumentsPage() {
         setDocuments(docs => 
           docs.map(d => 
             d.id === docId 
-              ? { ...d, status: newStatus, reviewed_at: new Date().toISOString() }
+              ? { 
+                  ...d, 
+                  status: newStatus, 
+                  reviewed_at: new Date().toISOString(),
+                  reviewed_by: auth.user.id,
+                  review_notes: reviewNotes[docId] || null
+                }
               : d
           )
         );
+
+        // Clear review notes for this document
+        setReviewNotes(prev => {
+          const updated = { ...prev };
+          delete updated[docId];
+          return updated;
+        });
 
         // If verified, trigger score recalculation
         if (newStatus === 'verified') {
@@ -181,6 +187,8 @@ export default function AdminDocumentsPage() {
           }
         }
       } else {
+        const errorText = await response.text();
+        console.error('Update failed:', errorText);
         setMessage({ type: 'error', text: 'Failed to update document status.' });
       }
     } catch (error) {
@@ -217,11 +225,32 @@ export default function AdminDocumentsPage() {
     }
   };
 
-  const getConfidenceColor = (confidence: number | null) => {
-    if (!confidence) return 'text-gray-400';
+  // For extraction_confidence (numeric)
+  const getExtractionConfidenceColor = (confidence: number | null) => {
+    if (confidence === null || confidence === undefined) return 'text-gray-400';
     if (confidence >= 80) return 'text-green-600';
     if (confidence >= 60) return 'text-yellow-600';
     return 'text-red-600';
+  };
+
+  // For classification_confidence (enum: high/medium/low)
+  const getClassificationConfidenceColor = (confidence: 'high' | 'medium' | 'low' | null) => {
+    if (!confidence) return 'text-gray-400';
+    switch (confidence) {
+      case 'high':
+        return 'text-green-600';
+      case 'medium':
+        return 'text-yellow-600';
+      case 'low':
+        return 'text-red-600';
+      default:
+        return 'text-gray-400';
+    }
+  };
+
+  const formatClassificationConfidence = (confidence: 'high' | 'medium' | 'low' | null) => {
+    if (!confidence) return 'N/A';
+    return confidence.charAt(0).toUpperCase() + confidence.slice(1);
   };
 
   // Filter documents
@@ -433,14 +462,14 @@ export default function AdminDocumentsPage() {
                     {/* Confidence Indicators */}
                     <div className="hidden md:flex items-center gap-4 text-sm">
                       <div className="text-center">
-                        <div className={`font-medium ${getConfidenceColor(doc.extraction_confidence)}`}>
-                          {doc.extraction_confidence ? `${doc.extraction_confidence}%` : 'N/A'}
+                        <div className={`font-medium ${getExtractionConfidenceColor(doc.extraction_confidence)}`}>
+                          {doc.extraction_confidence !== null ? `${Math.round(doc.extraction_confidence)}%` : 'N/A'}
                         </div>
                         <div className="text-xs text-gray-500">Extraction</div>
                       </div>
                       <div className="text-center">
-                        <div className={`font-medium ${getConfidenceColor(doc.classification_confidence)}`}>
-                          {doc.classification_confidence ? `${doc.classification_confidence}%` : 'N/A'}
+                        <div className={`font-medium ${getClassificationConfidenceColor(doc.classification_confidence)}`}>
+                          {formatClassificationConfidence(doc.classification_confidence)}
                         </div>
                         <div className="text-xs text-gray-500">Classification</div>
                       </div>
@@ -473,19 +502,45 @@ export default function AdminDocumentsPage() {
                     </div>
                     <div>
                       <div className="text-xs text-gray-500 mb-1">File Type</div>
-                      <div className="text-sm font-medium">{doc.file_type}</div>
+                      <div className="text-sm font-medium">{doc.file_type || 'N/A'}</div>
                     </div>
                     <div>
                       <div className="text-xs text-gray-500 mb-1">Extraction Method</div>
                       <div className="text-sm font-medium">{doc.extraction_method || 'N/A'}</div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-500 mb-1">Score Impact</div>
-                      <div className="text-sm font-medium text-green-600">
-                        {doc.score_impact ? `+${doc.score_impact} pts` : 'Not set'}
+                      <div className="text-xs text-gray-500 mb-1">File Size</div>
+                      <div className="text-sm font-medium">
+                        {doc.file_size ? `${(doc.file_size / 1024).toFixed(1)} KB` : 'N/A'}
                       </div>
                     </div>
                   </div>
+
+                  {/* Criteria Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Assigned Criterion</div>
+                      <div className="text-sm font-medium text-blue-600">
+                        {doc.criterion ? O1_CRITERIA[doc.criterion]?.name : 'Not assigned'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Auto-Classified Criterion</div>
+                      <div className="text-sm font-medium text-purple-600">
+                        {doc.auto_classified_criterion ? O1_CRITERIA[doc.auto_classified_criterion]?.name : 'Not classified'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  {doc.description && (
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Description</div>
+                      <div className="text-sm bg-white p-3 rounded-lg border border-gray-200">
+                        {doc.description}
+                      </div>
+                    </div>
+                  )}
 
                   {/* AI Reasoning */}
                   {doc.ai_reasoning && (
@@ -507,6 +562,16 @@ export default function AdminDocumentsPage() {
                     </div>
                   )}
 
+                  {/* Classification Notes */}
+                  {doc.classification_notes && (
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Classification Notes</div>
+                      <div className="text-sm bg-white p-3 rounded-lg border border-gray-200">
+                        {doc.classification_notes}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Extracted Text Preview */}
                   {doc.extracted_text && (
                     <div>
@@ -518,13 +583,13 @@ export default function AdminDocumentsPage() {
                     </div>
                   )}
 
-                  {/* Admin Notes Input */}
+                  {/* Review Notes Input - Only for pending/needs_review */}
                   {(doc.status === 'pending' || doc.status === 'needs_review') && (
                     <div>
-                      <div className="text-xs text-gray-500 mb-1">Admin Notes (Optional)</div>
+                      <div className="text-xs text-gray-500 mb-1">Review Notes (Optional)</div>
                       <textarea
-                        value={adminNotes[doc.id] || ''}
-                        onChange={(e) => setAdminNotes({ ...adminNotes, [doc.id]: e.target.value })}
+                        value={reviewNotes[doc.id] || ''}
+                        onChange={(e) => setReviewNotes({ ...reviewNotes, [doc.id]: e.target.value })}
                         placeholder="Add notes about your review decision..."
                         rows={2}
                         className="w-full text-sm p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
@@ -549,9 +614,7 @@ export default function AdminDocumentsPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Use a default score impact of 10 if not set, or use the AI suggested one
-                            const score = doc.score_impact || 10;
-                            updateDocumentStatus(doc.id, 'verified', score);
+                            updateDocumentStatus(doc.id, 'verified');
                           }}
                           disabled={processingId === doc.id}
                           className="flex items-center gap-2 px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
@@ -596,11 +659,11 @@ export default function AdminDocumentsPage() {
                     )}
                   </div>
 
-                  {/* Previous Admin Notes */}
-                  {doc.admin_notes && (
+                  {/* Previous Review Notes - Show if already reviewed */}
+                  {doc.review_notes && (
                     <div className="pt-2 border-t border-gray-200">
-                      <div className="text-xs text-gray-500 mb-1">Previous Admin Notes</div>
-                      <div className="text-sm text-gray-700">{doc.admin_notes}</div>
+                      <div className="text-xs text-gray-500 mb-1">Review Notes</div>
+                      <div className="text-sm text-gray-700">{doc.review_notes}</div>
                     </div>
                   )}
                 </div>
