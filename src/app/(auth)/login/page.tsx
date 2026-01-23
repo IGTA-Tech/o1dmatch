@@ -1,16 +1,14 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signInSchema, SignInFormData } from '@/types/forms';
-import { createClient } from '@/lib/supabase/client';
 import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/dashboard';
   const [isLoading, setIsLoading] = useState(false);
@@ -28,23 +26,62 @@ function LoginForm() {
     setIsLoading(true);
     setError(null);
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
     try {
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
+      // Use direct fetch instead of Supabase client
+      const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
       });
 
-      if (signInError) {
-        setError(signInError.message);
+      const result = await response.json();
+
+      if (!response.ok) {
+        setError(result.error_description || result.msg || 'Invalid email or password');
+        setIsLoading(false);
         return;
       }
 
-      router.push(redirectTo);
-      router.refresh();
-    } catch {
+      // Success - store tokens in cookies
+      const { access_token, refresh_token, expires_in } = result;
+      
+      // Get project ref from URL
+      const projectRef = supabaseUrl.replace('https://', '').split('.')[0];
+      
+      // Create the auth token cookie (same format Supabase uses)
+      const authData = {
+        access_token,
+        refresh_token,
+        expires_in,
+        expires_at: Math.floor(Date.now() / 1000) + expires_in,
+        token_type: 'bearer',
+        user: result.user,
+      };
+
+      // Set cookie
+      const cookieName = `sb-${projectRef}-auth-token`;
+      const cookieValue = encodeURIComponent(JSON.stringify(authData));
+      const maxAge = expires_in || 3600;
+      
+      document.cookie = `${cookieName}=${cookieValue}; path=/; max-age=${maxAge}; SameSite=Lax`;
+
+      console.log('Login successful, redirecting...');
+      
+      // Redirect
+      window.location.href = redirectTo;
+      
+    } catch (err) {
+      console.error('Login error:', err);
       setError('An unexpected error occurred. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };

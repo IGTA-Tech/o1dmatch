@@ -5,15 +5,14 @@ import Link from 'next/link';
 import {
   Menu,
   X,
-  LogOut,
   LayoutDashboard,
   ChevronDown,
   Users,
   Building2,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
-import { resetClient } from '@/lib/supabase/client';
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
+import { SignOutButton } from '@/components/auth/SignOutButton';
 
 // Define User interface locally
 interface AuthUser {
@@ -24,8 +23,6 @@ interface AuthUser {
     role?: string;
   };
 }
-
-// const [user, setUser] = useState<AuthUser | null>(null);
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
@@ -103,59 +100,6 @@ export default function Navbar() {
 
     checkAuth();
   }, [fetchUserRole]);
-
-  const handleSignOut = async () => {
-    // Clear UI state immediately
-    setUser(null);
-    setUserRole(null);
-
-    try {
-      const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL
-        ?.replace('https://', '')
-        ?.split('.')[0];
-
-      if (projectRef) {
-        // Clear all sb- cookies
-        const cookies = document.cookie.split(';');
-        for (const cookie of cookies) {
-          const cookieName = cookie.split('=')[0].trim();
-          if (cookieName.startsWith(`sb-${projectRef}`)) {
-            document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-            document.cookie = `${cookieName}=; path=/; domain=${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-            document.cookie = `${cookieName}=; path=/; domain=.${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-          }
-        }
-
-        // Clear localStorage
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key?.startsWith(`sb-${projectRef}`)) {
-            keysToRemove.push(key);
-          }
-        }
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-
-        // Clear sessionStorage
-        const sessionKeysToRemove: string[] = [];
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i);
-          if (key?.startsWith(`sb-${projectRef}`)) {
-            sessionKeysToRemove.push(key);
-          }
-        }
-        sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
-      }
-    } catch (error) {
-      console.log('Sign out cleanup error:', error);
-    }
-
-    // Reset the cached client
-    resetClient();
-
-    // Hard redirect to home page
-    window.location.href = '/';
-  };
 
   const getDashboardLink = () => {
     switch (userRole) {
@@ -262,13 +206,8 @@ export default function Navbar() {
                   <LayoutDashboard className="w-4 h-4" />
                   Dashboard
                 </Link>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-1 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </button>
+                {/* Use SignOutButton component */}
+                <SignOutButton variant="header" />
               </>
             ) : (
               <>
@@ -371,16 +310,8 @@ export default function Navbar() {
                     <LayoutDashboard className="w-4 h-4" />
                     Dashboard
                   </Link>
-                  <button
-                    onClick={() => {
-                      handleSignOut();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 text-left w-full"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sign Out
-                  </button>
+                  {/* Use SignOutButton component for mobile */}
+                  <SignOutButton variant="menu" />
                 </div>
               ) : (
                 <div className="border-t border-gray-100 pt-2 mt-2 space-y-2">

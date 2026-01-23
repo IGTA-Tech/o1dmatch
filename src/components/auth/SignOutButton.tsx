@@ -3,8 +3,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { LogOut, Loader2 } from 'lucide-react';
 
 interface SignOutButtonProps {
@@ -18,21 +16,45 @@ export function SignOutButton({
   showIcon = true,
   className = ''
 }: SignOutButtonProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     setLoading(true);
-    try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      router.push('/login');
-      router.refresh();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    } finally {
-      setLoading(false);
+
+    // Get project ref for cookie names
+    const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL
+      ?.replace('https://', '')
+      ?.split('.')[0];
+
+    // Clear all Supabase cookies
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const cookieName = cookie.split('=')[0].trim();
+      if (cookieName.startsWith('sb-') || (projectRef && cookieName.includes(projectRef))) {
+        // Try multiple path/domain combinations to ensure deletion
+        document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        document.cookie = `${cookieName}=; path=/; domain=${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        document.cookie = `${cookieName}=; path=/; domain=.${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+        document.cookie = `${cookieName}=; path=/; max-age=0`;
+      }
     }
+
+    // Clear localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-') || (projectRef && key.includes(projectRef))) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    // Clear sessionStorage
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('sb-') || (projectRef && key.includes(projectRef))) {
+        sessionStorage.removeItem(key);
+      }
+    });
+
+    // Hard redirect to login page
+    window.location.href = '/login';
   };
 
   // Different styles based on variant
@@ -44,6 +66,7 @@ export function SignOutButton({
 
   return (
     <button
+      type="button"
       onClick={handleSignOut}
       disabled={loading}
       className={variants[variant]}
@@ -53,7 +76,7 @@ export function SignOutButton({
       ) : (
         showIcon && <LogOut className="w-5 h-5" />
       )}
-      <span className="font-medium">Sign Out</span>
+      <span className="font-medium">{loading ? 'Signing Out...' : 'Sign Out'}</span>
     </button>
   );
 }

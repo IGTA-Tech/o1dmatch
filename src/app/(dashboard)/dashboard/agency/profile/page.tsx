@@ -81,6 +81,7 @@ export default function AgencyProfilePage() {
 
   const handleSave = async (data: AgencyProfileFormData) => {
     console.log("Start saving records");
+    console.log(profile);
     if (!profile) return;
 
     setSaving(true);
