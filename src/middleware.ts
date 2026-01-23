@@ -39,71 +39,71 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ============================================
-  // PUBLIC ROUTES - No authentication required
+  // PROTECTED ROUTES - Only these require authentication
   // ============================================
-  const publicRoutes = [
-    '/',
-    '/login',
-    '/signup',
-    '/register',
-    '/forgot-password',
-    '/reset-password',
-    '/admin/login',      // <-- Admin login is PUBLIC
-    '/auth/callback',
-    '/auth/confirm',
-    '/how-it-works/candidates',
-    '/how-it-works/employers',
-    '/pricing',
-    '/waitlist/talent',
-    '/waitlist/employer',
+  const protectedRoutes = [
+    '/dashboard',
+    '/profile',
+    '/settings',
+    '/account',
   ];
 
-  // Check if current path is a public route
-  const isPublicRoute = publicRoutes.some(
+  // Check if current path is a protected route
+  const isProtectedRoute = protectedRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
-  // Allow public routes and static files
-  if (
-    isPublicRoute ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.includes('.')
-  ) {
-    return supabaseResponse;
-  }
+  // ============================================
+  // AUTH ROUTES - Redirect to dashboard if already logged in
+  // ============================================
+  const authRoutes = ['/login', '/signup', '/register', '/forgot-password'];
+  const isAuthRoute = authRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
 
-  // ============================================
-  // PROTECTED ROUTES - Require authentication
-  // ============================================
-  
-  // If not logged in, redirect to login
-  if (!user) {
+  // If user is logged in and trying to access auth pages, redirect to dashboard
+  if (user && isAuthRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('redirect', pathname);
+    url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }
 
   // ============================================
-  // ADMIN ROUTES - Require admin role
+  // PROTECTED ROUTE HANDLING
   // ============================================
-  if (pathname.startsWith('/dashboard/admin')) {
-    // Fetch user profile to check role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (profile?.role !== 'admin') {
-      // Not an admin, redirect to their appropriate dashboard
+  
+  // Only check authentication for protected routes
+  if (isProtectedRoute) {
+    // If not logged in, redirect to login
+    if (!user) {
       const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
+      url.pathname = '/login';
+      url.searchParams.set('redirect', pathname);
       return NextResponse.redirect(url);
+    }
+
+    // ============================================
+    // ADMIN ROUTES - Require admin role
+    // ============================================
+    if (pathname.startsWith('/dashboard/admin')) {
+      // Fetch user profile to check role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.role !== 'admin') {
+        // Not an admin, redirect to their appropriate dashboard
+        const url = request.nextUrl.clone();
+        url.pathname = '/dashboard';
+        return NextResponse.redirect(url);
+      }
     }
   }
 
+  // All other routes (public pages, unknown URLs) - let them through
+  // Next.js will show 404 for pages that don't exist
   return supabaseResponse;
 }
 
