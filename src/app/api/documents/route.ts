@@ -211,7 +211,7 @@ export async function DELETE(request: NextRequest) {
     // Delete from storage if applicable
     if (document.file_url && document.file_url.includes('supabase')) {
       const path = document.file_url.split('/').slice(-2).join('/');
-      await adminSupabase.storage.from('documents').remove([path]);
+      await adminSupabase.storage.from('evidence').remove([path]);
     }
 
     // Delete document record
