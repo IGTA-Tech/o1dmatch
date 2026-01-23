@@ -48,6 +48,7 @@ const navigationItems = {
     { href: '/dashboard/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/admin/letters', label: 'Letters', icon: Mail },
     { href: '/dashboard/admin/users', label: 'Users', icon: Users },
+    { href: '/dashboard/admin/documents', label: 'Documents', icon: FileText },
     { href: '/dashboard/admin/settings', label: 'Settings', icon: Settings },
   ],
   agency: [
