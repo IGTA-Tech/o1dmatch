@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import { CriteriaBreakdown } from '@/components/talent/CriteriaBreakdown';
@@ -39,6 +39,32 @@ export default function EvidencePage() {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  // Calculate evidence breakdown from actual documents
+  const evidenceBreakdown = useMemo(() => {
+    const breakdown: Record<string, number> = {};
+    
+    // Initialize all criteria with 0
+    (Object.keys(O1_CRITERIA) as O1Criterion[]).forEach(criterion => {
+      breakdown[criterion] = 0;
+    });
+    
+    // Count verified documents per criterion
+    documents.forEach(doc => {
+      if (doc.criterion && doc.status === 'verified') {
+        breakdown[doc.criterion] = (breakdown[doc.criterion] || 0) + 1;
+      }
+    });
+    
+    return breakdown;
+  }, [documents]);
+
+  // Calculate criteria met (criteria with at least one verified document)
+  const criteriaMet = useMemo(() => {
+    return (Object.keys(O1_CRITERIA) as O1Criterion[]).filter(
+      criterion => evidenceBreakdown[criterion] > 0
+    );
+  }, [evidenceBreakdown]);
 
   const loadData = useCallback(async () => {
     // Get auth data directly from cookie instead of hanging supabase.auth.getUser()
@@ -181,6 +207,17 @@ export default function EvidencePage() {
     ? documents.filter((doc) => doc.criterion === selectedCriterion)
     : documents;
 
+  // Count documents by status for summary
+  const documentStats = useMemo(() => {
+    return {
+      total: documents.length,
+      verified: documents.filter(d => d.status === 'verified').length,
+      pending: documents.filter(d => d.status === 'pending').length,
+      needsReview: documents.filter(d => d.status === 'needs_review').length,
+      rejected: documents.filter(d => d.status === 'rejected').length,
+    };
+  }, [documents]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -226,15 +263,53 @@ export default function EvidencePage() {
         </div>
       </div>
 
-      {/* Criteria Overview */}
+      {/* Document Stats Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-gray-900">{documentStats.total}</div>
+            <div className="text-sm text-gray-600">Total</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-green-600">{documentStats.verified}</div>
+            <div className="text-sm text-gray-600">Verified</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-gray-500">{documentStats.pending}</div>
+            <div className="text-sm text-gray-600">Pending</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-yellow-500">{documentStats.needsReview}</div>
+            <div className="text-sm text-gray-600">Needs Review</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-red-500">{documentStats.rejected}</div>
+            <div className="text-sm text-gray-600">Rejected</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Criteria Overview - Now uses calculated breakdown from documents */}
       <Card>
         <CardHeader>
           <CardTitle>Criteria Progress</CardTitle>
+          <p className="text-sm text-gray-500">
+            Based on {documentStats.verified} verified document{documentStats.verified !== 1 ? 's' : ''} • 
+            {criteriaMet.length} of 8 criteria met
+          </p>
         </CardHeader>
         <CardContent>
           <CriteriaBreakdown
-            breakdown={profile?.evidence_summary || {}}
-            criteriaMet={profile?.criteria_met || []}
+            breakdown={evidenceBreakdown}
+            criteriaMet={criteriaMet}
             showUploadButtons
             onUpload={(criterion) => {
               setPreselectedCriterion(criterion);
@@ -258,6 +333,7 @@ export default function EvidencePage() {
         </button>
         {(Object.keys(O1_CRITERIA) as O1Criterion[]).map((criterion) => {
           const count = documents.filter((d) => d.criterion === criterion).length;
+          const verifiedCount = documents.filter((d) => d.criterion === criterion && d.status === 'verified').length;
           return (
             <button
               key={criterion}
@@ -269,6 +345,9 @@ export default function EvidencePage() {
               }`}
             >
               {O1_CRITERIA[criterion].name} ({count})
+              {verifiedCount > 0 && (
+                <span className="ml-1 text-green-600">✓{verifiedCount}</span>
+              )}
             </button>
           );
         })}
@@ -328,11 +407,6 @@ export default function EvidencePage() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                  {doc.score_impact && doc.status === 'verified' && (
-                    <span className="text-sm font-medium text-green-600">
-                      +{doc.score_impact} pts
-                    </span>
-                  )}
                   <span
                     className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(
                       doc.status
