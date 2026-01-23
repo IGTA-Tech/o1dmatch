@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import { ScoreDisplay } from '@/components/talent/ScoreDisplay';
 import { CriteriaBreakdown } from '@/components/talent/CriteriaBreakdown';
+import { O1Criterion, O1_CRITERIA } from '@/types/enums';
 import {
   FileText,
   Send,
@@ -51,6 +52,47 @@ export default async function TalentDashboardPage() {
 
     redirect('/dashboard/talent/profile');
   }
+
+  // Get all documents for this talent to calculate counts per criterion
+  const { data: documents } = await supabase
+    .from('talent_documents')
+    .select('criterion, status')
+    .eq('talent_id', talentProfile.id);
+
+  // Calculate document counts per criterion
+  const documentCounts: Record<string, { total: number; verified: number; pending: number; needsReview: number; rejected: number }> = {};
+  
+  // Initialize all criteria with 0
+  (Object.keys(O1_CRITERIA) as O1Criterion[]).forEach(criterion => {
+    documentCounts[criterion] = { total: 0, verified: 0, pending: 0, needsReview: 0, rejected: 0 };
+  });
+  
+  // Count documents per criterion by status
+  documents?.forEach(doc => {
+    if (doc.criterion && documentCounts[doc.criterion]) {
+      documentCounts[doc.criterion].total += 1;
+      
+      switch (doc.status) {
+        case 'verified':
+          documentCounts[doc.criterion].verified += 1;
+          break;
+        case 'pending':
+          documentCounts[doc.criterion].pending += 1;
+          break;
+        case 'needs_review':
+          documentCounts[doc.criterion].needsReview += 1;
+          break;
+        case 'rejected':
+          documentCounts[doc.criterion].rejected += 1;
+          break;
+      }
+    }
+  });
+
+  // Calculate criteria met (criteria with at least one verified document)
+  const criteriaMet = (Object.keys(O1_CRITERIA) as O1Criterion[]).filter(
+    criterion => documentCounts[criterion]?.verified > 0
+  );
 
   // Get stats
   const [
@@ -148,7 +190,7 @@ export default async function TalentDashboardPage() {
               showStatus
             />
             <p className="text-xs text-gray-500 mt-4 text-center">
-              {talentProfile.criteria_met?.length || 0} of 8 criteria met
+              {criteriaMet.length} of 8 criteria met
             </p>
           </CardContent>
         </Card>
@@ -193,8 +235,8 @@ export default async function TalentDashboardPage() {
         </CardHeader>
         <CardContent>
           <CriteriaBreakdown
-            breakdown={talentProfile.evidence_summary || {}}
-            criteriaMet={talentProfile.criteria_met || []}
+            documentCounts={documentCounts}
+            criteriaMet={criteriaMet}
             showUploadButtons
           />
         </CardContent>
