@@ -1,20 +1,27 @@
 'use client';
 
-import { Check, X, Plus } from 'lucide-react';
+import { Check, X, Plus, FileText } from 'lucide-react';
 import { O1Criterion, O1_CRITERIA } from '@/types/enums';
-import { EvidenceSummary } from '@/types/models';
-import { Progress } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
+interface DocumentCounts {
+  total: number;
+  verified: number;
+  pending: number;
+  needsReview: number;
+  rejected: number;
+}
+
 interface CriteriaBreakdownProps {
-  breakdown: EvidenceSummary;
+  // Document counts per criterion
+  documentCounts: Record<string, DocumentCounts>;
   criteriaMet: O1Criterion[];
   showUploadButtons?: boolean;
   onUpload?: (criterion: O1Criterion) => void;
 }
 
 export function CriteriaBreakdown({
-  breakdown,
+  documentCounts,
   criteriaMet,
   showUploadButtons = false,
   onUpload,
@@ -33,10 +40,8 @@ export function CriteriaBreakdown({
       <div className="space-y-3">
         {criteria.map((criterion) => {
           const info = O1_CRITERIA[criterion];
-          const evidence = breakdown[criterion];
+          const counts = documentCounts[criterion] || { total: 0, verified: 0, pending: 0, needsReview: 0, rejected: 0 };
           const isMet = criteriaMet.includes(criterion);
-          const score = evidence?.score || 0;
-          const maxScore = info.maxScore;
 
           return (
             <div
@@ -61,9 +66,19 @@ export function CriteriaBreakdown({
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-600">
-                    {score}/{maxScore}
-                  </span>
+                  {/* Document Count Display */}
+                  <div className="flex items-center gap-1 text-sm">
+                    <FileText className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-600">
+                      {counts.total} doc{counts.total !== 1 ? 's' : ''}
+                    </span>
+                    {counts.verified > 0 && (
+                      <span className="text-green-600 ml-1">
+                        ({counts.verified} verified)
+                      </span>
+                    )}
+                  </div>
+                  
                   {showUploadButtons && onUpload && (
                     <button
                       onClick={() => onUpload(criterion)}
@@ -76,16 +91,50 @@ export function CriteriaBreakdown({
                 </div>
               </div>
 
-              <Progress
-                value={score}
-                max={maxScore}
-                size="sm"
-                colorByScore
-              />
+              {/* Progress bar showing verified vs total */}
+              {counts.total > 0 && (
+                <div className="mt-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={cn(
+                        'h-2 rounded-full transition-all',
+                        counts.verified > 0 ? 'bg-green-500' : 'bg-gray-400'
+                      )}
+                      style={{
+                        width: counts.total > 0 
+                          ? `${Math.min((counts.verified / counts.total) * 100, 100)}%`
+                          : '0%'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
-              {evidence?.evidence_count !== undefined && evidence.evidence_count > 0 && (
+              {/* Status breakdown */}
+              {counts.total > 0 && (counts.pending > 0 || counts.needsReview > 0) && (
+                <div className="flex gap-3 mt-2 text-xs">
+                  {counts.pending > 0 && (
+                    <span className="text-gray-500">
+                      {counts.pending} pending
+                    </span>
+                  )}
+                  {counts.needsReview > 0 && (
+                    <span className="text-yellow-600">
+                      {counts.needsReview} needs review
+                    </span>
+                  )}
+                  {counts.rejected > 0 && (
+                    <span className="text-red-500">
+                      {counts.rejected} rejected
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Description */}
+              {info.description && (
                 <p className="text-xs text-gray-500 mt-2">
-                  {evidence.evidence_count} document{evidence.evidence_count !== 1 ? 's' : ''} uploaded
+                  {info.description}
                 </p>
               )}
             </div>

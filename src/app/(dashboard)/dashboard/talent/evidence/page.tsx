@@ -22,12 +22,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { O1Criterion, O1_CRITERIA } from '@/types/enums';
-import { TalentDocument, TalentProfile } from '@/types/models';
+import { TalentDocument } from '@/types/models';
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
 
 export default function EvidencePage() {
   const router = useRouter();
-  const [profile, setProfile] = useState<TalentProfile | null>(null);
   const [documents, setDocuments] = useState<TalentDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCriterion, setSelectedCriterion] = useState<O1Criterion | null>(null);
@@ -40,31 +39,46 @@ export default function EvidencePage() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  // Calculate evidence breakdown from actual documents
-  const evidenceBreakdown = useMemo(() => {
-    const breakdown: Record<string, number> = {};
+  // Calculate document counts per criterion (for CriteriaBreakdown)
+  const documentCounts = useMemo(() => {
+    const counts: Record<string, { total: number; verified: number; pending: number; needsReview: number; rejected: number }> = {};
     
     // Initialize all criteria with 0
     (Object.keys(O1_CRITERIA) as O1Criterion[]).forEach(criterion => {
-      breakdown[criterion] = 0;
+      counts[criterion] = { total: 0, verified: 0, pending: 0, needsReview: 0, rejected: 0 };
     });
     
-    // Count verified documents per criterion
+    // Count documents per criterion by status
     documents.forEach(doc => {
-      if (doc.criterion && doc.status === 'verified') {
-        breakdown[doc.criterion] = (breakdown[doc.criterion] || 0) + 1;
+      if (doc.criterion) {
+        counts[doc.criterion].total += 1;
+        
+        switch (doc.status) {
+          case 'verified':
+            counts[doc.criterion].verified += 1;
+            break;
+          case 'pending':
+            counts[doc.criterion].pending += 1;
+            break;
+          case 'needs_review':
+            counts[doc.criterion].needsReview += 1;
+            break;
+          case 'rejected':
+            counts[doc.criterion].rejected += 1;
+            break;
+        }
       }
     });
     
-    return breakdown;
+    return counts;
   }, [documents]);
 
   // Calculate criteria met (criteria with at least one verified document)
   const criteriaMet = useMemo(() => {
     return (Object.keys(O1_CRITERIA) as O1Criterion[]).filter(
-      criterion => evidenceBreakdown[criterion] > 0
+      criterion => documentCounts[criterion]?.verified > 0
     );
-  }, [evidenceBreakdown]);
+  }, [documentCounts]);
 
   const loadData = useCallback(async () => {
     // Get auth data directly from cookie instead of hanging supabase.auth.getUser()
@@ -81,9 +95,9 @@ export default function EvidencePage() {
     setAuthData({ userId, accessToken });
 
     try {
-      // Fetch talent profile using direct REST API
+      // Fetch talent profile using direct REST API (only need id for documents query)
       const profileResponse = await fetch(
-        `${supabaseUrl}/rest/v1/talent_profiles?user_id=eq.${userId}&select=*`,
+        `${supabaseUrl}/rest/v1/talent_profiles?user_id=eq.${userId}&select=id`,
         {
           method: 'GET',
           headers: {
@@ -97,12 +111,11 @@ export default function EvidencePage() {
       if (profileResponse.ok) {
         const profiles = await profileResponse.json();
         if (profiles && profiles[0]) {
-          const talentProfile = profiles[0];
-          setProfile(talentProfile);
+          const talentProfileId = profiles[0].id;
 
           // Fetch documents using direct REST API
           const docsResponse = await fetch(
-            `${supabaseUrl}/rest/v1/talent_documents?talent_id=eq.${talentProfile.id}&select=*&order=created_at.desc`,
+            `${supabaseUrl}/rest/v1/talent_documents?talent_id=eq.${talentProfileId}&select=*&order=created_at.desc`,
             {
               method: 'GET',
               headers: {
@@ -300,18 +313,17 @@ export default function EvidencePage() {
         </Card>
       </div>
 
-      {/* Criteria Overview - Now uses calculated breakdown from documents */}
+      {/* Criteria Overview - Uses documentCounts */}
       <Card>
         <CardHeader>
           <CardTitle>Criteria Progress</CardTitle>
           <p className="text-sm text-gray-500">
-            Based on {documentStats.verified} verified document{documentStats.verified !== 1 ? 's' : ''} • 
-            {criteriaMet.length} of 8 criteria met
+            Based on {documentStats.verified} verified document{documentStats.verified !== 1 ? 's' : ''} • {criteriaMet.length} of 8 criteria met
           </p>
         </CardHeader>
         <CardContent>
           <CriteriaBreakdown
-            breakdown={evidenceBreakdown}
+            documentCounts={documentCounts}
             criteriaMet={criteriaMet}
             showUploadButtons
             onUpload={(criterion) => {
