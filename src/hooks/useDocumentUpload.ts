@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { O1Criterion } from '@/types/enums';
 
 export interface UploadProgress {
   status: 'idle' | 'uploading' | 'extracting' | 'classifying' | 'complete' | 'error';
@@ -43,7 +44,12 @@ export function useDocumentUpload() {
   }, []);
 
   const upload = useCallback(
-    async (file: File, title: string, description?: string): Promise<UploadResult> => {
+    async (
+      file: File, 
+      title: string, 
+      description?: string,
+      criterion?: O1Criterion // Added criterion parameter
+    ): Promise<UploadResult> => {
       setResult(null);
 
       try {
@@ -59,6 +65,9 @@ export function useDocumentUpload() {
         formData.append('title', title);
         if (description) {
           formData.append('description', description);
+        }
+        if (criterion) {
+          formData.append('criterion', criterion); // Add criterion to form data
         }
 
         setProgress({

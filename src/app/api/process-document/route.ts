@@ -47,6 +47,11 @@ function confidenceToPercentage(
   }
 }
 
+// Validate if criterion is valid O1Criterion
+function isValidCriterion(criterion: string): criterion is O1Criterion {
+  return Object.keys(O1_CRITERIA).includes(criterion);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -79,6 +84,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null;
     const title = formData.get('title') as string;
     const description = formData.get('description') as string | null;
+    const userSelectedCriterion = formData.get('criterion') as string | null; // Get user-selected criterion
 
     if (!file) {
       return NextResponse.json({ error: 'File is required' }, { status: 400 });
@@ -86,6 +92,12 @@ export async function POST(request: NextRequest) {
 
     if (!title) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+    }
+
+    // Validate user-selected criterion if provided
+    let validatedCriterion: O1Criterion | null = null;
+    if (userSelectedCriterion && isValidCriterion(userSelectedCriterion)) {
+      validatedCriterion = userSelectedCriterion;
     }
 
     // Check file size (10MB limit)
@@ -150,6 +162,7 @@ export async function POST(request: NextRequest) {
 
     if (!extractionResult.success || !extractionResult.text) {
       // Still save the document but mark it for manual review
+      // Use user-selected criterion if provided
       const { data: document, error: insertError } = await adminSupabase
         .from('talent_documents')
         .insert({
@@ -159,7 +172,9 @@ export async function POST(request: NextRequest) {
           description: description || null,
           file_url: fileUrl,
           file_type: file.type,
+          file_size: file.size,
           status: 'pending',
+          criterion: validatedCriterion, // Use user-selected criterion
           extraction_method: extractionResult.method,
           extraction_confidence: extractionResult.confidence,
           ai_notes: 'Text extraction failed - manual review required',
@@ -180,6 +195,8 @@ export async function POST(request: NextRequest) {
         data: {
           document_id: document.id,
           status: 'pending',
+          criterion: validatedCriterion,
+          criterion_name: validatedCriterion ? O1_CRITERIA[validatedCriterion]?.name : null,
           message: 'Document uploaded but text extraction failed. Manual review required.',
           extraction: {
             success: false,
@@ -189,7 +206,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Classify the extracted text
+    // Classify the extracted text (AI will suggest a criterion)
     let classification;
     try {
       classification = await classifyDocument(
@@ -200,7 +217,7 @@ export async function POST(request: NextRequest) {
     } catch (classifyError) {
       console.error('Classification error:', classifyError);
 
-      // Save document without classification
+      // Save document without AI classification, use user-selected criterion
       const { data: document, error: insertError } = await adminSupabase
         .from('talent_documents')
         .insert({
@@ -210,7 +227,9 @@ export async function POST(request: NextRequest) {
           description: description || null,
           file_url: fileUrl,
           file_type: file.type,
+          file_size: file.size,
           status: 'pending',
+          criterion: validatedCriterion, // Use user-selected criterion
           extraction_method: extractionResult.method,
           extraction_confidence: extractionResult.confidence,
           extracted_text: extractionResult.text.substring(0, 50000),
@@ -232,6 +251,8 @@ export async function POST(request: NextRequest) {
         data: {
           document_id: document.id,
           status: 'pending',
+          criterion: validatedCriterion,
+          criterion_name: validatedCriterion ? O1_CRITERIA[validatedCriterion]?.name : null,
           message: 'Document uploaded but classification failed. Manual review required.',
           extraction: {
             success: true,
@@ -241,6 +262,9 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    // Determine final criterion: user-selected takes priority, otherwise use AI classification
+    const finalCriterion = validatedCriterion || classification.criterion;
 
     // Determine auto-verification status
     const classificationConfidence = confidenceToPercentage(classification.confidence);
@@ -260,12 +284,13 @@ export async function POST(request: NextRequest) {
         description: description || null,
         file_url: fileUrl,
         file_type: file.type,
+        file_size: file.size,
         status: autoStatus,
-        criterion: classification.criterion,
-        score_impact: autoStatus === 'verified' ? classification.score_impact : null,
+        criterion: finalCriterion, // Use user-selected or AI-classified criterion
+        auto_classified_criterion: classification.criterion, // Store AI suggestion separately
         extraction_method: extractionResult.method,
         extraction_confidence: extractionResult.confidence,
-        classification_confidence: classificationConfidence,
+        classification_confidence: classification.confidence, // This is enum: 'high', 'medium', 'low'
         extracted_text: extractionResult.text.substring(0, 50000),
         ai_reasoning: classification.reasoning,
         ai_notes:
@@ -308,7 +333,9 @@ export async function POST(request: NextRequest) {
       entity_id: document.id,
       metadata: {
         title,
-        criterion: classification.criterion,
+        criterion: finalCriterion,
+        user_selected_criterion: validatedCriterion,
+        ai_classified_criterion: classification.criterion,
         auto_status: autoStatus,
         extraction_method: extractionResult.method,
       },
@@ -319,9 +346,8 @@ export async function POST(request: NextRequest) {
       data: {
         document_id: document.id,
         status: autoStatus,
-        criterion: classification.criterion,
-        criterion_name: O1_CRITERIA[classification.criterion]?.name,
-        score_impact: classification.score_impact,
+        criterion: finalCriterion,
+        criterion_name: O1_CRITERIA[finalCriterion]?.name,
         extraction: {
           success: true,
           method: extractionResult.method,
@@ -330,6 +356,8 @@ export async function POST(request: NextRequest) {
         classification: {
           confidence: classification.confidence,
           reasoning: classification.reasoning,
+          ai_suggested_criterion: classification.criterion,
+          ai_suggested_criterion_name: O1_CRITERIA[classification.criterion]?.name,
         },
         message:
           autoStatus === 'verified'

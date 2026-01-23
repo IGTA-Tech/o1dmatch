@@ -34,9 +34,6 @@ export default function EvidencePage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [preselectedCriterion, setPreselectedCriterion] = useState<O1Criterion | null>(null);
 
-  if(profile){
-    console.log(profile);
-  }
   // Auth state
   const [authData, setAuthData] = useState<{ userId: string; accessToken: string } | null>(null);
 
@@ -245,7 +242,10 @@ export default function EvidencePage() {
           </div>
         </div>
         <button
-          onClick={() => setShowUploadModal(true)}
+          onClick={() => {
+            setPreselectedCriterion(null);
+            setShowUploadModal(true);
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Upload className="w-4 h-4" />
@@ -367,7 +367,10 @@ export default function EvidencePage() {
                 Upload evidence documents to strengthen your O-1 visa case.
               </p>
               <button
-                onClick={() => setShowUploadModal(true)}
+                onClick={() => {
+                  setPreselectedCriterion(null);
+                  setShowUploadModal(true);
+                }}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 <Upload className="w-4 h-4" />
@@ -444,7 +447,7 @@ export default function EvidencePage() {
         )}
       </div>
 
-      {/* Upload Modal with New Uploader */}
+      {/* Upload Modal with Criterion Selection */}
       {showUploadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
@@ -475,12 +478,14 @@ export default function EvidencePage() {
               </button>
             </div>
 
+            {/* Pass preselectedCriterion to DocumentUploader */}
             <DocumentUploader
               onUploadComplete={handleUploadComplete}
               onCancel={() => {
                 setShowUploadModal(false);
                 setPreselectedCriterion(null);
               }}
+              preselectedCriterion={preselectedCriterion}
             />
 
             <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg mt-4">

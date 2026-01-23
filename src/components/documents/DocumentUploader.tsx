@@ -6,16 +6,19 @@ import { Upload, FileText, X, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useDocumentUpload, UploadResult } from '@/hooks/useDocumentUpload';
 import { UploadProgress } from './UploadProgress';
 import { ConfidenceIndicator } from './ConfidenceIndicator';
+import { O1Criterion, O1_CRITERIA } from '@/types/enums';
 
 interface DocumentUploaderProps {
   onUploadComplete?: (result: UploadResult) => void;
   onCancel?: () => void;
+  preselectedCriterion?: O1Criterion | null;
 }
 
-export function DocumentUploader({ onUploadComplete, onCancel }: DocumentUploaderProps) {
+export function DocumentUploader({ onUploadComplete, onCancel, preselectedCriterion }: DocumentUploaderProps) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [criterion, setCriterion] = useState<O1Criterion | ''>(preselectedCriterion || '');
   const { upload, progress, result, reset, isUploading, isComplete, isError } = useDocumentUpload();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -48,7 +51,12 @@ export function DocumentUploader({ onUploadComplete, onCancel }: DocumentUploade
     e.preventDefault();
     if (!file || !title.trim()) return;
 
-    const uploadResult = await upload(file, title.trim(), description.trim() || undefined);
+    const uploadResult = await upload(
+      file, 
+      title.trim(), 
+      description.trim() || undefined,
+      criterion || undefined // Pass selected criterion
+    );
     if (uploadResult.success && onUploadComplete) {
       onUploadComplete(uploadResult);
     }
@@ -58,6 +66,7 @@ export function DocumentUploader({ onUploadComplete, onCancel }: DocumentUploade
     setFile(null);
     setTitle('');
     setDescription('');
+    setCriterion(preselectedCriterion || '');
     reset();
   };
 
@@ -222,6 +231,33 @@ export function DocumentUploader({ onUploadComplete, onCancel }: DocumentUploade
         />
       </div>
 
+      {/* Criterion Selection */}
+      <div>
+        <label htmlFor="criterion" className="block text-sm font-medium text-gray-700">
+          O-1 Criterion *
+        </label>
+        <select
+          id="criterion"
+          value={criterion}
+          onChange={(e) => setCriterion(e.target.value as O1Criterion | '')}
+          disabled={isUploading}
+          className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+          required
+        >
+          <option value="">Select a criterion...</option>
+          {(Object.keys(O1_CRITERIA) as O1Criterion[]).map((key) => (
+            <option key={key} value={key}>
+              {O1_CRITERIA[key].name}
+            </option>
+          ))}
+        </select>
+        {criterion && O1_CRITERIA[criterion as O1Criterion]?.description && (
+          <p className="mt-1 text-xs text-gray-500">
+            {O1_CRITERIA[criterion as O1Criterion].description}
+          </p>
+        )}
+      </div>
+
       {/* Description Input */}
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-700">
@@ -259,7 +295,7 @@ export function DocumentUploader({ onUploadComplete, onCancel }: DocumentUploade
         </button>
         <button
           type="submit"
-          disabled={!file || !title.trim() || isUploading}
+          disabled={!file || !title.trim() || !criterion || isUploading}
           className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isUploading ? (
