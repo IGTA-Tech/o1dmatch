@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import {
   User,
@@ -33,7 +32,7 @@ import {
 } from '@/types/forms';
 import { TalentProfile } from '@/types/models';
 import { Resolver } from 'react-hook-form';
-import { getSupabaseToken } from '@/lib/supabase/getToken';
+import { getSupabaseAuthData } from '@/lib/supabase/getToken';
 
 type TabKey = 'basic' | 'location' | 'professional' | 'education' | 'online';
 
@@ -57,7 +56,6 @@ function FieldError({ message }: { message?: string }) {
 }
 
 // Form error summary component
-// Form error summary component - shows which fields have errors
 function FormErrorSummary({ errors }: { errors: Record<string, { message?: string }> }) {
   const errorEntries = Object.entries(errors);
   if (errorEntries.length === 0) return null;
@@ -94,32 +92,58 @@ export default function TalentProfilePage() {
   // Bio state
   const [bio, setBio] = useState('');
 
-  const supabase = createClient();
+  // Auth state
+  const [authData, setAuthData] = useState<{ userId: string; accessToken: string } | null>(null);
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   useEffect(() => {
     async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Get auth data directly from cookie instead of using hanging supabase.auth.getUser()
+      const auth = getSupabaseAuthData();
+      
+      if (!auth?.user) {
         router.push('/login');
         return;
       }
 
-      const { data } = await supabase
-        .from('talent_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      const userId = auth.user.id;
+      const accessToken = auth.access_token;
+      
+      setAuthData({ userId, accessToken });
 
-      if (data) {
-        setProfile(data);
-        setSkills(data.skills || []);
-        setBio(data.bio || '');
+      try {
+        // Fetch profile using direct REST API call
+        const response = await fetch(
+          `${supabaseUrl}/rest/v1/talent_profiles?user_id=eq.${userId}&select=*`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'apikey': supabaseAnonKey,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (response.ok) {
+          const profiles = await response.json();
+          if (profiles && profiles[0]) {
+            setProfile(profiles[0]);
+            setSkills(profiles[0].skills || []);
+            setBio(profiles[0].bio || '');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
       }
+
       setLoading(false);
     }
 
     loadProfile();
-  }, [supabase, router]);
+  }, [router, supabaseUrl, supabaseAnonKey]);
 
   const basicForm = useForm<TalentBasicInfoFormData>({
     resolver: zodResolver(talentBasicInfoSchema),
@@ -131,24 +155,6 @@ export default function TalentProfilePage() {
       professional_headline: profile.professional_headline || '',
     } : undefined,
   });
-
-  // const locationForm = useForm<TalentLocationFormData>({
-  //   resolver: zodResolver(talentLocationSchema),
-  //   mode: 'onSubmit',
-  //   values: profile ? {
-  //     city: profile.city || '',
-  //     state: profile.state || '',
-  //     country: profile.country || 'USA',
-  //     willing_to_relocate: profile.willing_to_relocate || false,
-  //     preferred_locations: profile.preferred_locations || [],
-  //     work_arrangement: profile.work_arrangement as TalentLocationFormData['work_arrangement'],
-  //     engagement_type: profile.engagement_type as TalentLocationFormData['engagement_type'],
-  //     salary_min: profile.salary_min || undefined,
-  //     salary_preferred: profile.salary_preferred || undefined,
-  //     available_start: profile.available_start as TalentLocationFormData['available_start'],
-  //     available_start_date: profile.available_start_date || undefined,
-  //   } : undefined,
-  // });
 
   const locationForm = useForm<TalentLocationFormData>({
     resolver: zodResolver(talentLocationSchema) as Resolver<TalentLocationFormData>,
@@ -204,97 +210,62 @@ export default function TalentProfilePage() {
   });
 
   const handleSave = async (data: Record<string, unknown>) => {
-    if (!profile) return;
-    
+    if (!profile || !authData) {
+      setMessage({ type: 'error', text: 'Profile not loaded. Please refresh.' });
+      return;
+    }
+
     setSaving(true);
     setMessage(null);
-  
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  
+
+    // For professional tab, include skills and bio
+    if (activeTab === 'professional') {
+      data.skills = skills;
+      data.bio = bio;
+    }
+
     try {
-      const accessToken = getSupabaseToken();
-  
-      if (!accessToken) {
-        setMessage({ type: 'error', text: 'Session expired. Please log out and log in again.' });
-        setSaving(false);
-        return;
-      }
-  
-      // Clean data
-      const cleanedData: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(data)) {
-        if (value === '' && !['first_name', 'last_name', 'email'].includes(key)) {
-          cleanedData[key] = null;
-        } else {
-          cleanedData[key] = value;
-        }
-      }
-      cleanedData.updated_at = new Date().toISOString();
-  
+      // Update profile using direct REST API call
       const response = await fetch(
         `${supabaseUrl}/rest/v1/talent_profiles?id=eq.${profile.id}`,
         {
           method: 'PATCH',
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': anonKey,
+            'Authorization': `Bearer ${authData.accessToken}`,
+            'apikey': supabaseAnonKey,
             'Content-Type': 'application/json',
-            'Prefer': 'return=representation',
+            'Prefer': 'return=minimal',
           },
-          body: JSON.stringify(cleanedData),
+          body: JSON.stringify(data),
         }
       );
-  
-      const responseText = await response.text();
-  
-      if (response.ok && responseText && responseText !== '[]') {
-        const result = JSON.parse(responseText);
-        if (result?.[0]) {
-          setMessage({ type: 'success', text: 'Profile updated successfully!' });
-          setProfile(result[0] as TalentProfile);
-        }
-      } else if (response.status === 401) {
-        setMessage({ type: 'error', text: 'Session expired. Please log out and log in again.' });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Update error:', errorData);
+        setMessage({ type: 'error', text: 'Failed to save changes. Please try again.' });
       } else {
-        setMessage({ type: 'error', text: 'Failed to save. Please try again.' });
+        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        setProfile({ ...profile, ...data } as TalentProfile);
       }
-    } catch (err) {
-      console.error("Save error:", err);
-      setMessage({ type: 'error', text: 'Failed to save changes.' });
-    } finally {
-      setSaving(false);
+    } catch (error) {
+      console.error('Save error:', error);
+      setMessage({ type: 'error', text: 'Failed to save changes. Please try again.' });
     }
+
+    setSaving(false);
   };
 
-  // Handle basic info save with bio
-  const handleBasicSave = async (data: TalentBasicInfoFormData) => {
-    await handleSave({ ...data, bio });
-  };
-
-  // Handle professional save with skills
-  const handleProfessionalSave = async (data: TalentProfessionalFormData) => {
-    await handleSave({ ...data, skills });
-  };
-
-  // Skills management
   const addSkill = () => {
-    const trimmed = skillInput.trim();
-    if (trimmed && !skills.includes(trimmed)) {
-      setSkills([...skills, trimmed]);
+    const skill = skillInput.trim();
+    if (skill && !skills.includes(skill)) {
+      setSkills([...skills, skill]);
       setSkillInput('');
     }
   };
 
   const removeSkill = (skillToRemove: string) => {
-    setSkills(skills.filter(skill => skill !== skillToRemove));
-  };
-
-  const handleSkillKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addSkill();
-    }
+    setSkills(skills.filter((s) => s !== skillToRemove));
   };
 
   if (loading) {
@@ -315,37 +286,41 @@ export default function TalentProfilePage() {
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Profile</h1>
-          <p className="text-gray-600">Update your profile information</p>
+          <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+          <p className="text-gray-600">Manage your talent profile information</p>
         </div>
       </div>
 
       {message && (
         <div
-          className={`p-4 rounded-lg ${message.type === 'success'
+          className={`p-4 rounded-lg ${
+            message.type === 'success'
               ? 'bg-green-50 text-green-700 border border-green-200'
               : 'bg-red-50 text-red-700 border border-red-200'
-            }`}
+          }`}
         >
           {message.text}
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 flex-wrap border-b border-gray-200">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${activeTab === tab.key
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-4 overflow-x-auto">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                activeTab === tab.key
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
       </div>
 
       {/* Basic Info */}
@@ -356,7 +331,7 @@ export default function TalentProfilePage() {
           </CardHeader>
           <CardContent>
             <FormErrorSummary errors={basicForm.formState.errors} />
-            <form onSubmit={basicForm.handleSubmit(handleBasicSave)} className="space-y-4">
+            <form onSubmit={basicForm.handleSubmit((data) => handleSave(data))} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -364,8 +339,9 @@ export default function TalentProfilePage() {
                   </label>
                   <input
                     {...basicForm.register('first_name')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${basicForm.formState.errors.first_name ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      basicForm.formState.errors.first_name ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={basicForm.formState.errors.first_name?.message} />
                 </div>
@@ -375,22 +351,22 @@ export default function TalentProfilePage() {
                   </label>
                   <input
                     {...basicForm.register('last_name')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${basicForm.formState.errors.last_name ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      basicForm.formState.errors.last_name ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={basicForm.formState.errors.last_name?.message} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                 <input
                   {...basicForm.register('phone')}
                   type="tel"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${basicForm.formState.errors.phone ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    basicForm.formState.errors.phone ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
                 <FieldError message={basicForm.formState.errors.phone?.message} />
               </div>
@@ -401,33 +377,12 @@ export default function TalentProfilePage() {
                 </label>
                 <input
                   {...basicForm.register('professional_headline')}
-                  placeholder="e.g., Senior AI Researcher with 10+ years of experience"
-                  maxLength={140}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${basicForm.formState.errors.professional_headline ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  placeholder="e.g., Senior AI Researcher | Machine Learning Expert"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    basicForm.formState.errors.professional_headline ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
                 <FieldError message={basicForm.formState.errors.professional_headline?.message} />
-                <p className="mt-1 text-xs text-gray-500">
-                  A brief summary visible to employers (max 140 characters)
-                </p>
-              </div>
-
-              {/* Bio Field */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Bio
-                </label>
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  rows={5}
-                  maxLength={2000}
-                  placeholder="Tell employers about yourself, your experience, achievements, and what you're looking for..."
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  {bio.length}/2000 characters - Describe your background, expertise, and career goals
-                </p>
               </div>
 
               <div className="flex justify-end">
@@ -459,8 +414,9 @@ export default function TalentProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
                   <input
                     {...locationForm.register('city')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.city ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      locationForm.formState.errors.city ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={locationForm.formState.errors.city?.message} />
                 </div>
@@ -468,8 +424,9 @@ export default function TalentProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
                   <input
                     {...locationForm.register('state')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.state ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      locationForm.formState.errors.state ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={locationForm.formState.errors.state?.message} />
                 </div>
@@ -477,8 +434,9 @@ export default function TalentProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
                   <input
                     {...locationForm.register('country')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.country ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      locationForm.formState.errors.country ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={locationForm.formState.errors.country?.message} />
                 </div>
@@ -489,72 +447,76 @@ export default function TalentProfilePage() {
                   {...locationForm.register('willing_to_relocate')}
                   type="checkbox"
                   id="willing_to_relocate"
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded"
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="willing_to_relocate" className="text-sm text-gray-700">
-                  Willing to relocate
+                  I&apos;m willing to relocate
                 </label>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Work Arrangement
-                </label>
-                <select
-                  {...locationForm.register('work_arrangement')}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.work_arrangement ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                >
-                  <option value="">Select preference</option>
-                  <option value="on_site">On-site</option>
-                  <option value="hybrid">Hybrid</option>
-                  <option value="remote">Remote</option>
-                  <option value="flexible">Flexible</option>
-                </select>
-                <FieldError message={locationForm.formState.errors.work_arrangement?.message} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Engagement Type
-                </label>
-                <select
-                  {...locationForm.register('engagement_type')}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.engagement_type ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                >
-                  <option value="">Select type</option>
-                  <option value="full_time">Full-time</option>
-                  <option value="part_time">Part-time</option>
-                  <option value="contract_w2">Contract (W-2)</option>
-                  <option value="consulting_1099">Consulting (1099)</option>
-                  <option value="project_based">Project-based</option>
-                </select>
-                <FieldError message={locationForm.formState.errors.engagement_type?.message} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Minimum Salary ($)
+                    Work Arrangement
+                  </label>
+                  <select
+                    {...locationForm.register('work_arrangement')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      locationForm.formState.errors.work_arrangement ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select preference</option>
+                    <option value="remote">Remote</option>
+                    <option value="hybrid">Hybrid</option>
+                    <option value="onsite">On-site</option>
+                    <option value="flexible">Flexible</option>
+                  </select>
+                  <FieldError message={locationForm.formState.errors.work_arrangement?.message} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Engagement Type
+                  </label>
+                  <select
+                    {...locationForm.register('engagement_type')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      locationForm.formState.errors.engagement_type ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select type</option>
+                    <option value="full_time">Full-time</option>
+                    <option value="part_time">Part-time</option>
+                    <option value="contract">Contract</option>
+                    <option value="consulting">Consulting</option>
+                  </select>
+                  <FieldError message={locationForm.formState.errors.engagement_type?.message} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Minimum Salary (USD)
                   </label>
                   <input
                     {...locationForm.register('salary_min', { valueAsNumber: true })}
                     type="number"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.salary_min ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      locationForm.formState.errors.salary_min ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={locationForm.formState.errors.salary_min?.message} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Preferred Salary ($)
+                    Preferred Salary (USD)
                   </label>
                   <input
                     {...locationForm.register('salary_preferred', { valueAsNumber: true })}
                     type="number"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${locationForm.formState.errors.salary_preferred ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      locationForm.formState.errors.salary_preferred ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={locationForm.formState.errors.salary_preferred?.message} />
                 </div>
@@ -579,11 +541,11 @@ export default function TalentProfilePage() {
       {activeTab === 'professional' && (
         <Card>
           <CardHeader>
-            <CardTitle>Professional Experience</CardTitle>
+            <CardTitle>Professional Information</CardTitle>
           </CardHeader>
           <CardContent>
             <FormErrorSummary errors={professionalForm.formState.errors} />
-            <form onSubmit={professionalForm.handleSubmit(handleProfessionalSave)} className="space-y-4">
+            <form onSubmit={professionalForm.handleSubmit((data) => handleSave(data))} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -591,8 +553,9 @@ export default function TalentProfilePage() {
                   </label>
                   <input
                     {...professionalForm.register('current_job_title')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${professionalForm.formState.errors.current_job_title ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      professionalForm.formState.errors.current_job_title ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={professionalForm.formState.errors.current_job_title?.message} />
                 </div>
@@ -602,20 +565,22 @@ export default function TalentProfilePage() {
                   </label>
                   <input
                     {...professionalForm.register('current_employer')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${professionalForm.formState.errors.current_employer ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      professionalForm.formState.errors.current_employer ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={professionalForm.formState.errors.current_employer?.message} />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
                   <input
                     {...professionalForm.register('industry')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${professionalForm.formState.errors.industry ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      professionalForm.formState.errors.industry ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={professionalForm.formState.errors.industry?.message} />
                 </div>
@@ -627,60 +592,68 @@ export default function TalentProfilePage() {
                     {...professionalForm.register('years_experience', { valueAsNumber: true })}
                     type="number"
                     min="0"
-                    max="50"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${professionalForm.formState.errors.years_experience ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      professionalForm.formState.errors.years_experience ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={professionalForm.formState.errors.years_experience?.message} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Seniority</label>
+                  <select
+                    {...professionalForm.register('seniority')}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      professionalForm.formState.errors.seniority ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select level</option>
+                    <option value="entry">Entry Level</option>
+                    <option value="mid">Mid Level</option>
+                    <option value="senior">Senior</option>
+                    <option value="lead">Lead</option>
+                    <option value="executive">Executive</option>
+                  </select>
+                  <FieldError message={professionalForm.formState.errors.seniority?.message} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Seniority Level</label>
-                <select
-                  {...professionalForm.register('seniority')}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${professionalForm.formState.errors.seniority ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                >
-                  <option value="">Select level</option>
-                  <option value="entry">Entry Level</option>
-                  <option value="mid">Mid Level</option>
-                  <option value="senior">Senior</option>
-                  <option value="lead">Lead</option>
-                  <option value="principal">Principal</option>
-                  <option value="executive">Executive</option>
-                </select>
-                <FieldError message={professionalForm.formState.errors.seniority?.message} />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Tell us about yourself..."
+                />
               </div>
 
-              {/* Skills Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Skills
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Skills</label>
                 <div className="flex gap-2">
                   <input
+                    type="text"
                     value={skillInput}
                     onChange={(e) => setSkillInput(e.target.value)}
-                    onKeyDown={handleSkillKeyDown}
-                    placeholder="Type a skill and press Enter"
-                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addSkill();
+                      }
+                    }}
+                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Add a skill and press Enter"
                   />
                   <button
                     type="button"
                     onClick={addSkill}
-                    className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                   >
                     Add
                   </button>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Add skills relevant to your expertise (e.g., Python, Machine Learning, Data Analysis)
-                </p>
-
-                {/* Skills Tags */}
                 {skills.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     {skills.map((skill, index) => (
                       <span
                         key={index}
@@ -730,8 +703,9 @@ export default function TalentProfilePage() {
                 </label>
                 <select
                   {...educationForm.register('education')}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${educationForm.formState.errors.education ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    educationForm.formState.errors.education ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 >
                   <option value="">Select level</option>
                   <option value="high_school">High School</option>
@@ -747,8 +721,9 @@ export default function TalentProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">University</label>
                 <input
                   {...educationForm.register('university')}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${educationForm.formState.errors.university ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    educationForm.formState.errors.university ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
                 <FieldError message={educationForm.formState.errors.university?.message} />
               </div>
@@ -758,8 +733,9 @@ export default function TalentProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Field of Study</label>
                   <input
                     {...educationForm.register('field_of_study')}
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${educationForm.formState.errors.field_of_study ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      educationForm.formState.errors.field_of_study ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={educationForm.formState.errors.field_of_study?.message} />
                 </div>
@@ -772,8 +748,9 @@ export default function TalentProfilePage() {
                     type="number"
                     min="1950"
                     max="2030"
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${educationForm.formState.errors.graduation_year ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      educationForm.formState.errors.graduation_year ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <FieldError message={educationForm.formState.errors.graduation_year?.message} />
                 </div>
@@ -809,8 +786,9 @@ export default function TalentProfilePage() {
                   {...onlineForm.register('linkedin_url')}
                   type="url"
                   placeholder="https://linkedin.com/in/username"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${onlineForm.formState.errors.linkedin_url ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    onlineForm.formState.errors.linkedin_url ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
                 <FieldError message={onlineForm.formState.errors.linkedin_url?.message} />
               </div>
@@ -821,8 +799,9 @@ export default function TalentProfilePage() {
                   {...onlineForm.register('github_url')}
                   type="url"
                   placeholder="https://github.com/username"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${onlineForm.formState.errors.github_url ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    onlineForm.formState.errors.github_url ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
                 <FieldError message={onlineForm.formState.errors.github_url?.message} />
               </div>
@@ -835,8 +814,9 @@ export default function TalentProfilePage() {
                   {...onlineForm.register('google_scholar_url')}
                   type="url"
                   placeholder="https://scholar.google.com/citations?user=..."
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${onlineForm.formState.errors.google_scholar_url ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    onlineForm.formState.errors.google_scholar_url ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
                 <FieldError message={onlineForm.formState.errors.google_scholar_url?.message} />
               </div>
@@ -847,8 +827,9 @@ export default function TalentProfilePage() {
                   {...onlineForm.register('personal_website')}
                   type="url"
                   placeholder="https://example.com"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${onlineForm.formState.errors.personal_website ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                    onlineForm.formState.errors.personal_website ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
                 <FieldError message={onlineForm.formState.errors.personal_website?.message} />
               </div>
