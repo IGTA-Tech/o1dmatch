@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import { CriteriaBreakdown } from '@/components/talent/CriteriaBreakdown';
 import { DocumentUploader } from '@/components/documents';
@@ -24,6 +23,7 @@ import {
 import Link from 'next/link';
 import { O1Criterion, O1_CRITERIA } from '@/types/enums';
 import { TalentDocument, TalentProfile } from '@/types/models';
+import { getSupabaseAuthData } from '@/lib/supabase/getToken';
 
 export default function EvidencePage() {
   const router = useRouter();
@@ -34,37 +34,71 @@ export default function EvidencePage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [preselectedCriterion, setPreselectedCriterion] = useState<O1Criterion | null>(null);
 
-  const supabase = createClient();
+  // Auth state
+  const [authData, setAuthData] = useState<{ userId: string; accessToken: string } | null>(null);
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   const loadData = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    // Get auth data directly from cookie instead of hanging supabase.auth.getUser()
+    const auth = getSupabaseAuthData();
+    
+    if (!auth?.user) {
       router.push('/login');
       return;
     }
 
-    const { data: talentProfile } = await supabase
-      .from('talent_profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
+    const userId = auth.user.id;
+    const accessToken = auth.access_token;
+    
+    setAuthData({ userId, accessToken });
 
-    if (talentProfile) {
-      setProfile(talentProfile);
+    try {
+      // Fetch talent profile using direct REST API
+      const profileResponse = await fetch(
+        `${supabaseUrl}/rest/v1/talent_profiles?user_id=eq.${userId}&select=*`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': supabaseAnonKey,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      const { data: docs } = await supabase
-        .from('talent_documents')
-        .select('*')
-        .eq('talent_id', talentProfile.id)
-        .order('created_at', { ascending: false });
+      if (profileResponse.ok) {
+        const profiles = await profileResponse.json();
+        if (profiles && profiles[0]) {
+          const talentProfile = profiles[0];
+          setProfile(talentProfile);
 
-      if (docs) {
-        setDocuments(docs);
+          // Fetch documents using direct REST API
+          const docsResponse = await fetch(
+            `${supabaseUrl}/rest/v1/talent_documents?talent_id=eq.${talentProfile.id}&select=*&order=created_at.desc`,
+            {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'apikey': supabaseAnonKey,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+
+          if (docsResponse.ok) {
+            const docs = await docsResponse.json();
+            setDocuments(docs || []);
+          }
+        }
       }
+    } catch (error) {
+      console.error('Error loading data:', error);
     }
 
     setLoading(false);
-  }, [supabase, router]);
+  }, [router, supabaseUrl, supabaseAnonKey]);
 
   useEffect(() => {
     loadData();
@@ -78,16 +112,29 @@ export default function EvidencePage() {
 
   const handleDelete = async (doc: TalentDocument) => {
     if (!confirm('Are you sure you want to delete this document?')) return;
+    if (!authData) return;
 
-    const { error } = await supabase
-      .from('talent_documents')
-      .delete()
-      .eq('id', doc.id);
+    try {
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/talent_documents?id=eq.${doc.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authData.accessToken}`,
+            'apikey': supabaseAnonKey,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-    if (error) {
+      if (!response.ok) {
+        alert('Failed to delete document.');
+      } else {
+        setDocuments(documents.filter((d) => d.id !== doc.id));
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
       alert('Failed to delete document.');
-    } else {
-      setDocuments(documents.filter((d) => d.id !== doc.id));
     }
   };
 
