@@ -34,6 +34,9 @@ export default function EvidencePage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [preselectedCriterion, setPreselectedCriterion] = useState<O1Criterion | null>(null);
 
+  if(profile){
+    console.log(profile);
+  }
   // Auth state
   const [authData, setAuthData] = useState<{ userId: string; accessToken: string } | null>(null);
 
