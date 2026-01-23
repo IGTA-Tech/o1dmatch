@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import { Card, CardContent } from '@/components/ui';
 import {
   FileText,
   Loader2,
@@ -296,51 +296,61 @@ export default function AdminDocumentsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card 
-          className={`cursor-pointer transition-all ${statusFilter === 'all' ? 'ring-2 ring-blue-500' : ''}`}
+        <div 
+          className={`cursor-pointer transition-all rounded-lg ${statusFilter === 'all' ? 'ring-2 ring-blue-500' : ''}`}
           onClick={() => setStatusFilter('all')}
         >
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-            <div className="text-sm text-gray-600">Total Documents</div>
-          </CardContent>
-        </Card>
-        <Card 
-          className={`cursor-pointer transition-all ${statusFilter === 'pending' ? 'ring-2 ring-blue-500' : ''}`}
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+              <div className="text-sm text-gray-600">Total Documents</div>
+            </CardContent>
+          </Card>
+        </div>
+        <div 
+          className={`cursor-pointer transition-all rounded-lg ${statusFilter === 'pending' ? 'ring-2 ring-blue-500' : ''}`}
           onClick={() => setStatusFilter('pending')}
         >
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-500">{stats.pending}</div>
-            <div className="text-sm text-gray-600">Pending</div>
-          </CardContent>
-        </Card>
-        <Card 
-          className={`cursor-pointer transition-all ${statusFilter === 'needs_review' ? 'ring-2 ring-blue-500' : ''}`}
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-gray-500">{stats.pending}</div>
+              <div className="text-sm text-gray-600">Pending</div>
+            </CardContent>
+          </Card>
+        </div>
+        <div 
+          className={`cursor-pointer transition-all rounded-lg ${statusFilter === 'needs_review' ? 'ring-2 ring-blue-500' : ''}`}
           onClick={() => setStatusFilter('needs_review')}
         >
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-500">{stats.needsReview}</div>
-            <div className="text-sm text-gray-600">Needs Review</div>
-          </CardContent>
-        </Card>
-        <Card 
-          className={`cursor-pointer transition-all ${statusFilter === 'verified' ? 'ring-2 ring-blue-500' : ''}`}
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-yellow-500">{stats.needsReview}</div>
+              <div className="text-sm text-gray-600">Needs Review</div>
+            </CardContent>
+          </Card>
+        </div>
+        <div 
+          className={`cursor-pointer transition-all rounded-lg ${statusFilter === 'verified' ? 'ring-2 ring-blue-500' : ''}`}
           onClick={() => setStatusFilter('verified')}
         >
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-500">{stats.verified}</div>
-            <div className="text-sm text-gray-600">Verified</div>
-          </CardContent>
-        </Card>
-        <Card 
-          className={`cursor-pointer transition-all ${statusFilter === 'rejected' ? 'ring-2 ring-blue-500' : ''}`}
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-green-500">{stats.verified}</div>
+              <div className="text-sm text-gray-600">Verified</div>
+            </CardContent>
+          </Card>
+        </div>
+        <div 
+          className={`cursor-pointer transition-all rounded-lg ${statusFilter === 'rejected' ? 'ring-2 ring-blue-500' : ''}`}
           onClick={() => setStatusFilter('rejected')}
         >
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-red-500">{stats.rejected}</div>
-            <div className="text-sm text-gray-600">Rejected</div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-red-500">{stats.rejected}</div>
+              <div className="text-sm text-gray-600">Rejected</div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Filters */}
@@ -387,7 +397,7 @@ export default function AdminDocumentsPage() {
           </Card>
         ) : (
           filteredDocuments.map((doc) => (
-            <Card key={doc.id} className="overflow-hidden">
+            <Card key={doc.id}>
               {/* Main Row */}
               <div 
                 className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
