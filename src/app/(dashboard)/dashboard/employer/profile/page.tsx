@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import {
@@ -330,6 +330,60 @@ export default function EmployerProfilePage() {
     watch('understands_o1_usage') &&
     watch('agrees_to_terms');
 
+  // Map field names to their respective tabs
+  const fieldToTab: Record<string, TabKey> = {
+    company_name: 'company',
+    legal_name: 'company',
+    dba_name: 'company',
+    company_website: 'company',
+    industry: 'company',
+    company_size: 'company',
+    year_founded: 'company',
+    company_description: 'company',
+    street_address: 'address',
+    city: 'address',
+    state: 'address',
+    zip_code: 'address',
+    country: 'address',
+    signatory_name: 'signatory',
+    signatory_title: 'signatory',
+    signatory_email: 'signatory',
+    signatory_phone: 'signatory',
+    is_authorized_signatory: 'signatory',
+    understands_o1_usage: 'signatory',
+    agrees_to_terms: 'signatory',
+  };
+
+  // Handle validation errors - switch to the tab with errors and show message
+  const onInvalid = (fieldErrors: FieldErrors<EmployerProfileFormData>) => {
+    const errorFields = Object.keys(fieldErrors);
+    
+    if (errorFields.length > 0) {
+      // Find the first tab with errors
+      const firstErrorField = errorFields[0];
+      const targetTab = fieldToTab[firstErrorField];
+      
+      if (targetTab && targetTab !== activeTab) {
+        setActiveTab(targetTab);
+      }
+      
+      // Build error message
+      const errorMessages: string[] = [];
+      errorFields.forEach((field) => {
+        const error = fieldErrors[field as keyof EmployerProfileFormData];
+        if (error?.message) {
+          errorMessages.push(error.message);
+        }
+      });
+      
+      const tabName = targetTab ? TABS.find(t => t.key === targetTab)?.label : 'form';
+      setMessage({ 
+        type: 'error', 
+        text: `Please fix the errors in the ${tabName} tab: ${errorMessages.join(', ')}` 
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -392,25 +446,38 @@ export default function EmployerProfilePage() {
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <div className="flex gap-8">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 pb-3 px-1 border-b-2 transition-colors ${
-                activeTab === tab.key
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+          {TABS.map((tab) => {
+            // Check if this tab has any errors
+            const tabHasErrors = Object.keys(errors).some(
+              (field) => fieldToTab[field] === tab.key
+            );
+            
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 pb-3 px-1 border-b-2 transition-colors ${
+                  activeTab === tab.key
+                    ? 'border-blue-600 text-blue-600'
+                    : tabHasErrors
+                    ? 'border-transparent text-red-500 hover:text-red-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+                {tabHasErrors && (
+                  <span className="w-2 h-2 bg-red-500 rounded-full" title="Has errors" />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit(handleSave)}>
+      <form onSubmit={handleSubmit(handleSave, onInvalid)}>
         {/* Company Info Tab */}
         {activeTab === 'company' && (
           <Card>

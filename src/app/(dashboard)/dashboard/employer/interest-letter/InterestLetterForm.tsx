@@ -241,7 +241,7 @@ export function InterestLetterForm({
             doc.setFont('helvetica', 'normal');
             const bulletMargin = margin + 5;
             const bulletWidth = contentWidth - 5;
-            doc.text('○', margin, yPos);
+            doc.text('-', margin, yPos);
             const lines = doc.splitTextToSize(text, bulletWidth);
             doc.text(lines, bulletMargin, yPos);
             yPos += (lines.length * fontSize * 0.4) + 3;
@@ -368,13 +368,13 @@ export function InterestLetterForm({
         addText('AUTHORIZED SIGNATURE', 12, true);
         yPos += 5;
         
-        addText('● Employer Signature: _________________________________');
+        addText('- Employer Signature: _________________________________');
         yPos += 5;
-        addText(`● Printed Name: ${fullEmployerProfile?.signatory_name || 'N/A'}`);
+        addText(`- Printed Name: ${fullEmployerProfile?.signatory_name || 'N/A'}`);
         yPos += 5;
-        addText(`● Title: ${fullEmployerProfile?.signatory_title || 'N/A'}`);
+        addText(`- Title: ${fullEmployerProfile?.signatory_title || jobTitle || 'N/A'}`);
         yPos += 5;
-        addText(`● Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`);
+        addText(`- Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`);
         yPos += 5;
 
         addLine(1);
