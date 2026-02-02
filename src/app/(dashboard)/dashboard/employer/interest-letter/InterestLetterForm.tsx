@@ -58,6 +58,13 @@ interface InterestLetterFormProps {
 
 type CommitmentLevel = 'exploratory_interest' | 'intent_to_engage' | 'conditional_offer' | 'firm_commitment' | 'offer_extended';
 
+// Helper function to get date string for N days from now
+const getDateFromNow = (days: number): string => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date.toISOString().split('T')[0];
+};
+
 export function InterestLetterForm({
     employerProfile,
     talent,
@@ -96,8 +103,8 @@ export function InterestLetterForm({
     // New fields for PDF generation
     const [requiredSkills, setRequiredSkills] = useState('');
     const [useTextStartDate, setUseTextStartDate] = useState(true);
-    const [startDate, setStartDate] = useState<string>('');
-    const [endDate, setEndDate] = useState<string>('');
+    const [startDate, setStartDate] = useState<string>(getDateFromNow(2));
+    const [endDate, setEndDate] = useState<string>(getDateFromNow(2 + 365 * 3)); // 3 years from start
     const [generatingPdf, setGeneratingPdf] = useState(false);
 
     // Load full employer profile on mount for PDF generation

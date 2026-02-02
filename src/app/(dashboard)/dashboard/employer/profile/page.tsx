@@ -43,6 +43,7 @@ export default function EmployerProfilePage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load profile on mount using REST API
@@ -160,6 +161,7 @@ export default function EmployerProfilePage() {
       }
       
       setLogoFile(file);
+      setLogoError(null); // Clear logo error when file is selected
       setMessage(null);
       
       // Create preview
@@ -234,8 +236,36 @@ export default function EmployerProfilePage() {
   const handleSave = async (data: EmployerProfileFormData) => {
     if (!profile) return;
   
-    setSaving(true);
+    // Clear previous errors
+    setLogoError(null);
     setMessage(null);
+
+    // Custom validation for required fields not in schema
+    const validationErrors: string[] = [];
+    
+    // Check for company logo (either existing or new file selected)
+    if (!logoPreview && !logoFile && !profile.company_logo_url) {
+      setLogoError('Company logo is required');
+      validationErrors.push('Company logo is required');
+    }
+
+    // Check for signatory title
+    if (!data.signatory_title?.trim()) {
+      validationErrors.push('Signatory title is required');
+    }
+
+    if (validationErrors.length > 0) {
+      // Determine which tab to switch to
+      if (!logoPreview && !logoFile && !profile.company_logo_url) {
+        setActiveTab('company');
+      } else if (!data.signatory_title?.trim()) {
+        setActiveTab('signatory');
+      }
+      setMessage({ type: 'error', text: `Please fix the following errors: ${validationErrors.join(', ')}` });
+      return;
+    }
+
+    setSaving(true);
   
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -258,7 +288,7 @@ export default function EmployerProfilePage() {
       // Clean data
       const cleanedData: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(data)) {
-        if (value === '' && !['company_name', 'signatory_name', 'signatory_email'].includes(key)) {
+        if (value === '' && !['company_name', 'signatory_name', 'signatory_email', 'signatory_title'].includes(key)) {
           cleanedData[key] = null;
         } else {
           cleanedData[key] = value;
@@ -326,12 +356,15 @@ export default function EmployerProfilePage() {
     watch('company_name') &&
     watch('signatory_name') &&
     watch('signatory_email') &&
+    watch('signatory_title') &&
     watch('is_authorized_signatory') &&
     watch('understands_o1_usage') &&
-    watch('agrees_to_terms');
+    watch('agrees_to_terms') &&
+    (logoPreview || profile?.company_logo_url);
 
   // Map field names to their respective tabs
   const fieldToTab: Record<string, TabKey> = {
+    company_logo: 'company',
     company_name: 'company',
     legal_name: 'company',
     dba_name: 'company',
@@ -447,10 +480,11 @@ export default function EmployerProfilePage() {
       <div className="border-b border-gray-200">
         <div className="flex gap-8">
           {TABS.map((tab) => {
-            // Check if this tab has any errors
-            const tabHasErrors = Object.keys(errors).some(
+            // Check if this tab has any errors (including custom logoError for company tab)
+            const formErrors = Object.keys(errors).some(
               (field) => fieldToTab[field] === tab.key
             );
+            const tabHasErrors = formErrors || (tab.key === 'company' && !!logoError);
             
             return (
               <button
@@ -488,7 +522,7 @@ export default function EmployerProfilePage() {
               {/* Company Logo Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Logo
+                  Company Logo *
                 </label>
                 <div className="flex items-start gap-6">
                   {/* Logo Preview */}
@@ -509,8 +543,8 @@ export default function EmployerProfilePage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
-                        <ImageIcon className="w-10 h-10 text-gray-400" />
+                      <div className={`w-32 h-32 border-2 border-dashed rounded-lg flex items-center justify-center bg-gray-50 ${logoError ? 'border-red-400' : 'border-gray-300'}`}>
+                        <ImageIcon className={`w-10 h-10 ${logoError ? 'text-red-400' : 'text-gray-400'}`} />
                       </div>
                     )}
                   </div>
@@ -527,16 +561,19 @@ export default function EmployerProfilePage() {
                     />
                     <label
                       htmlFor="logo-upload"
-                      className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                      className={`inline-flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${logoError ? 'border-red-400 text-red-600' : 'border-gray-300'}`}
                     >
-                      <Upload className="w-4 h-4 text-gray-600" />
-                      <span className="text-sm text-gray-700">
+                      <Upload className={`w-4 h-4 ${logoError ? 'text-red-600' : 'text-gray-600'}`} />
+                      <span className={`text-sm ${logoError ? 'text-red-600' : 'text-gray-700'}`}>
                         {logoPreview ? 'Change Logo' : 'Upload Logo'}
                       </span>
                     </label>
                     <p className="mt-2 text-xs text-gray-500">
                       PNG, JPG, or GIF. Max 5MB. Recommended: 200x200px or larger.
                     </p>
+                    {logoError && (
+                      <p className="mt-1 text-sm text-red-600">{logoError}</p>
+                    )}
                     {uploadingLogo && (
                       <p className="mt-2 text-sm text-blue-600 flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -759,13 +796,16 @@ export default function EmployerProfilePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Title
+                    Title *
                   </label>
                   <input
                     {...register('signatory_title')}
                     placeholder="e.g., CEO, Director of HR"
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
+                  {errors.signatory_title && (
+                    <p className="mt-1 text-sm text-red-600">{errors.signatory_title.message}</p>
+                  )}
                 </div>
               </div>
 
