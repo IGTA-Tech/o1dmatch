@@ -12,6 +12,7 @@ import {
   FileSignature,
   Send,
   Filter,
+  FileDown,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -31,6 +32,8 @@ interface LetterWithRelations {
   forwarded_to_employer_at: string | null;
   created_at: string;
   admin_reviewed_at: string | null;
+  generated_pdf_url: string | null;
+  pdf_url: string | null;
   employer: { id: string; company_name: string } | null;
   talent: { id: string; first_name: string; last_name: string } | null;
 }
@@ -47,7 +50,7 @@ export default async function AdminLettersPage({ searchParams }: PageProps) {
     redirect('/login');
   }
 
-  // Build query
+  // Build query - added generated_pdf_url and pdf_url
   let query = supabase
     .from('interest_letters')
     .select(`
@@ -61,6 +64,8 @@ export default async function AdminLettersPage({ searchParams }: PageProps) {
       forwarded_to_employer_at,
       created_at,
       admin_reviewed_at,
+      generated_pdf_url,
+      pdf_url,
       employer:employer_profiles(id, company_name),
       talent:talent_profiles(id, first_name, last_name)
     `)
@@ -77,7 +82,7 @@ export default async function AdminLettersPage({ searchParams }: PageProps) {
   }
 
   const { data, error } = await query;
-  
+
   // Cast to proper type
   const letters = data as unknown as LetterWithRelations[] | null;
 
@@ -143,7 +148,7 @@ export default async function AdminLettersPage({ searchParams }: PageProps) {
     if (signatureStatus === 'admin_reviewing') {
       return <FileSignature className="w-5 h-5 text-purple-500" />;
     }
-    
+
     switch (adminStatus) {
       case 'pending_review':
         return <Clock className="w-4 h-4 text-yellow-500" />;
@@ -172,7 +177,7 @@ export default async function AdminLettersPage({ searchParams }: PageProps) {
           <h1 className="text-2xl font-bold text-gray-900">Letter Management</h1>
           <p className="text-gray-600 mt-1">Review and manage interest letters</p>
         </div>
-        
+
         {/* Alert for pending signature reviews */}
         {(awaitingSignatureReviewCount || 0) > 0 && (
           <Link
@@ -199,21 +204,19 @@ export default async function AdminLettersPage({ searchParams }: PageProps) {
             </Link>
           )}
         </div>
-        
+
         <div className="flex flex-wrap gap-2">
           {/* All Letters */}
           <Link
             href="/dashboard/admin/letters"
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              !status && !signature
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${!status && !signature
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-            }`}
+              }`}
           >
             All
-            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${
-              !status && !signature ? 'bg-white/20' : 'bg-gray-100'
-            }`}>
+            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${!status && !signature ? 'bg-white/20' : 'bg-gray-100'
+              }`}>
               {allCount || 0}
             </span>
           </Link>
@@ -224,51 +227,45 @@ export default async function AdminLettersPage({ searchParams }: PageProps) {
           {/* Letter Status Filters - Each resets to filter ALL records */}
           <Link
             href="/dashboard/admin/letters?status=pending_review"
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              status === 'pending_review' && !signature
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${status === 'pending_review' && !signature
                 ? 'bg-yellow-500 text-white'
                 : 'bg-white text-yellow-700 hover:bg-yellow-50 border border-yellow-200'
-            }`}
+              }`}
           >
             <Clock className="w-3.5 h-3.5 inline mr-1" />
             Pending
-            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${
-              status === 'pending_review' && !signature ? 'bg-white/20' : 'bg-yellow-100'
-            }`}>
+            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${status === 'pending_review' && !signature ? 'bg-white/20' : 'bg-yellow-100'
+              }`}>
               {pendingCount || 0}
             </span>
           </Link>
 
           <Link
             href="/dashboard/admin/letters?status=approved"
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              status === 'approved' && !signature
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${status === 'approved' && !signature
                 ? 'bg-green-600 text-white'
                 : 'bg-white text-green-700 hover:bg-green-50 border border-green-200'
-            }`}
+              }`}
           >
             <CheckCircle className="w-3.5 h-3.5 inline mr-1" />
             Approved
-            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${
-              status === 'approved' && !signature ? 'bg-white/20' : 'bg-green-100'
-            }`}>
+            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${status === 'approved' && !signature ? 'bg-white/20' : 'bg-green-100'
+              }`}>
               {approvedCount || 0}
             </span>
           </Link>
 
           <Link
             href="/dashboard/admin/letters?status=rejected"
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              status === 'rejected' && !signature
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${status === 'rejected' && !signature
                 ? 'bg-red-600 text-white'
                 : 'bg-white text-red-700 hover:bg-red-50 border border-red-200'
-            }`}
+              }`}
           >
             <XCircle className="w-3.5 h-3.5 inline mr-1" />
             Rejected
-            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${
-              status === 'rejected' && !signature ? 'bg-white/20' : 'bg-red-100'
-            }`}>
+            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${status === 'rejected' && !signature ? 'bg-white/20' : 'bg-red-100'
+              }`}>
               {rejectedCount || 0}
             </span>
           </Link>
@@ -279,34 +276,30 @@ export default async function AdminLettersPage({ searchParams }: PageProps) {
           {/* Signature Status Filters - Each resets to filter ALL records */}
           <Link
             href="/dashboard/admin/letters?signature=admin_reviewing"
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              signature === 'admin_reviewing' && !status
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${signature === 'admin_reviewing' && !status
                 ? 'bg-purple-600 text-white'
                 : 'bg-white text-purple-700 hover:bg-purple-50 border border-purple-200'
-            }`}
+              }`}
           >
             <FileSignature className="w-3.5 h-3.5 inline mr-1" />
             Awaiting Signature Review
-            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${
-              signature === 'admin_reviewing' && !status ? 'bg-white/20' : 'bg-purple-100'
-            }`}>
+            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${signature === 'admin_reviewing' && !status ? 'bg-white/20' : 'bg-purple-100'
+              }`}>
               {awaitingSignatureReviewCount || 0}
             </span>
           </Link>
 
           <Link
             href="/dashboard/admin/letters?signature=forwarded_to_employer"
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              signature === 'forwarded_to_employer' && !status
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${signature === 'forwarded_to_employer' && !status
                 ? 'bg-teal-600 text-white'
                 : 'bg-white text-teal-700 hover:bg-teal-50 border border-teal-200'
-            }`}
+              }`}
           >
             <Send className="w-3.5 h-3.5 inline mr-1" />
             Forwarded
-            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${
-              signature === 'forwarded_to_employer' && !status ? 'bg-white/20' : 'bg-teal-100'
-            }`}>
+            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs ${signature === 'forwarded_to_employer' && !status ? 'bg-white/20' : 'bg-teal-100'
+              }`}>
               {signatureForwardedCount || 0}
             </span>
           </Link>
@@ -321,17 +314,21 @@ export default async function AdminLettersPage({ searchParams }: PageProps) {
               {letters.map((letter) => (
                 <div
                   key={letter.id}
-                  className={`py-4 -mx-4 px-4 first:-mt-4 last:-mb-4 transition-colors ${
-                    letter.signature_status === 'admin_reviewing'
+                  className={`py-4 -mx-4 px-4 first:-mt-4 last:-mb-4 transition-colors ${letter.signature_status === 'admin_reviewing'
                       ? 'bg-purple-50 hover:bg-purple-100'
                       : 'hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       {getStatusIcon(letter.admin_status || 'pending_review', letter.signature_status)}
                       <div>
-                        <h4 className="font-medium text-gray-900">{letter.job_title}</h4>
+                        <Link
+                          href={`/dashboard/admin/letters/${letter.id}`}
+                          className="font-medium text-gray-900 hover:text-blue-600 hover:underline transition-colors"
+                        >
+                          {letter.job_title}
+                        </Link>
                         <p className="text-sm text-gray-600">
                           {letter.employer?.company_name || 'Unknown Company'} → {letter.talent?.first_name} {letter.talent?.last_name}
                         </p>
@@ -362,7 +359,35 @@ export default async function AdminLettersPage({ searchParams }: PageProps) {
                         {getStatusBadge(letter.admin_status || 'pending_review')}
                         {getSignatureStatusBadge(letter.signature_status)}
                       </div>
-                      
+
+                      {/* Generated PDF Button */}
+                      {letter.generated_pdf_url && (
+                        <a
+                          href={letter.generated_pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                          title="View Generated Agreement PDF"
+                        >
+                          <FileDown className="w-4 h-4" />
+                          USCIS PDF
+                        </a>
+                      )}
+
+                      {/* Attachment PDF Button (if different from generated) */}
+                      {letter.pdf_url && letter.pdf_url !== letter.generated_pdf_url && (
+                        <a
+                          href={letter.pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors"
+                          title="View Attachment"
+                        >
+                          <FileText className="w-4 h-4" />
+                          Attach
+                        </a>
+                      )}
+
                       {letter.signature_status === 'admin_reviewing' ? (
                         <Link
                           href={`/dashboard/admin/letters/${letter.id}`}

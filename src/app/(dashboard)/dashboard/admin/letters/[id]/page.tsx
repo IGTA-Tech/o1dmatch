@@ -18,7 +18,7 @@ import {
   Send,
   Download,
   Paperclip,
-  ExternalLink,
+  FileDown,
 } from 'lucide-react';
 import Link from 'next/link';
 import { AdminReviewActions } from './AdminReviewActions';
@@ -256,6 +256,44 @@ export default async function AdminLetterDetailPage({
         <AdminReviewActions letterId={letter.id} />
       )}
 
+      {/* Generated Agreement PDF - Download Section */}
+      {letter.generated_pdf_url && (
+        <Card className="border-teal-200 bg-teal-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-teal-800">
+              <FileDown className="w-5 h-5" />
+              Generated Agreement PDF
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-white rounded-lg border border-teal-200">
+                  <FileText className="w-8 h-8 text-teal-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {getFilenameFromUrl(letter.generated_pdf_url)}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Auto-generated Multiple Employer Agreement
+                  </p>
+                </div>
+              </div>
+              <a
+                href={letter.generated_pdf_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Employer Attached Letter - Download Section */}
       {letter.pdf_url && (
         <Card className="border-blue-200 bg-blue-50">
@@ -280,25 +318,15 @@ export default async function AdminLetterDetailPage({
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <a
-                  href={letter.pdf_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-100 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  View
-                </a>
-                <a
-                  href={letter.pdf_url}
-                  download
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  Download
-                </a>
-              </div>
+              <a
+                href={letter.pdf_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </a>
             </div>
           </CardContent>
         </Card>
@@ -574,6 +602,12 @@ export default async function AdminLetterDetailPage({
             <p className="text-sm text-gray-500 mb-1">Job Duties & Responsibilities</p>
             <p className="text-gray-900 whitespace-pre-wrap">{letter.duties_description}</p>
           </div>
+          {letter.required_skills && (
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Required Skills</p>
+              <p className="text-gray-900 whitespace-pre-wrap">{letter.required_skills}</p>
+            </div>
+          )}
           <div>
             <p className="text-sm text-gray-500 mb-1">Why O-1 Visa is Required</p>
             <p className="text-gray-900 whitespace-pre-wrap">{letter.why_o1_required}</p>

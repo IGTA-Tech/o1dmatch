@@ -38,7 +38,7 @@ interface Article {
 }
 
 export default async function BlogPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: articles, error } = await supabase
     .from('articles')

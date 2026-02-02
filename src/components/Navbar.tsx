@@ -9,6 +9,8 @@ import {
   ChevronDown,
   Users,
   Building2,
+  BookOpen,
+  User,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
@@ -30,16 +32,21 @@ export default function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+  const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const waitlistRef = useRef<HTMLDivElement>(null);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (waitlistRef.current && !waitlistRef.current.contains(event.target as Node)) {
         setIsWaitlistOpen(false);
+      }
+      if (dashboardRef.current && !dashboardRef.current.contains(event.target as Node)) {
+        setIsDashboardOpen(false);
       }
     };
 
@@ -118,6 +125,23 @@ export default function Navbar() {
     }
   };
 
+  const getProfileLink = () => {
+    switch (userRole) {
+      case 'talent':
+        return '/dashboard/talent/profile';
+      case 'employer':
+        return '/dashboard/employer/profile';
+      case 'agency':
+        return '/dashboard/agency/profile';
+      case 'lawyer':
+        return '/dashboard/lawyer/profile';
+      case 'admin':
+        return '/dashboard/admin/settings';
+      default:
+        return null;
+    }
+  };
+
   const loginHref = isDemoMode ? '/demo' : '/login';
   const signupHref = isDemoMode ? '/demo' : '/signup';
 
@@ -125,6 +149,8 @@ export default function Navbar() {
 
   // Show logged-in state if we have a user, even if role is still loading
   const isLoggedIn = !!user;
+
+  const profileLink = getProfileLink();
 
   return (
     <header className={`fixed ${isDemoMode ? 'top-10' : 'top-0'} left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50`}>
@@ -156,6 +182,15 @@ export default function Navbar() {
               className={`py-2 hover:text-gray-900 ${pathname === "/pricing" ? "text-blue-600" : "text-gray-600"}`}
             >
               Pricing
+            </Link>
+
+            {/* Blog Link */}
+            <Link
+              href="/blog"
+              className={`flex items-center gap-1 py-2 hover:text-gray-900 ${pathname.startsWith("/blog") ? "text-blue-600" : "text-gray-600"}`}
+            >
+              <BookOpen className="w-4 h-4" />
+              Blog
             </Link>
 
             {/* Waitlist Dropdown */}
@@ -199,15 +234,44 @@ export default function Navbar() {
               </div>
             ) : isLoggedIn ? (
               <>
-                <Link
-                  href={getDashboardLink()}
-                  className={`flex items-center gap-1 py-2 hover:text-gray-900 ${pathname.startsWith("/dashboard") ? "text-blue-600" : "text-gray-600"}`}
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
-                </Link>
-                {/* Use SignOutButton component */}
-                <SignOutButton variant="header" />
+                {/* Dashboard Dropdown */}
+                <div className="relative" ref={dashboardRef}>
+                  <button
+                    onClick={() => setIsDashboardOpen(!isDashboardOpen)}
+                    className={`flex items-center gap-1 py-2 hover:text-gray-900 ${pathname.startsWith("/dashboard") ? "text-blue-600" : "text-gray-600"}`}
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                    <ChevronDown className={`w-4 h-4 transition-transform ${isDashboardOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isDashboardOpen && (
+                    <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                      <Link
+                        href={getDashboardLink()}
+                        onClick={() => setIsDashboardOpen(false)}
+                        className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === getDashboardLink() ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        Dashboard
+                      </Link>
+                      {profileLink && (
+                        <Link
+                          href={profileLink}
+                          onClick={() => setIsDashboardOpen(false)}
+                          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === profileLink ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                        >
+                          <User className="w-4 h-4" />
+                          Profile
+                        </Link>
+                      )}
+                      <div className="border-t border-gray-100 my-1" />
+                      <div className="px-4 py-2">
+                        <SignOutButton variant="menu" />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -267,6 +331,14 @@ export default function Navbar() {
                 Pricing
               </Link>
               <Link
+                href="/blog"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <BookOpen className="w-4 h-4" />
+                Blog
+              </Link>
+              <Link
                 href="/lawyers"
                 className="text-gray-600 hover:text-gray-900 py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -310,6 +382,16 @@ export default function Navbar() {
                     <LayoutDashboard className="w-4 h-4" />
                     Dashboard
                   </Link>
+                  {profileLink && (
+                    <Link
+                      href={profileLink}
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <User className="w-4 h-4" />
+                      Profile
+                    </Link>
+                  )}
                   {/* Use SignOutButton component for mobile */}
                   <SignOutButton variant="menu" />
                 </div>

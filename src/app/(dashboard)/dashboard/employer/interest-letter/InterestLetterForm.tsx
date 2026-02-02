@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
@@ -14,8 +14,29 @@ import {
     Building2,
     FileText,
     Save,
+    Calendar,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getSupabaseToken } from '@/lib/supabase/getToken';
+import { jsPDF } from 'jspdf';
+
+// Full employer profile interface for PDF generation
+interface EmployerProfileFull {
+    id: string;
+    user_id: string;
+    company_name: string;
+    legal_name: string | null;
+    company_logo_url: string | null;
+    street_address: string | null;
+    city: string | null;
+    state: string | null;
+    zip_code: string | null;
+    country: string;
+    signatory_name: string;
+    signatory_title: string | null;
+    signatory_email: string;
+    signatory_phone: string | null;
+}
 
 interface InterestLetterFormProps {
     employerProfile: {
@@ -51,6 +72,9 @@ export function InterestLetterForm({
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
+    // Full employer profile for PDF generation
+    const [fullEmployerProfile, setFullEmployerProfile] = useState<EmployerProfileFull | null>(null);
+
     // Form state
     const [selectedJob, setSelectedJob] = useState(preselectedJobId || '');
     const [jobTitle, setJobTitle] = useState('');
@@ -68,11 +92,59 @@ export function InterestLetterForm({
     const [letterContent, setLetterContent] = useState('');
     const [attachment, setAttachment] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
+    
+    // New fields for PDF generation
+    const [requiredSkills, setRequiredSkills] = useState('');
+    const [useTextStartDate, setUseTextStartDate] = useState(true);
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
+    const [generatingPdf, setGeneratingPdf] = useState(false);
+
+    // Load full employer profile on mount for PDF generation
+    useEffect(() => {
+        async function loadFullEmployerProfile() {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+            const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+            const accessToken = getSupabaseToken();
+
+            if (!accessToken) return;
+
+            try {
+                const response = await fetch(
+                    `${supabaseUrl}/rest/v1/employer_profiles?id=eq.${employerProfile.id}&select=*`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'apikey': anonKey,
+                        },
+                    }
+                );
+
+                if (response.ok) {
+                    const profiles = await response.json();
+                    if (profiles && profiles.length > 0) {
+                        setFullEmployerProfile(profiles[0]);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading employer profile:', error);
+            }
+        }
+
+        loadFullEmployerProfile();
+    }, [employerProfile.id]);
+
+    // Auto-calculate end date (3 years from start) when using date picker
+    useEffect(() => {
+        if (startDate && !useTextStartDate) {
+            const start = new Date(startDate);
+            const end = new Date(start);
+            end.setFullYear(end.getFullYear() + 3);
+            setEndDate(end.toISOString().split('T')[0]);
+        }
+    }, [startDate, useTextStartDate]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // Change default from 'hybrid' to valid value and 'full_time'
-        // const [workArrangement, setWorkArrangement] = useState('hybrid'); // This is correct
-        // const [engagementType, setEngagementType] = useState('full_time'); // This is correct
         const file = e.target.files?.[0];
         if (file) {
             if (file.size > 10 * 1024 * 1024) {
@@ -97,11 +169,260 @@ export function InterestLetterForm({
             setError('Job duties description is required');
             return false;
         }
+        if (!requiredSkills.trim()) {
+            setError('Required skills is required');
+            return false;
+        }
+        if (!salaryMin && !salaryMax) {
+            setError('At least one salary field (min or max) is required');
+            return false;
+        }
         if (!whyO1Required.trim()) {
             setError('Please explain why O-1 talent is required');
             return false;
         }
+        if (!useTextStartDate && !startDate) {
+            setError('Start date is required');
+            return false;
+        }
+        if (useTextStartDate && !startTiming.trim()) {
+            setError('Start timing is required');
+            return false;
+        }
         return true;
+    };
+
+    // Format date for PDF display
+    const formatDateForPdf = (dateStr: string | null): string => {
+        if (!dateStr) return 'Upon visa approval';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    };
+
+    // Generate salary range string for PDF
+    const formatSalaryRange = (): string => {
+        if (salaryMin && salaryMax) {
+            return `$${Number(salaryMin).toLocaleString()} - $${Number(salaryMax).toLocaleString()} per year`;
+        } else if (salaryMin) {
+            return `$${Number(salaryMin).toLocaleString()}+ per year`;
+        } else if (salaryMax) {
+            return `Up to $${Number(salaryMax).toLocaleString()} per year`;
+        }
+        return 'Competitive compensation';
+    };
+
+    // Generate PDF document
+    const generatePDF = async (): Promise<Blob> => {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 20;
+        const contentWidth = pageWidth - (margin * 2);
+        let yPos = 20;
+
+        // Helper: draw horizontal line
+        const addLine = (thickness: number = 0.5) => {
+            doc.setLineWidth(thickness);
+            doc.line(margin, yPos, pageWidth - margin, yPos);
+            yPos += 5;
+        };
+
+        // Helper: add text with word wrap
+        const addText = (text: string, fontSize: number = 10, isBold: boolean = false) => {
+            doc.setFontSize(fontSize);
+            doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+            const lines = doc.splitTextToSize(text, contentWidth);
+            doc.text(lines, margin, yPos);
+            yPos += (lines.length * fontSize * 0.4) + 2;
+        };
+
+        // Helper: add bullet point
+        const addBulletPoint = (text: string, fontSize: number = 10) => {
+            doc.setFontSize(fontSize);
+            doc.setFont('helvetica', 'normal');
+            const bulletMargin = margin + 5;
+            const bulletWidth = contentWidth - 5;
+            doc.text('○', margin, yPos);
+            const lines = doc.splitTextToSize(text, bulletWidth);
+            doc.text(lines, bulletMargin, yPos);
+            yPos += (lines.length * fontSize * 0.4) + 3;
+        };
+
+        // Helper: check page break
+        const checkPageBreak = (neededSpace: number = 30) => {
+            if (yPos > doc.internal.pageSize.getHeight() - neededSpace) {
+                doc.addPage();
+                yPos = 20;
+            }
+        };
+
+        // Try to add company logo
+        if (fullEmployerProfile?.company_logo_url) {
+            try {
+                const logoResponse = await fetch(fullEmployerProfile.company_logo_url);
+                const logoBlob = await logoResponse.blob();
+                const logoBase64 = await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(logoBlob);
+                });
+                doc.addImage(logoBase64, 'PNG', margin, yPos, 40, 40);
+                yPos += 45;
+            } catch (e) {
+                console.log('Could not load logo for PDF:', e);
+            }
+        }
+
+        // Header line
+        addLine(1);
+
+        // Title
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('MULTIPLE EMPLOYER AGREEMENT FOR P-1/O-1 VISA BENEFICIARY', margin, yPos);
+        yPos += 10;
+
+        // Intro text
+        addText('This Agreement ("Agreement") is made between the Employer(s) identified below and the Petitioner, who will act on behalf of the visa beneficiary named below.');
+        yPos += 5;
+
+        addLine(1);
+
+        // Section 1: Employer Information
+        checkPageBreak();
+        addText('1. EMPLOYER INFORMATION', 12, true);
+        yPos += 2;
+        addBulletPoint(`Name of Employer: ${fullEmployerProfile?.signatory_name || 'N/A'}`);
+        addBulletPoint(`Organization Name: ${fullEmployerProfile?.company_name || employerProfile.company_name}`);
+        
+        const address = [
+            fullEmployerProfile?.street_address,
+            fullEmployerProfile?.city,
+            fullEmployerProfile?.state,
+            fullEmployerProfile?.zip_code,
+            fullEmployerProfile?.country
+        ].filter(Boolean).join(', ');
+        addBulletPoint(`Contact Information: ${address || 'N/A'}`);
+        addBulletPoint(`Phone: ${fullEmployerProfile?.signatory_phone || 'N/A'}`);
+        addBulletPoint(`Email: ${fullEmployerProfile?.signatory_email || 'N/A'}`);
+        yPos += 5;
+
+        // Section 2: Beneficiary Information
+        checkPageBreak();
+        addText('2. BENEFICIARY INFORMATION', 12, true);
+        yPos += 2;
+        addBulletPoint(`Full Name of Beneficiary: ${talent.name}`);
+        yPos += 5;
+
+        // Section 3: Duration of Activities
+        checkPageBreak();
+        addText('3. DURATION OF ACTIVITIES', 12, true);
+        yPos += 2;
+        const startDateStr = useTextStartDate ? (startTiming || 'Upon visa approval') : formatDateForPdf(startDate);
+        const endDateStr = useTextStartDate ? 'Up to three years from visa approval' : formatDateForPdf(endDate);
+        addBulletPoint(`Dates of Activities: From ${startDateStr} to ${endDateStr}`);
+        yPos += 2;
+        addText('   If no specific date is listed, it is understood that the beneficiary\'s activities will commence on the date of visa approval and extend up to three years from that date.', 9);
+        yPos += 5;
+
+        // Section 4: Description of Authorized Activities
+        checkPageBreak();
+        addText('4. DESCRIPTION OF AUTHORIZED ACTIVITIES', 12, true);
+        yPos += 2;
+        addText(`Position: ${jobTitle}`, 10, true);
+        yPos += 3;
+        addText('Job Duties:', 10, true);
+        addText(dutiesDescription);
+        yPos += 3;
+        addText('Required Skills:', 10, true);
+        addText(requiredSkills);
+        yPos += 3;
+        addText(`Compensation: ${formatSalaryRange()}`, 10, true);
+        yPos += 5;
+
+        // Section 5: Authorization for Service of Process
+        checkPageBreak();
+        addText('5. AUTHORIZATION FOR SERVICE OF PROCESS', 12, true);
+        yPos += 2;
+        addBulletPoint('The Employer grants permission for the Petitioner to act as the agent for the beneficiary and to receive service of process on behalf of the beneficiary and all involved Employers related to this petition.');
+        yPos += 5;
+
+        // Section 6: Agent-Based Petition Filing
+        checkPageBreak();
+        addText('6. AGENT-BASED PETITION FILING', 12, true);
+        yPos += 2;
+        addBulletPoint('The Employer authorizes the Petitioner to file the visa petition on behalf of the beneficiary, including the representation of all involved Employers for purposes of this agent-based petition.');
+        yPos += 5;
+
+        // Section 7: Additional Provisions
+        checkPageBreak();
+        addText('7. ADDITIONAL PROVISIONS', 12, true);
+        yPos += 2;
+        addBulletPoint('Responsibility for Compliance: The Employer agrees to comply with all applicable U.S. immigration laws and regulations concerning the employment of the beneficiary.');
+        addBulletPoint('Notification of Changes: The Employer agrees to promptly inform the Petitioner of any changes to the beneficiary\'s employment status or any changes that may impact the beneficiary\'s visa status.');
+        addBulletPoint('Liability and Indemnification: The Employer agrees to indemnify and hold harmless the Petitioner for any legal claims or liabilities arising from the beneficiary\'s activities under this visa.');
+        yPos += 5;
+
+        // Signature Section
+        checkPageBreak(60);
+        addLine(1);
+        addText('AUTHORIZED SIGNATURE', 12, true);
+        yPos += 5;
+        
+        addText('● Employer Signature: _________________________________');
+        yPos += 5;
+        addText(`● Printed Name: ${fullEmployerProfile?.signatory_name || 'N/A'}`);
+        yPos += 5;
+        addText(`● Title: ${fullEmployerProfile?.signatory_title || 'N/A'}`);
+        yPos += 5;
+        addText(`● Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`);
+        yPos += 5;
+
+        addLine(1);
+
+        return doc.output('blob');
+    };
+
+    // Upload generated PDF to Supabase
+    const uploadGeneratedPDF = async (pdfBlob: Blob): Promise<string | null> => {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        const accessToken = getSupabaseToken();
+
+        if (!accessToken) {
+            console.error('No access token for PDF upload');
+            return null;
+        }
+
+        try {
+            const fileName = `${employerProfile.id}/${talent.id}/agreement-${Date.now()}.pdf`;
+
+            const response = await fetch(
+                `${supabaseUrl}/storage/v1/object/interest-letters/${fileName}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'apikey': anonKey,
+                        'Content-Type': 'application/pdf',
+                        'x-upsert': 'true',
+                    },
+                    body: pdfBlob,
+                }
+            );
+
+            if (response.ok) {
+                const generatedPdfUrl = `${supabaseUrl}/storage/v1/object/public/interest-letters/${fileName}`;
+                console.log('Generated PDF uploaded successfully:', generatedPdfUrl);
+                return generatedPdfUrl;
+            } else {
+                const errorText = await response.text();
+                console.error('Generated PDF upload failed:', response.status, errorText);
+                return null;
+            }
+        } catch (error) {
+            console.error('Generated PDF upload error:', error);
+            return null;
+        }
     };
 
     const handleSubmit = async (isDraft: boolean = false) => {
@@ -117,11 +438,11 @@ export function InterestLetterForm({
 
         try {
             let pdfUrl = null;
+            let generatedPdfUrl = null;
 
-            // Upload attachment if exists
-            // Upload attachment if exists
+            // Upload attachment if exists (existing functionality)
             if (attachment) {
-                console.log("====> Start uploading <====");
+                console.log("====> Start uploading attachment <====");
                 setUploading(true);
 
                 try {
@@ -129,18 +450,17 @@ export function InterestLetterForm({
                     const fileName = `${employerProfile.id}/${talent.id}/${Date.now()}.${fileExt}`;
                     console.log("fileName => ", fileName);
 
-                    // Use anon key for public bucket upload
                     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
                     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-                    console.log("anonKey ====> ", anonKey);
-                    console.log("Uploading via fetch with anon key...");
+                    const accessToken = getSupabaseToken();
 
                     const response = await fetch(
                         `${supabaseUrl}/storage/v1/object/interest-letters/${fileName}`,
                         {
                             method: 'POST',
                             headers: {
-                                'Authorization': `Bearer ${anonKey}`,
+                                'Authorization': `Bearer ${accessToken}`,
+                                'apikey': anonKey!,
                                 'Content-Type': attachment.type,
                                 'x-upsert': 'true',
                             },
@@ -154,15 +474,36 @@ export function InterestLetterForm({
 
                     if (response.ok) {
                         pdfUrl = `${supabaseUrl}/storage/v1/object/public/interest-letters/${fileName}`;
-                        console.log("Upload success, URL:", pdfUrl);
+                        console.log("Attachment upload success, URL:", pdfUrl);
                     } else {
-                        console.error('Upload failed:', response.status, responseText);
+                        console.error('Attachment upload failed:', response.status, responseText);
                     }
                 } catch (err) {
-                    console.error('Upload error:', err);
+                    console.error('Attachment upload error:', err);
                 }
 
                 setUploading(false);
+            }
+
+            // Generate and upload PDF (only for non-draft submissions)
+            if (!isDraft) {
+                console.log('====> Generating PDF <====');
+                setGeneratingPdf(true);
+
+                try {
+                    const pdfBlob = await generatePDF();
+                    generatedPdfUrl = await uploadGeneratedPDF(pdfBlob);
+                    
+                    if (generatedPdfUrl) {
+                        console.log('Generated PDF URL:', generatedPdfUrl);
+                    } else {
+                        console.warn('PDF generation/upload failed, continuing without PDF');
+                    }
+                } catch (err) {
+                    console.error('PDF generation error:', err);
+                }
+
+                setGeneratingPdf(false);
             }
 
             const insertData = {
@@ -170,34 +511,38 @@ export function InterestLetterForm({
                 employer_id: employerProfile.id,
                 source_type: 'employer',
                 job_id: selectedJob || null,
-                commitment_level: commitmentLevel, // Must be: exploratory_interest, intent_to_engage, conditional_offer, firm_commitment, offer_extended
+                commitment_level: commitmentLevel,
                 job_title: jobTitle.trim(),
                 department: department.trim() || null,
                 salary_min: salaryMin || null,
                 salary_max: salaryMax || null,
                 salary_negotiable: salaryNegotiable,
-                engagement_type: engagementType, // Must be: full_time, part_time, contract_w2, consulting_1099, project_based
-                work_arrangement: workArrangement, // Must be: on_site, hybrid, remote, flexible
+                engagement_type: engagementType,
+                work_arrangement: workArrangement,
                 locations: locations ? locations.split(',').map(l => l.trim()).filter(Boolean) : [],
-                start_timing: startTiming || null,
+                start_timing: useTextStartDate ? startTiming : null,
+                start_date: !useTextStartDate && startDate ? startDate : null,
+                end_date: !useTextStartDate && endDate ? endDate : null,
                 duties_description: dutiesDescription.trim(),
                 why_o1_required: whyO1Required.trim(),
+                required_skills: requiredSkills.trim(),
                 letter_content: letterContent.trim() || null,
-                pdf_url: pdfUrl || null,
-                status: isDraft ? 'draft' : 'sent', // Must be: draft, sent, viewed, accepted, declined, expired, signature_requested, signature_pending, signed
+                pdf_url: pdfUrl || null, // Attachment URL (existing field)
+                generated_pdf_url: generatedPdfUrl || null, // NEW: Auto-generated PDF URL
+                status: isDraft ? 'draft' : 'sent',
             };
 
             console.log("Insert data:", JSON.stringify(insertData, null, 2));
-            console.log("Insert data:", JSON.stringify(insertData, null, 2));
             const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
             const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const accessToken = getSupabaseToken();
 
             const insertResponse = await fetch(
                 `${supabaseUrl}/rest/v1/interest_letters`,
                 {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${anonKey}`,
+                        'Authorization': `Bearer ${accessToken}`,
                         'apikey': anonKey!,
                         'Content-Type': 'application/json',
                         'Prefer': 'return=representation',
@@ -236,6 +581,7 @@ export function InterestLetterForm({
             setSending(false);
             setSavingDraft(false);
             setUploading(false);
+            setGeneratingPdf(false);
         }
     };
 
@@ -251,7 +597,6 @@ export function InterestLetterForm({
                             Interest Letter Sent!
                         </h2>
                         <p className="text-gray-600 mb-4">
-                            {/* Your interest letter has been sent to {talent.name}. */}
                             Your interest letter has been sent to Talent.
                         </p>
                         <p className="text-sm text-gray-500">
@@ -303,8 +648,6 @@ export function InterestLetterForm({
                                 </div>
                             </div>
                         )}
-                        {/* <h3 className="font-semibold text-gray-900">{talent.skills}</h3> */}
-                        {/* <p className="text-sm text-gray-500">{talent.employer}</p> */}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Building2 className="w-4 h-4" />
@@ -433,17 +776,69 @@ export function InterestLetterForm({
                             />
                         </div>
 
+                        {/* Start Date Section with Toggle */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Expected Start
-                            </label>
-                            <input
-                                type="text"
-                                value={startTiming}
-                                onChange={(e) => setStartTiming(e.target.value)}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                placeholder="e.g., Immediately, Q2 2026, Flexible"
-                            />
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Start Date *
+                                </label>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setUseTextStartDate(false)}
+                                        className={`flex items-center gap-1 px-3 py-1 text-xs rounded-lg transition-colors ${
+                                            !useTextStartDate
+                                                ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        <Calendar className="w-3 h-3" />
+                                        Date Picker
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setUseTextStartDate(true)}
+                                        className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                                            useTextStartDate
+                                                ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        Text Input
+                                    </button>
+                                </div>
+                            </div>
+
+                            {useTextStartDate ? (
+                                <input
+                                    type="text"
+                                    value={startTiming}
+                                    onChange={(e) => setStartTiming(e.target.value)}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="e.g., Immediately, Q2 2026, Upon visa approval"
+                                />
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Start Date</label>
+                                        <input
+                                            type="date"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">End Date (auto +3 years)</label>
+                                        <input
+                                            type="date"
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -457,7 +852,7 @@ export function InterestLetterForm({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Salary Min ($)
+                                    Salary Min ($) *
                                 </label>
                                 <input
                                     type="number"
@@ -469,7 +864,7 @@ export function InterestLetterForm({
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Salary Max ($)
+                                    Salary Max ($) *
                                 </label>
                                 <input
                                     type="number"
@@ -480,6 +875,9 @@ export function InterestLetterForm({
                                 />
                             </div>
                         </div>
+                        <p className="text-xs text-gray-500">
+                            Salary range is required for O-1 visa sponsorship letters.
+                        </p>
                         <div className="flex items-center gap-2">
                             <input
                                 type="checkbox"
@@ -515,6 +913,23 @@ export function InterestLetterForm({
                             />
                             <p className="mt-1 text-xs text-gray-500">
                                 This will be used in the O-1 petition to demonstrate the role requires extraordinary ability.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Required Skills *
+                            </label>
+                            <textarea
+                                value={requiredSkills}
+                                onChange={(e) => setRequiredSkills(e.target.value)}
+                                rows={3}
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                placeholder="List specific skills, technologies, qualifications required for this role..."
+                                required
+                            />
+                            <p className="mt-1 text-xs text-gray-500">
+                                List the technical skills, certifications, or qualifications needed.
                             </p>
                         </div>
 
@@ -631,13 +1046,13 @@ export function InterestLetterForm({
                         </Link>
                         <button
                             type="submit"
-                            disabled={sending || savingDraft || uploading}
+                            disabled={sending || savingDraft || uploading || generatingPdf}
                             className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                         >
-                            {sending || uploading ? (
+                            {sending || uploading || generatingPdf ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    {uploading ? 'Uploading...' : 'Sending...'}
+                                    {generatingPdf ? 'Generating PDF...' : uploading ? 'Uploading...' : 'Sending...'}
                                 </>
                             ) : (
                                 <>
