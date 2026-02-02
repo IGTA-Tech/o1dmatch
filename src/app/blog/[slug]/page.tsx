@@ -25,7 +25,7 @@ const contentTypeColors: Record<string, string> = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: article } = await supabase
     .from('articles')
     .select('title, meta_description, featured_image_url')
@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ArticlePage({ params }: Props) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: article, error } = await supabase
     .from('articles')
