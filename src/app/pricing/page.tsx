@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { EMPLOYER_TIERS, TALENT_TIERS, EmployerTier, TalentTier } from '@/lib/subscriptions/tiers';
 import Navbar from "@/components/Navbar";
@@ -106,6 +107,7 @@ const TALENT_FEATURES = {
 };
 
 export default function PricingPage() {
+  const router = useRouter();
   const [view, setView] = useState<ViewType>('employers');
   const [promoCode, setPromoCode] = useState('');
   const [promoStatus, setPromoStatus] = useState<{ valid: boolean; message: string } | null>(null);
@@ -160,12 +162,25 @@ export default function PricingPage() {
         }),
       });
 
+      // Check for unauthorized (401) - redirect to login
+      if (response.status === 401) {
+        const userType = view === 'employers' ? 'employer' : 'talent';
+        router.push(`/login?redirect=/pricing&type=${userType}`);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.url) {
         window.location.href = data.url;
       } else if (data.error) {
-        alert(data.error);
+        // Check if error message indicates unauthorized
+        if (data.error === 'Unauthorized' || data.error.toLowerCase().includes('unauthorized') || data.error.toLowerCase().includes('not logged in') || data.error.toLowerCase().includes('login required')) {
+          const userType = view === 'employers' ? 'employer' : 'talent';
+          router.push(`/login?redirect=/pricing&type=${userType}`);
+        } else {
+          alert(data.error);
+        }
       }
     } catch (error) {
       console.error('Checkout error:', error);
