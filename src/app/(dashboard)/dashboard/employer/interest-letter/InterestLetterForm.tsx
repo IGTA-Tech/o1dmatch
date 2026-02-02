@@ -372,7 +372,7 @@ export function InterestLetterForm({
         yPos += 5;
         addText(`- Printed Name: ${fullEmployerProfile?.signatory_name || 'N/A'}`);
         yPos += 5;
-        addText(`- Title: ${fullEmployerProfile?.signatory_title || jobTitle || 'N/A'}`);
+        addText(`- Title: ${fullEmployerProfile?.signatory_title || 'N/A'}`);
         yPos += 5;
         addText(`- Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`);
         yPos += 5;
