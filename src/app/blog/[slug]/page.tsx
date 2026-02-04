@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
 
 interface Props {
   params: { slug: string };
@@ -80,8 +81,10 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-white">
+      <Navbar />
+      
       {/* Breadcrumb */}
-      <div className="bg-gray-50 border-b">
+      <div className="bg-gray-50 border-b mt-16">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <nav className="text-sm text-gray-500">
             <Link href="/" className="hover:text-blue-600">Home</Link>
@@ -234,6 +237,26 @@ export default async function ArticlePage({ params }: Props) {
           </Link>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">O1</span>
+              </div>
+              <span className="font-semibold text-white">O1DMatch</span>
+            </div>
+            <p className="text-gray-400 text-sm text-center">
+              Connecting exceptional talent with opportunities for O-1 visa sponsorship.
+            </p>
+            <p className="text-gray-400 text-sm">
+              © {new Date().getFullYear()} O1DMatch. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

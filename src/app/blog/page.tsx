@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { Metadata } from 'next';
+import Navbar from '@/components/Navbar';
 
 export const metadata: Metadata = {
   title: 'Immigration Insights | O1DMatch',
@@ -52,8 +53,10 @@ export default async function BlogPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16 mt-16">
         <div className="max-w-6xl mx-auto px-4">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Immigration Insights</h1>
           <p className="text-xl text-blue-100 max-w-2xl">
@@ -146,6 +149,26 @@ export default async function BlogPage() {
           </Link>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">O1</span>
+              </div>
+              <span className="font-semibold text-white">O1DMatch</span>
+            </div>
+            <p className="text-gray-400 text-sm text-center">
+              Connecting exceptional talent with opportunities for O-1 visa sponsorship.
+            </p>
+            <p className="text-gray-400 text-sm">
+              © {new Date().getFullYear()} O1DMatch. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
