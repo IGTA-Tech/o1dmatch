@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { EMPLOYER_TIERS, TALENT_TIERS, EmployerTier, TalentTier } from '@/lib/subscriptions/tiers';
 import Navbar from "@/components/Navbar";
-import { Check, Building2, User, Sparkles, ArrowRight, X, XCircle, CheckCircle } from 'lucide-react';
+import { Check, Building2, User, Sparkles, ArrowRight, X, XCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 type ViewType = 'employers' | 'talent';
 
@@ -114,6 +114,7 @@ function PricingPageContent() {
   const [promoStatus, setPromoStatus] = useState<{ valid: boolean; message: string } | null>(null);
   const [validatingPromo, setValidatingPromo] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'canceled'; message: string } | null>(null);
+  const [subscribing, setSubscribing] = useState<string | null>(null);
 
   // Handle success/canceled query params
   useEffect(() => {
@@ -175,6 +176,7 @@ function PricingPageContent() {
   };
 
   const handleSubscribe = async (tier: EmployerTier | TalentTier) => {
+    setSubscribing(tier);
     try {
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
@@ -204,11 +206,13 @@ function PricingPageContent() {
           router.push(`/login?redirect=/pricing&type=${userType}`);
         } else {
           alert(data.error);
+          setSubscribing(null);
         }
       }
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Something went wrong. Please try again.');
+      setSubscribing(null);
     }
   };
 
@@ -401,13 +405,23 @@ function PricingPageContent() {
                       ) : (
                         <button
                           onClick={() => handleSubscribe(key)}
-                          className={`w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                          disabled={subscribing !== null}
+                          className={`w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed ${
                             key === 'growth'
                               ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200'
                               : 'bg-gray-900 text-white hover:bg-gray-800'
                           }`}
                         >
-                          Subscribe <ArrowRight className="w-4 h-4" />
+                          {subscribing === key ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              Subscribe <ArrowRight className="w-4 h-4" />
+                            </>
+                          )}
                         </button>
                       )}
                     </div>
@@ -520,13 +534,23 @@ function PricingPageContent() {
                       ) : (
                         <button
                           onClick={() => handleSubscribe(key)}
-                          className={`w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                          disabled={subscribing !== null}
+                          className={`w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed ${
                             key === 'active_match'
                               ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200'
                               : 'bg-gray-900 text-white hover:bg-gray-800'
                           }`}
                         >
-                          Subscribe <ArrowRight className="w-4 h-4" />
+                          {subscribing === key ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              Subscribe <ArrowRight className="w-4 h-4" />
+                            </>
+                          )}
                         </button>
                       )}
                     </div>
