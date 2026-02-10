@@ -8,7 +8,6 @@ export function getStripe(): Stripe | null {
   if (!stripeInstance && process.env.STRIPE_SECRET_KEY) {
     stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: '2025-12-15.clover',
-      typescript: true,
     });
   }
   return stripeInstance;
@@ -38,86 +37,86 @@ export async function getOrCreateStripeCustomer(
   userId: string,
   name?: string,
   metadata?: Record<string, string>
-): Promise<Stripe.Customer | null> {
+): Promise<Stripe.Customer> {
   const stripeClient = getStripe();
   if (!stripeClient) {
-    console.warn('Stripe not initialized - missing STRIPE_SECRET_KEY');
-    return null;
+    throw new Error('Stripe not initialized - STRIPE_SECRET_KEY environment variable is missing');
   }
 
-  // Check if customer already exists
-  const existingCustomers = await stripeClient.customers.list({
-    email,
-    limit: 1,
-  });
+  try {
+    // Check if customer already exists
+    const existingCustomers = await stripeClient.customers.list({
+      email,
+      limit: 1,
+    });
 
-  if (existingCustomers.data.length > 0) {
-    return existingCustomers.data[0];
+    if (existingCustomers.data.length > 0) {
+      return existingCustomers.data[0];
+    }
+
+    // Create new customer
+    const customer = await stripeClient.customers.create({
+      email,
+      name,
+      metadata: {
+        userId,
+        ...metadata,
+      },
+    });
+
+    return customer;
+  } catch (error) {
+    console.error('Stripe customer creation error:', error);
+    throw new Error(`Failed to create Stripe customer: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-
-  // Create new customer
-  const customer = await stripeClient.customers.create({
-    email,
-    name,
-    metadata: {
-      userId,
-      ...metadata,
-    },
-  });
-
-  return customer;
 }
 
 // Create a checkout session for subscription
 export async function createCheckoutSession(params: {
   customerId: string;
   priceId: string;
-  setupPriceId?: string; // One-time setup fee
+  setupPriceId?: string; // One-time setup fee (currently not used - can be added later)
   successUrl: string;
   cancelUrl: string;
   trialDays?: number;
   metadata?: Record<string, string>;
-}): Promise<Stripe.Checkout.Session | null> {
+}): Promise<Stripe.Checkout.Session> {
   const stripeClient = getStripe();
   if (!stripeClient) {
-    console.warn('Stripe not initialized');
-    return null;
+    throw new Error('Stripe not initialized - STRIPE_SECRET_KEY environment variable is missing');
   }
 
-  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
-    {
-      price: params.priceId,
-      quantity: 1,
-    },
-  ];
+  try {
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+      {
+        price: params.priceId,
+        quantity: 1,
+      },
+    ];
 
-  // Add setup fee if applicable
-  if (params.setupPriceId) {
-    lineItems.push({
-      price: params.setupPriceId,
-      quantity: 1,
-    });
-  }
-
-  const sessionParams: Stripe.Checkout.SessionCreateParams = {
-    customer: params.customerId,
-    mode: 'subscription',
-    line_items: lineItems,
-    success_url: params.successUrl,
-    cancel_url: params.cancelUrl,
-    metadata: params.metadata,
-    subscription_data: {
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      customer: params.customerId,
+      mode: 'subscription',
+      line_items: lineItems,
+      success_url: params.successUrl,
+      cancel_url: params.cancelUrl,
       metadata: params.metadata,
-    },
-  };
+      subscription_data: {
+        metadata: params.metadata,
+      },
+    };
 
-  // Add trial period if applicable
-  if (params.trialDays && params.trialDays > 0) {
-    sessionParams.subscription_data!.trial_period_days = params.trialDays;
+    // Add trial period if applicable
+    if (params.trialDays && params.trialDays > 0) {
+      sessionParams.subscription_data!.trial_period_days = params.trialDays;
+    }
+
+    const session = await stripeClient.checkout.sessions.create(sessionParams);
+    return session;
+  } catch (error) {
+    console.error('Stripe checkout session error:', error);
+    throw new Error(`Failed to create checkout session: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-
-  const session = await stripeClient.checkout.sessions.create(sessionParams);
-  return session;
 }
 
 // Create a billing portal session for managing subscription

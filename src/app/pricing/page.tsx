@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { EMPLOYER_TIERS, TALENT_TIERS, EmployerTier, TalentTier } from '@/lib/subscriptions/tiers';
 import Navbar from "@/components/Navbar";
-import { Check, Building2, User, Sparkles, ArrowRight, X } from 'lucide-react';
+import { Check, Building2, User, Sparkles, ArrowRight, X, XCircle, CheckCircle } from 'lucide-react';
 
 type ViewType = 'employers' | 'talent';
 
@@ -106,12 +106,36 @@ const TALENT_FEATURES = {
   ],
 };
 
-export default function PricingPage() {
+function PricingPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [view, setView] = useState<ViewType>('employers');
   const [promoCode, setPromoCode] = useState('');
   const [promoStatus, setPromoStatus] = useState<{ valid: boolean; message: string } | null>(null);
   const [validatingPromo, setValidatingPromo] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'canceled'; message: string } | null>(null);
+
+  // Handle success/canceled query params
+  useEffect(() => {
+    const canceled = searchParams.get('canceled');
+    const success = searchParams.get('success');
+
+    if (canceled === 'true') {
+      setStatusMessage({
+        type: 'canceled',
+        message: 'Payment was canceled. You can try again when you\'re ready.',
+      });
+      // Clean up URL
+      router.replace('/pricing', { scroll: false });
+    } else if (success === 'true') {
+      setStatusMessage({
+        type: 'success',
+        message: 'Payment successful! Your subscription is now active.',
+      });
+      // Clean up URL
+      router.replace('/pricing', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const validatePromo = async () => {
     if (!promoCode.trim()) return;
@@ -194,6 +218,38 @@ export default function PricingPage() {
 
       {/* Spacer for fixed navbar */}
       <div className="pt-24" />
+
+      {/* Status Message Banner */}
+      {statusMessage && (
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+          <div
+            className={`flex items-center justify-between p-4 rounded-xl border ${
+              statusMessage.type === 'success'
+                ? 'bg-green-50 border-green-200 text-green-800'
+                : 'bg-amber-50 border-amber-200 text-amber-800'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {statusMessage.type === 'success' ? (
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+              ) : (
+                <XCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              )}
+              <span className="font-medium">{statusMessage.message}</span>
+            </div>
+            <button
+              onClick={() => setStatusMessage(null)}
+              className={`p-1 rounded-lg transition-colors ${
+                statusMessage.type === 'success'
+                  ? 'hover:bg-green-100'
+                  : 'hover:bg-amber-100'
+              }`}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Hero */}
@@ -555,5 +611,22 @@ export default function PricingPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// Wrap in Suspense for useSearchParams
+export default function PricingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        <Navbar />
+        <div className="pt-24" />
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    }>
+      <PricingPageContent />
+    </Suspense>
   );
 }

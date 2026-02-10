@@ -1,7 +1,3 @@
-// src/components/layout/DashboardLayout.tsx
-// 
-// Updated DashboardLayout with Sign Out button in the sidebar
-
 'use client';
 
 import { ReactNode } from 'react';
@@ -17,6 +13,7 @@ import {
   Users,
   Settings,
   Building2,
+  CreditCard,
 } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SignOutButton } from '@/components/auth/SignOutButton';
@@ -35,6 +32,7 @@ const navigationItems = {
     { href: '/dashboard/talent/jobs', label: 'Jobs', icon: Briefcase },
     { href: '/dashboard/talent/applications', label: 'Applications', icon: Send },
     { href: '/dashboard/talent/letters', label: 'Letters', icon: Mail },
+    { href: '/dashboard/talent/billing', label: 'Billing', icon: CreditCard },
   ],
   employer: [
     { href: '/dashboard/employer', label: 'Dashboard', icon: LayoutDashboard },
@@ -43,6 +41,7 @@ const navigationItems = {
     { href: '/dashboard/employer/browse', label: 'Browse Talent', icon: Users },
     { href: '/dashboard/employer/letters', label: 'Letters', icon: Mail },
     { href: '/dashboard/employer/applications', label: 'Applications', icon: Send },
+    { href: '/dashboard/employer/billing', label: 'Billing', icon: CreditCard },
   ],
   admin: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: LayoutDashboard },

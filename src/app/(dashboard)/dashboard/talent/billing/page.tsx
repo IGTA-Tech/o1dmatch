@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { BillingClient } from './billing-client';
+import { TalentBillingClient } from './billing-client';
 
-export default async function EmployerBillingPage({
+export default async function TalentBillingPage({
   searchParams,
 }: {
   searchParams: Promise<{ success?: string; canceled?: string }>;
@@ -16,9 +16,9 @@ export default async function EmployerBillingPage({
 
   // Get subscription data
   const { data: subscription } = await supabase
-    .from('employer_subscriptions')
+    .from('talent_subscriptions')
     .select('*')
-    .eq('employer_id', user.id)
+    .eq('talent_id', user.id)
     .single();
 
   // Get URL params
@@ -27,7 +27,7 @@ export default async function EmployerBillingPage({
   const showCanceled = params.canceled === 'true';
 
   return (
-    <BillingClient 
+    <TalentBillingClient 
       subscription={subscription} 
       userId={user.id}
       showSuccess={showSuccess}

@@ -1,72 +1,71 @@
-import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
-import { constructWebhookEvent } from '@/lib/stripe';
-import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-12-15.clover',
+});
 
-export async function POST(request: Request) {
-  if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET is not set');
-    return NextResponse.json(
-      { error: 'Webhook secret not configured' },
-      { status: 500 }
-    );
-  }
+// Use service role key for webhook (bypasses RLS)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
+export async function POST(request: NextRequest) {
   const body = await request.text();
-  const headersList = await headers();
-  const signature = headersList.get('stripe-signature');
+  const signature = request.headers.get('stripe-signature');
 
   if (!signature) {
-    return NextResponse.json(
-      { error: 'Missing stripe-signature header' },
-      { status: 400 }
-    );
+    console.error('No stripe-signature header');
+    return NextResponse.json({ error: 'No signature' }, { status: 400 });
   }
 
-  const event = constructWebhookEvent(body, signature, webhookSecret);
+  let event: Stripe.Event;
 
-  if (!event) {
-    return NextResponse.json(
-      { error: 'Invalid webhook signature' },
-      { status: 400 }
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!
     );
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err);
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  console.log('Stripe webhook event:', event.type);
 
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        await handleCheckoutCompleted(supabase, session);
+        await handleCheckoutCompleted(session);
         break;
       }
 
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionUpdate(supabase, subscription);
+        await handleSubscriptionUpdated(subscription);
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionCanceled(supabase, subscription);
+        await handleSubscriptionDeleted(subscription);
         break;
       }
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
-        await handlePaymentSucceeded(supabase, invoice);
+        await handleInvoicePaid(invoice);
         break;
       }
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
-        await handlePaymentFailed(supabase, invoice);
+        await handleInvoiceFailed(invoice);
         break;
       }
 
@@ -84,136 +83,264 @@ export async function POST(request: Request) {
   }
 }
 
-async function handleCheckoutCompleted(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  session: Stripe.Checkout.Session
-) {
-  const { userId, userType, tier } = session.metadata || {};
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  console.log('Checkout completed:', session.id);
 
-  if (!userId || !userType) {
-    console.error('Missing metadata in checkout session');
+  const userId = session.metadata?.userId;
+  const userType = session.metadata?.userType;
+  const tier = session.metadata?.tier;
+
+  if (!userId || !userType || !tier) {
+    console.error('Missing metadata in checkout session:', session.metadata);
     return;
   }
 
-  const tableName = userType === 'employer' ? 'employer_subscriptions' : 'talent_subscriptions';
-  const idColumn = userType === 'employer' ? 'employer_id' : 'talent_id';
+  const customerId = session.customer as string;
+  const subscriptionId = session.subscription as string;
 
-  await supabase
-    .from(tableName)
-    .upsert({
-      [idColumn]: userId,
-      tier: tier || (userType === 'employer' ? 'starter' : 'starter'),
-      stripe_customer_id: session.customer as string,
-      stripe_subscription_id: session.subscription as string,
-      status: 'active',
-      setup_fee_paid: true,
-      updated_at: new Date().toISOString(),
-    });
+  // Get the subscription details from Stripe
+  let stripeSubscription: Stripe.Subscription | null = null;
+  let priceId: string | null = null;
+  let currentPeriodStart: string | null = null;
+  let currentPeriodEnd: string | null = null;
+  let trialEndsAt: string | null = null;
+
+  if (subscriptionId) {
+    try {
+      stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+      priceId = stripeSubscription.items.data[0]?.price.id || null;
+      
+      // Access billing period - cast to any to handle API version differences
+      const subData = stripeSubscription as unknown as {
+        current_period_start?: number;
+        current_period_end?: number;
+        trial_end?: number | null;
+      };
+      
+      if (subData.current_period_start) {
+        currentPeriodStart = new Date(subData.current_period_start * 1000).toISOString();
+      }
+      if (subData.current_period_end) {
+        currentPeriodEnd = new Date(subData.current_period_end * 1000).toISOString();
+      }
+      if (subData.trial_end) {
+        trialEndsAt = new Date(subData.trial_end * 1000).toISOString();
+      }
+    } catch (err) {
+      console.error('Error fetching subscription from Stripe:', err);
+    }
+  }
+
+  console.log('Updating subscription for user:', userId, 'tier:', tier);
+
+  if (userType === 'employer') {
+    // Upsert employer subscription
+    const { error } = await supabase
+      .from('employer_subscriptions')
+      .upsert({
+        employer_id: userId,
+        tier: tier,
+        status: stripeSubscription?.status === 'trialing' ? 'trialing' : 'active',
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscriptionId,
+        stripe_price_id: priceId,
+        current_period_start: currentPeriodStart,
+        current_period_end: currentPeriodEnd,
+        trial_ends_at: trialEndsAt,
+        setup_fee_paid: true,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'employer_id',
+      });
+
+    if (error) {
+      console.error('Error updating employer subscription:', error);
+    } else {
+      console.log('Employer subscription updated successfully');
+    }
+  } else if (userType === 'talent') {
+    // Upsert talent subscription (note: talent_subscriptions doesn't have trial_ends_at)
+    const { error } = await supabase
+      .from('talent_subscriptions')
+      .upsert({
+        talent_id: userId,
+        tier: tier,
+        status: stripeSubscription?.status === 'trialing' ? 'trialing' : 'active',
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscriptionId,
+        stripe_price_id: priceId,
+        current_period_start: currentPeriodStart,
+        current_period_end: currentPeriodEnd,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'talent_id',
+      });
+
+    if (error) {
+      console.error('Error updating talent subscription:', error);
+    } else {
+      console.log('Talent subscription updated successfully');
+    }
+  }
 }
 
-async function handleSubscriptionUpdate(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  subscription: Stripe.Subscription
-) {
-  const customerId = subscription.customer as string;
-  const status = mapStripeStatus(subscription.status);
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  console.log('Subscription updated:', subscription.id, 'status:', subscription.status);
 
-  // Access period dates from subscription (cast for type safety)
+  const customerId = subscription.customer as string;
+  const priceId = subscription.items.data[0]?.price.id || null;
+
+  // Map Stripe status to your allowed statuses
+  let status: string;
+  switch (subscription.status) {
+    case 'active':
+      status = 'active';
+      break;
+    case 'trialing':
+      status = 'trialing';
+      break;
+    case 'past_due':
+      status = 'past_due';
+      break;
+    case 'canceled':
+    case 'unpaid':
+      status = 'canceled';
+      break;
+    case 'paused':
+      status = 'paused';
+      break;
+    default:
+      status = 'active';
+  }
+
+  // Access billing period - cast to handle API version differences
   const subData = subscription as unknown as {
     current_period_start?: number;
     current_period_end?: number;
+    trial_end?: number | null;
   };
-  const periodStart = subData.current_period_start
+
+  const currentPeriodStart = subData.current_period_start 
     ? new Date(subData.current_period_start * 1000).toISOString()
     : null;
-  const periodEnd = subData.current_period_end
+  const currentPeriodEnd = subData.current_period_end
     ? new Date(subData.current_period_end * 1000).toISOString()
     : null;
+  const trialEndsAt = subData.trial_end 
+    ? new Date(subData.trial_end * 1000).toISOString() 
+    : null;
 
-  // Try employer first
+  // Try to update employer subscription
   const { data: employerSub } = await supabase
     .from('employer_subscriptions')
-    .select('id')
+    .select('employer_id')
     .eq('stripe_customer_id', customerId)
     .single();
 
   if (employerSub) {
-    await supabase
+    const { error } = await supabase
       .from('employer_subscriptions')
       .update({
-        status,
+        status: status,
         stripe_subscription_id: subscription.id,
-        current_period_start: periodStart,
-        current_period_end: periodEnd,
+        stripe_price_id: priceId,
+        current_period_start: currentPeriodStart,
+        current_period_end: currentPeriodEnd,
+        trial_ends_at: trialEndsAt,
         updated_at: new Date().toISOString(),
       })
       .eq('stripe_customer_id', customerId);
+
+    if (error) {
+      console.error('Error updating employer subscription:', error);
+    } else {
+      console.log('Employer subscription status updated to:', status);
+    }
     return;
   }
 
-  // Try talent
-  await supabase
+  // Try to update talent subscription
+  const { data: talentSub } = await supabase
     .from('talent_subscriptions')
-    .update({
-      status,
-      stripe_subscription_id: subscription.id,
-      current_period_start: periodStart,
-      current_period_end: periodEnd,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('stripe_customer_id', customerId);
+    .select('talent_id')
+    .eq('stripe_customer_id', customerId)
+    .single();
+
+  if (talentSub) {
+    // Note: talent_subscriptions doesn't have trial_ends_at column
+    const { error } = await supabase
+      .from('talent_subscriptions')
+      .update({
+        status: status,
+        stripe_subscription_id: subscription.id,
+        stripe_price_id: priceId,
+        current_period_start: currentPeriodStart,
+        current_period_end: currentPeriodEnd,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('stripe_customer_id', customerId);
+
+    if (error) {
+      console.error('Error updating talent subscription:', error);
+    } else {
+      console.log('Talent subscription status updated to:', status);
+    }
+  }
 }
 
-async function handleSubscriptionCanceled(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  subscription: Stripe.Subscription
-) {
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  console.log('Subscription deleted:', subscription.id);
+
   const customerId = subscription.customer as string;
 
-  // Update employer subscription
-  await supabase
+  // Update employer subscription to free/canceled
+  const { error: empError } = await supabase
     .from('employer_subscriptions')
     .update({
+      tier: 'free',
       status: 'canceled',
+      stripe_subscription_id: null,
+      stripe_price_id: null,
+      current_period_start: null,
+      current_period_end: null,
+      trial_ends_at: null,
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_customer_id', customerId);
 
-  // Update talent subscription
-  await supabase
+  if (empError) {
+    console.error('Error canceling employer subscription:', empError);
+  }
+
+  // Update talent subscription to profile_only/canceled (no trial_ends_at column)
+  const { error: talError } = await supabase
     .from('talent_subscriptions')
     .update({
+      tier: 'profile_only',
       status: 'canceled',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('stripe_customer_id', customerId);
-}
-
-async function handlePaymentSucceeded(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  invoice: Stripe.Invoice
-) {
-  const customerId = invoice.customer as string;
-
-  // Reset monthly letter count on successful payment (new billing period)
-  await supabase
-    .from('employer_subscriptions')
-    .update({
-      letters_sent_this_month: 0,
-      letters_reset_at: new Date().toISOString(),
-      status: 'active',
+      stripe_subscription_id: null,
+      stripe_price_id: null,
+      current_period_start: null,
+      current_period_end: null,
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_customer_id', customerId);
 
-  // Log successful payment
-  console.log(`Payment succeeded for customer: ${customerId}`);
+  if (talError) {
+    console.error('Error canceling talent subscription:', talError);
+  }
+
+  console.log('Subscription canceled for customer:', customerId);
 }
 
-async function handlePaymentFailed(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  invoice: Stripe.Invoice
-) {
+async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  console.log('Invoice paid:', invoice.id);
+  // Subscription is automatically updated via subscription.updated event
+}
+
+async function handleInvoiceFailed(invoice: Stripe.Invoice) {
+  console.log('Invoice payment failed:', invoice.id);
+
   const customerId = invoice.customer as string;
 
   // Update status to past_due
@@ -232,24 +359,4 @@ async function handlePaymentFailed(
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_customer_id', customerId);
-
-  // TODO: Send email notification about failed payment
-  console.log(`Payment failed for customer: ${customerId}`);
-}
-
-function mapStripeStatus(stripeStatus: Stripe.Subscription.Status): string {
-  switch (stripeStatus) {
-    case 'active':
-      return 'active';
-    case 'past_due':
-      return 'past_due';
-    case 'canceled':
-      return 'canceled';
-    case 'trialing':
-      return 'trialing';
-    case 'paused':
-      return 'paused';
-    default:
-      return 'active';
-  }
 }

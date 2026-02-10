@@ -11,6 +11,7 @@ import {
   Building2,
   BookOpen,
   User,
+  CreditCard,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
@@ -265,6 +266,26 @@ export default function Navbar() {
                           Profile
                         </Link>
                       )}
+                      {userRole === 'employer' && (
+                        <Link
+                          href="/dashboard/employer/billing"
+                          onClick={() => setIsDashboardOpen(false)}
+                          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/dashboard/employer/billing" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          Billing
+                        </Link>
+                      )}
+                      {userRole === 'talent' && (
+                        <Link
+                          href="/dashboard/talent/billing"
+                          onClick={() => setIsDashboardOpen(false)}
+                          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/dashboard/talent/billing" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          Billing
+                        </Link>
+                      )}
                       <div className="border-t border-gray-100 my-1" />
                       <div className="px-4 py-2">
                         <SignOutButton variant="menu" />
@@ -390,6 +411,26 @@ export default function Navbar() {
                     >
                       <User className="w-4 h-4" />
                       Profile
+                    </Link>
+                  )}
+                  {userRole === 'employer' && (
+                    <Link
+                      href="/dashboard/employer/billing"
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      Billing
+                    </Link>
+                  )}
+                  {userRole === 'talent' && (
+                    <Link
+                      href="/dashboard/talent/billing"
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      Billing
                     </Link>
                   )}
                   {/* Use SignOutButton component for mobile */}
