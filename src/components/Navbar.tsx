@@ -12,6 +12,8 @@ import {
   BookOpen,
   User,
   CreditCard,
+  FileText,
+  ClipboardCheck,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
@@ -276,6 +278,26 @@ export default function Navbar() {
                           Billing
                         </Link>
                       )}
+                      {userRole === 'employer' && (
+                        <Link
+                          href="/dashboard/employer/xtraordinarypetitions"
+                          onClick={() => setIsDashboardOpen(false)}
+                          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/dashboard/employer/xtraordinarypetitions" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                        >
+                          <FileText className="w-4 h-4" />
+                          Xtraordinary Petitions
+                        </Link>
+                      )}
+                      {userRole === 'employer' && (
+                        <Link
+                          href="/dashboard/employer/visa-evaluations"
+                          onClick={() => setIsDashboardOpen(false)}
+                          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/dashboard/employer/visa-evaluations" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                        >
+                          <ClipboardCheck className="w-4 h-4" />
+                          Visa Evaluations
+                        </Link>
+                      )}
                       {userRole === 'talent' && (
                         <Link
                           href="/dashboard/talent/billing"
@@ -421,6 +443,26 @@ export default function Navbar() {
                     >
                       <CreditCard className="w-4 h-4" />
                       Billing
+                    </Link>
+                  )}
+                  {userRole === 'employer' && (
+                    <Link
+                      href="/dashboard/employer/xtraordinarypetitions"
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <FileText className="w-4 h-4" />
+                      Xtraordinary Petitions
+                    </Link>
+                  )}
+                  {userRole === 'employer' && (
+                    <Link
+                      href="/dashboard/employer/visa-evaluations"
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <ClipboardCheck className="w-4 h-4" />
+                      Visa Evaluations
                     </Link>
                   )}
                   {userRole === 'talent' && (
