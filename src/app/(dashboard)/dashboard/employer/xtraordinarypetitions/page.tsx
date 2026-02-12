@@ -1131,7 +1131,7 @@ function NewCaseTab({ onCaseCreated }: { onCaseCreated: () => void }) {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/v1/cases", {
+      const res = await fetch(`${API_BASE}/api/v1/cases`, {
         method: "POST",
         headers: API_HEADERS,
         body: JSON.stringify({
