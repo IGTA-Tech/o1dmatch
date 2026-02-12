@@ -652,11 +652,14 @@ function AuthDownloadButton({ url, filename }: { url: string; filename: string }
 // ─── Get Documents Display ───────────────────────────────────────────────────
 function DocumentsDisplay({ data }: { data: Record<string, unknown> }) {
   const docs = (Array.isArray(data.data) ? data.data : []) as Array<Record<string, unknown>>;
-
   if (docs.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-        <p className="text-sm text-gray-500">No documents found for this case.</p>
+      <div className="rounded-lg border border-dashed border-gray-300 p-10 text-center">
+        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 className="mt-3 text-sm font-semibold text-gray-900">No Documents Yet</h3>
+        <p className="mt-1 text-sm text-gray-500">Documents haven&apos;t been generated for this case yet. Use &quot;Generate Documents&quot; to start.</p>
       </div>
     );
   }
@@ -715,6 +718,72 @@ function DocumentsDisplay({ data }: { data: Record<string, unknown> }) {
   );
 }
 
+// ─── Generate Documents Display ──────────────────────────────────────────────
+function GenerateDocumentsDisplay({ data }: { data: Record<string, unknown> }) {
+  const inner = (data.data ?? data) as Record<string, unknown>;
+  const caseId = inner.caseId as string | undefined;
+  const status = inner.status as string | undefined;
+  const message = inner.message as string | undefined;
+  const totalBatches = inner.totalBatches as number | undefined;
+  const nextBatch = inner.nextBatch as number | undefined;
+
+  return (
+    <div className="space-y-4">
+      {/* Message banner */}
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
+            <svg className="h-5 w-5 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </div>
+          <div>
+            {message && <p className="text-sm font-medium text-blue-900">{message}</p>}
+            {status && (
+              <span className={`mt-2 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${getStatusStyle(status)}`}>
+                {getStatusIcon(status)} {status}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Details grid */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {caseId && (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Case ID</p>
+            <p className="mt-1 font-mono text-sm font-semibold text-gray-900">{caseId}</p>
+          </div>
+        )}
+        {typeof totalBatches === "number" && (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Total Batches</p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">{totalBatches}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Batch progress */}
+      {typeof nextBatch === "number" && typeof totalBatches === "number" && (
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-medium text-gray-500">Batch Progress</span>
+            <span className="text-sm font-semibold text-gray-900">{nextBatch - 1} / {totalBatches}</span>
+          </div>
+          <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
+            <div
+              className="h-full rounded-full bg-blue-500 transition-all duration-500"
+              style={{ width: `${((nextBatch - 1) / totalBatches) * 100}%` }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-gray-400">Next batch: {nextBatch} of {totalBatches}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Response Display (router) ───────────────────────────────────────────────
 function ResponseDisplay({ data, modalTitle }: { data: unknown; modalTitle: string }) {
   if (data === null || data === undefined) return null;
@@ -741,8 +810,13 @@ function ResponseDisplay({ data, modalTitle }: { data: unknown; modalTitle: stri
     return <GenerateExhibitDisplay data={obj} />;
   }
 
+  // Generate Documents response
+  if (modalTitle === "Generate Documents" && typeof obj === "object" && inner.message) {
+    return <GenerateDocumentsDisplay data={obj} />;
+  }
+
   // Get Documents response
-  if (modalTitle === "Get Documents" && typeof obj === "object" && Array.isArray(obj.data)) {
+  if (modalTitle === "Get Documents") {
     return <DocumentsDisplay data={obj} />;
   }
 
@@ -1202,8 +1276,8 @@ export default function XtraordinaryPetitionsPage() {
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors ${activeTab === tab.key
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
                 }`}
             >
               {tab.label}
