@@ -1,3 +1,5 @@
+// src/components/layout/DashboardLayout.tsx
+
 'use client';
 
 import { ReactNode } from 'react';
@@ -13,7 +15,9 @@ import {
   Users,
   Settings,
   Building2,
+  Files,
   CreditCard,
+  FolderOpen,
 } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SignOutButton } from '@/components/auth/SignOutButton';
@@ -41,13 +45,14 @@ const navigationItems = {
     { href: '/dashboard/employer/browse', label: 'Browse Talent', icon: Users },
     { href: '/dashboard/employer/letters', label: 'Letters', icon: Mail },
     { href: '/dashboard/employer/applications', label: 'Applications', icon: Send },
+    { href: '/dashboard/employer/exhibits', label: 'Exhibits', icon: FolderOpen },
     { href: '/dashboard/employer/billing', label: 'Billing', icon: CreditCard },
   ],
   admin: [
     { href: '/dashboard/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/admin/letters', label: 'Letters', icon: Mail },
     { href: '/dashboard/admin/users', label: 'Users', icon: Users },
-    { href: '/dashboard/admin/documents', label: 'Documents', icon: FileText },
+    { href: '/dashboard/admin/documents', label: 'Documents', icon: Files },
     { href: '/dashboard/admin/settings', label: 'Settings', icon: Settings },
   ],
   agency: [
@@ -88,7 +93,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
               <Settings className="w-5 h-5" />
             </Link>
 
-            {/* Sign Out Button in Header (optional - you can remove if only using sidebar) */}
+            {/* Sign Out Button in Header */}
             <SignOutButton variant="header" />
           </div>
         </div>

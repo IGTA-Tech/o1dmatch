@@ -14,6 +14,8 @@ import {
   CreditCard,
   FileText,
   ClipboardCheck,
+  Star,
+  FolderOpen,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
@@ -298,6 +300,26 @@ export default function Navbar() {
                           Visa Evaluations
                         </Link>
                       )}
+                      {userRole === 'employer' && (
+                        <Link
+                          href="/dashboard/employer/scoring"
+                          onClick={() => setIsDashboardOpen(false)}
+                          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/dashboard/employer/scoring" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                        >
+                          <Star className="w-4 h-4" />
+                          Scoring
+                        </Link>
+                      )}
+                      {userRole === 'employer' && (
+                        <Link
+                          href="/dashboard/employer/exhibits"
+                          onClick={() => setIsDashboardOpen(false)}
+                          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/dashboard/employer/exhibits" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                        >
+                          <FolderOpen className="w-4 h-4" />
+                          Exhibits
+                        </Link>
+                      )}
                       {userRole === 'talent' && (
                         <Link
                           href="/dashboard/talent/billing"
@@ -463,6 +485,26 @@ export default function Navbar() {
                     >
                       <ClipboardCheck className="w-4 h-4" />
                       Visa Evaluations
+                    </Link>
+                  )}
+                  {userRole === 'employer' && (
+                    <Link
+                      href="/dashboard/employer/scoring"
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Star className="w-4 h-4" />
+                      Scoring
+                    </Link>
+                  )}
+                  {userRole === 'employer' && (
+                    <Link
+                      href="/dashboard/employer/exhibits"
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <FolderOpen className="w-4 h-4" />
+                      Exhibits
                     </Link>
                   )}
                   {userRole === 'talent' && (
