@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
           const supabase = await createClient();
           const results = json.data.results;
 
-          const updateData: Record<string, any> = {
+          const updateData: Record<string, unknown> = {
             status: "completed",
             progress: json.data.progress ?? 100,
             overall_score: results.overallScore,
@@ -220,9 +220,9 @@ export async function POST(req: NextRequest) {
         let incomingFormData;
         try {
           incomingFormData = await req.formData();
-        } catch (parseErr: any) {
+        } catch (parseErr: unknown) {
           console.error("[scoring API] FormData parse error:", parseErr);
-          return NextResponse.json({ success: false, error: "Failed to parse uploaded file: " + parseErr.message }, { status: 400 });
+          return NextResponse.json({ success: false, error: "Failed to parse uploaded file: " + (parseErr instanceof Error ? parseErr.message : "Unknown error") }, { status: 400 });
         }
 
         const file = incomingFormData.get("document") as File | null;
@@ -266,9 +266,9 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json(json, { status: res.status });
-      } catch (uploadErr: any) {
+      } catch (uploadErr: unknown) {
         console.error("[scoring API] Upload error:", uploadErr);
-        return NextResponse.json({ success: false, error: uploadErr.message || "Upload failed" }, { status: 500 });
+        return NextResponse.json({ success: false, error: (uploadErr instanceof Error ? uploadErr.message : "Upload failed") }, { status: 500 });
       }
     }
 
