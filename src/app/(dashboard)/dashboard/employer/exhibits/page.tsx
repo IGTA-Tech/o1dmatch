@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ExhibitsClient } from "./exhibits-client";
+import { ExhibitsClient, ExhibitPackage, PetitionCase } from "./exhibits-client";
 
 export default function EmployerExhibitsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [packages, setPackages] = useState<any[]>([]);
-  const [cases, setCases] = useState<any[]>([]);
+  const [packages, setPackages] = useState<ExhibitPackage[]>([]);
+  const [cases, setCases] = useState<PetitionCase[]>([]);
   const [employerId, setEmployerId] = useState<string>("");
   const [companyName, setCompanyName] = useState<string>("");
 
