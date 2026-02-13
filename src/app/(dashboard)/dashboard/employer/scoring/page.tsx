@@ -1,3 +1,4 @@
+/* /src/app/(dashboard)/dashboard/employer/scoring/page.tsx */
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -26,12 +27,36 @@ import {
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
+interface CriteriaScore {
+  score?: number;
+  criterionNumber?: number;
+  criterionName?: string;
+  rating?: string;
+  strengths?: string[];
+  officerConcerns?: string[];
+  [key: string]: unknown;
+}
+
+interface RfePrediction {
+  topic?: string;
+  probability?: number;
+  suggestedEvidence?: string[];
+  [key: string]: unknown;
+}
+
+interface Recommendations {
+  critical?: string[];
+  high?: string[];
+  recommended?: string[];
+  [key: string]: unknown;
+}
+
 interface ScoringResult {
   success?: boolean;
   status?: string;
   sessionId?: string;
-  data?: any;
-  [key: string]: any;
+  data?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 interface ScoringSession {
@@ -47,13 +72,13 @@ interface ScoringSession {
   approval_probability: number | null;
   rfe_probability: number | null;
   denial_risk: number | null;
-  criteria_scores: any[];
-  rfe_predictions: any[];
+  criteria_scores: CriteriaScore[];
+  rfe_predictions: RfePrediction[];
   weaknesses: string[];
   strengths: string[];
-  recommendations: any;
+  recommendations: Recommendations;
   full_report: string | null;
-  api_response: any;
+  api_response: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -118,7 +143,7 @@ const ProbBar = ({ label, value, color }: { label: string; value: number; color:
 /* ------------------------------------------------------------------ */
 /*  Criteria Card                                                      */
 /* ------------------------------------------------------------------ */
-const CriteriaCard = ({ c }: { c: any }) => {
+const CriteriaCard = ({ c }: { c: CriteriaScore }) => {
   const [open, setOpen] = useState(false);
   const ratingColor = (r: string) => {
     const rl = r?.toLowerCase();
@@ -136,24 +161,24 @@ const CriteriaCard = ({ c }: { c: any }) => {
           <p className="text-sm font-medium text-gray-900 text-left">{c.criterionNumber ? `#${c.criterionNumber} ` : ""}{c.criterionName || "Criterion"}</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ratingColor(c.rating)}`}>{c.rating}</span>
+        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ratingColor(c.rating ?? "")}`}>{c.rating}</span>
           {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
         </div>
       </button>
       {open && (
         <div className="px-4 pb-4 pt-1 border-t border-gray-100 space-y-3">
-          {c.strengths?.length > 0 && (
+          {(c.strengths?.length ?? 0) > 0 && (
             <div>
               <p className="text-xs font-semibold text-green-700 mb-1 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Strengths</p>
-              <ul className="space-y-1">{c.strengths.map((s: string, i: number) => (
+              <ul className="space-y-1">{c.strengths?.map((s: string, i: number) => (
                 <li key={i} className="text-xs text-gray-700 pl-4 relative before:content-['•'] before:absolute before:left-1 before:text-green-400">{s}</li>
               ))}</ul>
             </div>
           )}
-          {c.officerConcerns?.length > 0 && (
+          {(c.officerConcerns?.length ?? 0) > 0 && (
             <div>
               <p className="text-xs font-semibold text-orange-700 mb-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Officer Concerns</p>
-              <ul className="space-y-1">{c.officerConcerns.map((s: string, i: number) => (
+              <ul className="space-y-1">{c.officerConcerns?.map((s: string, i: number) => (
                 <li key={i} className="text-xs text-gray-700 pl-4 relative before:content-['•'] before:absolute before:left-1 before:text-orange-400">{s}</li>
               ))}</ul>
             </div>
@@ -167,22 +192,24 @@ const CriteriaCard = ({ c }: { c: any }) => {
 /* ------------------------------------------------------------------ */
 /*  Score Display                                                      */
 /* ------------------------------------------------------------------ */
-const ScoreDisplay = ({ result, fromDB }: { result: any; fromDB?: boolean }) => {
-  const r = fromDB ? null : (result?.data?.results || result?.results || null);
+const ScoreDisplay = ({ result, fromDB }: { result: ScoringResult | ScoringSession; fromDB?: boolean }) => {
+  const dbResult = fromDB ? (result as ScoringSession) : null;
+  const apiResult = fromDB ? null : (result as ScoringResult);
+  const r = apiResult ? ((apiResult.data as Record<string, unknown>)?.results as Record<string, unknown> || null) : null;
 
-  const overallScore = fromDB ? result.overall_score : (r?.overallScore ?? null);
-  const overallRating = fromDB ? result.overall_rating : (r?.overallRating ?? null);
-  const approvalProb = fromDB ? result.approval_probability : (r?.approvalProbability ?? null);
-  const rfeProb = fromDB ? result.rfe_probability : (r?.rfeProbability ?? null);
-  const denialRisk = fromDB ? result.denial_risk : (r?.denialRisk ?? null);
-  const criteriaScores = fromDB ? (result.criteria_scores || []) : (r?.criteriaScores || []);
-  const rfePredictions = fromDB ? (result.rfe_predictions || []) : (r?.rfePredictions || []);
-  const weaknesses = fromDB ? (result.weaknesses || []) : (r?.weaknesses || []);
-  const strengths = fromDB ? (result.strengths || []) : (r?.strengths || []);
-  const recommendations = fromDB ? (result.recommendations || {}) : (r?.recommendations || {});
-  const fullReport = fromDB ? result.full_report : (r?.fullReport || null);
-  const status = fromDB ? result.status : (result?.data?.status || result?.status || "unknown");
-  const progress = fromDB ? result.progress : (result?.data?.progress ?? null);
+  const overallScore = dbResult ? dbResult.overall_score : ((r?.overallScore as number) ?? null);
+  const overallRating = dbResult ? dbResult.overall_rating : ((r?.overallRating as string) ?? null);
+  const approvalProb = dbResult ? dbResult.approval_probability : ((r?.approvalProbability as number) ?? null);
+  const rfeProb = dbResult ? dbResult.rfe_probability : ((r?.rfeProbability as number) ?? null);
+  const denialRisk = dbResult ? dbResult.denial_risk : ((r?.denialRisk as number) ?? null);
+  const criteriaScores = dbResult ? (dbResult.criteria_scores || []) : ((r?.criteriaScores as CriteriaScore[]) || []);
+  const rfePredictions = dbResult ? (dbResult.rfe_predictions || []) : ((r?.rfePredictions as RfePrediction[]) || []);
+  const weaknesses = dbResult ? (dbResult.weaknesses || []) : ((r?.weaknesses as string[]) || []);
+  const strengths = dbResult ? (dbResult.strengths || []) : ((r?.strengths as string[]) || []);
+  const recommendations: Recommendations = dbResult ? (dbResult.recommendations || {}) : ((r?.recommendations as Recommendations) || {});
+  const fullReport = dbResult ? dbResult.full_report : ((r?.fullReport as string) || null);
+  const status = dbResult ? dbResult.status : ((apiResult?.data as Record<string, unknown>)?.status as string || apiResult?.status || "unknown");
+  const progress = dbResult ? dbResult.progress : ((apiResult?.data as Record<string, unknown>)?.progress as number ?? null);
 
   const scorePercent = overallScore != null ? Math.round(Number(overallScore)) : null;
   const [showReport, setShowReport] = useState(false);
@@ -241,7 +268,7 @@ const ScoreDisplay = ({ result, fromDB }: { result: any; fromDB?: boolean }) => 
       {criteriaScores.length > 0 && (
         <div>
           <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3"><Award className="w-4 h-4 text-blue-500" /> Criteria Scores</h4>
-          <div className="space-y-2">{criteriaScores.map((c: any, i: number) => <CriteriaCard key={i} c={c} />)}</div>
+          <div className="space-y-2">{criteriaScores.map((c: CriteriaScore, i: number) => <CriteriaCard key={i} c={c} />)}</div>
         </div>
       )}
 
@@ -267,14 +294,14 @@ const ScoreDisplay = ({ result, fromDB }: { result: any; fromDB?: boolean }) => 
       {rfePredictions.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
           <h4 className="text-sm font-semibold text-yellow-800 mb-3 flex items-center gap-1"><AlertCircle className="w-4 h-4" /> RFE Predictions</h4>
-          <div className="space-y-3">{rfePredictions.map((rfe: any, i: number) => (
+          <div className="space-y-3">{rfePredictions.map((rfe: RfePrediction, i: number) => (
             <div key={i} className="bg-white rounded-lg p-3 border border-yellow-100">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-medium text-gray-900">{rfe.topic}</span>
                 <span className="text-xs font-bold text-yellow-700">{rfe.probability}% likely</span>
               </div>
-              {rfe.suggestedEvidence?.length > 0 && (
-                <ul className="mt-2 space-y-1">{rfe.suggestedEvidence.map((e: string, j: number) => (
+              {(rfe.suggestedEvidence?.length ?? 0) > 0 && (
+                <ul className="mt-2 space-y-1">{rfe.suggestedEvidence?.map((e: string, j: number) => (
                   <li key={j} className="text-xs text-gray-600 flex items-start gap-1.5"><ChevronRight className="w-3 h-3 text-yellow-500 mt-0.5 flex-shrink-0" />{e}</li>
                 ))}</ul>
               )}
@@ -283,7 +310,7 @@ const ScoreDisplay = ({ result, fromDB }: { result: any; fromDB?: boolean }) => 
         </div>
       )}
 
-      {recommendations && (recommendations.critical?.length > 0 || recommendations.high?.length > 0 || recommendations.recommended?.length > 0) && (
+      {recommendations && ((recommendations.critical?.length ?? 0) > 0 || (recommendations.high?.length ?? 0) > 0 || (recommendations.recommended?.length ?? 0) > 0) && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-1"><Star className="w-4 h-4" /> Recommendations</h4>
           <div className="space-y-3">
@@ -292,10 +319,10 @@ const ScoreDisplay = ({ result, fromDB }: { result: any; fromDB?: boolean }) => 
               { key: "high", label: "High Priority", color: "text-orange-600", dot: "bg-orange-500" },
               { key: "recommended", label: "Recommended", color: "text-blue-600", dot: "bg-blue-500" },
             ].map(({ key, label, color, dot }) =>
-              recommendations[key]?.length > 0 ? (
+              ((recommendations[key as keyof Recommendations] as string[] | undefined)?.length ?? 0) > 0 ? (
                 <div key={key}>
                   <span className={`text-xs font-bold ${color} uppercase`}>{label}</span>
-                  <ul className="mt-1 space-y-1">{recommendations[key].map((rec: string, i: number) => (
+                  <ul className="mt-1 space-y-1">{(recommendations[key as keyof Recommendations] as string[])?.map((rec: string, i: number) => (
                     <li key={i} className="text-xs text-gray-800 flex items-start gap-2"><span className={`w-1.5 h-1.5 rounded-full ${dot} mt-1.5 flex-shrink-0`} />{rec}</li>
                   ))}</ul>
                 </div>
@@ -330,11 +357,6 @@ export default function ScoringPage() {
   const [sessions, setSessions] = useState<ScoringSession[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedSession, setSelectedSession] = useState<ScoringSession | null>(null);
-  const [lookupSessionId, setLookupSessionId] = useState("");
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupResult, setLookupResult] = useState<ScoringResult | null>(null);
-  const [lookupError, setLookupError] = useState("");
-
   /* --- New Scoring tab --- */
   const [step, setStep] = useState<"form" | "upload" | "scoring" | "processing" | "result">("form");
   const [visaType, setVisaType] = useState("");
@@ -380,32 +402,13 @@ export default function ScoringPage() {
     }
   };
 
-  const handleLookup = async () => {
-    if (!lookupSessionId.trim()) { setLookupError("Please enter a Session ID"); return; }
-    setLookupLoading(true);
-    setLookupError("");
-    setLookupResult(null);
-    setSelectedSession(null);
-    try {
-      const res = await fetch(`/api/scoring?sessionId=${encodeURIComponent(lookupSessionId.trim())}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message || json.error || "Failed to fetch session");
-      setLookupResult(json);
-      loadHistory();
-    } catch (err: any) {
-      setLookupError(err.message || "Failed to fetch session results");
-    } finally {
-      setLookupLoading(false);
-    }
-  };
-
   /* --- Step 1: Create session --- */
   const handleCreateSession = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
-      const body: any = { visaType, documentType };
+      const body: Record<string, string> = { visaType, documentType };
       if (beneficiaryName.trim()) body.beneficiaryName = beneficiaryName.trim();
 
       const res = await fetch("/api/scoring", {
@@ -420,8 +423,8 @@ export default function ScoringPage() {
       } else {
         throw new Error(json.error?.message || json.error || json.message || "Failed to create session");
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to create scoring session");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to create scoring session");
     } finally {
       setLoading(false);
     }
@@ -465,8 +468,8 @@ export default function ScoringPage() {
       setUploadProgress(null);
       setStep("scoring");
       setLoading(false);
-    } catch (err: any) {
-      setError(err.message || "Failed to upload documents");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to upload documents");
       setUploadProgress(null);
       setLoading(false);
     }
@@ -489,8 +492,8 @@ export default function ScoringPage() {
       } else {
         throw new Error(json.error?.message || json.error || "Failed to trigger scoring");
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to trigger scoring");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to trigger scoring");
       setLoading(false);
     }
   };
@@ -547,8 +550,8 @@ export default function ScoringPage() {
 
         await new Promise((r) => setTimeout(r, 5000));
         return poll();
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch results");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to fetch results");
         setLoading(false);
       }
     };
@@ -665,7 +668,7 @@ export default function ScoringPage() {
                           <td className="px-4 py-3 text-gray-500 text-xs">{fmtDate(s.created_at)}</td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center gap-2">
-                              <button onClick={() => { setSelectedSession(s); setLookupResult(null); }} className="text-blue-600 hover:text-blue-800 text-xs font-medium hover:underline">View</button>
+                            <button onClick={() => { setSelectedSession(s); }} className="text-blue-600 hover:text-blue-800 text-xs font-medium hover:underline">View</button>
                               <button onClick={() => handleDeleteSession(s.session_id)} className="text-red-500 hover:text-red-700 text-xs font-medium hover:underline">Delete</button>
                             </div>
                           </td>

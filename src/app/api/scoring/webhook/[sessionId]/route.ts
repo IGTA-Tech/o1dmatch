@@ -1,3 +1,4 @@
+/** /src/app/api/scoring/webhook/[sessionId]/route.ts */
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -38,7 +39,7 @@ export async function POST(
 
   console.log(`[webhook] Received webhook for session: ${sessionId}`);
 
-  let payload: any;
+  let payload: Record<string, unknown>;
   try {
     payload = await req.json();
     console.log("[webhook] Payload:", JSON.stringify(payload, null, 2));
@@ -47,8 +48,8 @@ export async function POST(
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const eventType = payload?.type;
-  const eventData = payload?.data;
+  const eventType = payload?.type as string | undefined;
+  const eventData = payload?.data as Record<string, unknown> | undefined;
 
   if (!eventType || !eventData) {
     console.error("[webhook] Missing type or data in payload");
@@ -62,10 +63,10 @@ export async function POST(
     console.log(`[webhook] Scoring completed for session: ${sessionId}, score: ${eventData.overallScore}`);
 
     // The webhook payload has summary data. Fetch full results for detailed fields.
-    const fullResponse = await fetchFullResults(eventData.sessionId || sessionId);
-    const fullResults = fullResponse?.data?.results || null;
+    const fullResponse = await fetchFullResults((eventData.sessionId as string) || sessionId);
+    const fullResults = (fullResponse?.data as Record<string, unknown>)?.results as Record<string, unknown> | null ?? null;
 
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       status: "completed",
       progress: 100,
       overall_score: eventData.overallScore ?? fullResults?.overallScore ?? null,
@@ -84,7 +85,7 @@ export async function POST(
       api_response: fullResponse || payload,
     };
 
-    const { error, data } = await supabase
+    const { error } = await supabase
       .from("scoring_sessions")
       .update(updateData)
       .eq("session_id", sessionId);
@@ -121,7 +122,7 @@ export async function POST(
 
   // ─── scoring.progress (optional) ───
   if (eventType === "scoring.progress") {
-    const progress = eventData.progress ?? 0;
+    const progress = (eventData.progress as number) ?? 0;
     console.log(`[webhook] Scoring progress for session: ${sessionId}, progress: ${progress}%`);
 
     const { error } = await supabase
