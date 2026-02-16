@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
         if (apiStatus === "completed" && apiResults) {
           console.log(`[cron/scoring-sync] Session ${sid} is completed. Score: ${apiResults.overallScore}`);
 
-          const updateData: Record<string, any> = {
+          const updateData: Record<string, unknown> = {
             status: "completed",
             progress: json.data.progress ?? 100,
             overall_score: apiResults.overallScore,
@@ -149,9 +149,9 @@ export async function GET(req: NextRequest) {
         // Small delay to respect rate limits
         await new Promise((r) => setTimeout(r, 500));
 
-      } catch (sessionErr: any) {
+      } catch (sessionErr: unknown) {
         console.error(`[cron/scoring-sync] Error processing ${sid}:`, sessionErr);
-        results.errors.push(`${sid}: ${sessionErr.message}`);
+        results.errors.push(`${sid}: ${sessionErr instanceof Error ? sessionErr.message : 'Unknown error'}`);
         results.skipped++;
       }
     }
@@ -159,8 +159,8 @@ export async function GET(req: NextRequest) {
     console.log("[cron/scoring-sync] Sync complete:", results);
     return NextResponse.json({ success: true, results });
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[cron/scoring-sync] Fatal error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Internal server error' }, { status: 500 });
   }
 }
