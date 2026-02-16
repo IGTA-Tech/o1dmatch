@@ -104,14 +104,14 @@ function toAbsoluteDownloadUrl(downloadUrl: string | null | undefined): string |
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-interface PetitionCase {
+export interface PetitionCase {
   id: string;
   beneficiary_name: string;
   visa_type: string;
   status: string;
 }
 
-interface ExhibitPackage {
+export interface ExhibitPackage {
   id: string;
   employer_id: string;
   case_id: string | null;
