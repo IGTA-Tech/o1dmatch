@@ -8,7 +8,7 @@ import {
   AlertCircle, Loader2, Package, Search, X, ChevronRight,
   ChevronLeft, Settings, Tag, ArrowUpDown, Zap, RotateCcw,
   ArrowDownAZ, Shuffle, Check, FileDown, RefreshCw, Globe,
-  ListOrdered, BookOpen, Link2, HardDrive,
+  ListOrdered, BookOpen, Link2, HardDrive, Mail,
 } from 'lucide-react';
 
 // ─── Exhibit Maker Backend ──────────────────────────────────────────────────
@@ -33,35 +33,14 @@ function toAbsoluteDownloadUrl(downloadUrl: string | null | undefined): string |
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-interface GooglePickerAction { PICKED: string; }
-interface GooglePickerFeature { MULTISELECT_ENABLED: string; }
-interface GooglePickerViewId { DOCUMENTS: string; }
-interface GooglePicker {
-  PickerBuilder: new () => any;
-  DocsView: new (viewId?: string) => any;
-  Action: GooglePickerAction;
-  Feature: GooglePickerFeature;
-  ViewId: GooglePickerViewId;
-}
-interface GoogleAPI { picker?: GooglePicker; }
-interface GapiClient { load: (api: string, callback: () => void) => void; }
-declare global {
-  interface Window {
-    gapi?: GapiClient;
-    google?: GoogleAPI;
-  }
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
-
-export interface PetitionCase {
+interface PetitionCase {
   id: string;
   beneficiary_name: string;
   visa_type: string;
   status: string;
 }
 
-export interface ExhibitPackage {
+interface ExhibitPackage {
   id: string;
   employer_id: string;
   case_id: string | null;
@@ -74,6 +53,9 @@ export interface ExhibitPackage {
   total_pages: number | null;
   file_size: number | null;
   download_url: string | null;
+  delivery_method: string | null;
+  recipient_email: string | null;
+  drive_link: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -191,7 +173,7 @@ function extractUrlsFromText(text: string): { url: string; label: string }[] {
     for (const chunk of chunks) {
       const m = chunk.match(/^(https?:\/\/[^\s,;""''<>\[\](){}]+)/i);
       if (!m) continue;
-      const url = m[1].replace(/[.,;:!?)}\]]+$/, '');
+      let url = m[1].replace(/[.,;:!?)}\]]+$/, '');
       try { new URL(url); } catch { continue; }
       const remaining = line.replace(url, '').replace(/^\s*[\d#]+[.):\-]?\s*/, '').replace(/^\s*[-*•]\s*/, '').trim();
       let label = remaining.replace(/^[\s—–\-,;:|]+/, '').replace(/[\s—–\-,;:|]+$/, '').trim();
@@ -263,28 +245,28 @@ function PackageList({ packages, onCreateNew, onRefresh }: { packages: ExhibitPa
   const [statusFilter, setStatusFilter] = useState('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  async function handleDelete(pkg: ExhibitPackage) {
-    if (!confirm(`Delete "${pkg.name}"? This action cannot be undone.`)) return;
-    setDeletingId(pkg.id);
-    try {
-      const res = await fetch(`/api/exhibits/${pkg.id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error || 'Delete failed');
-      }
-      onRefresh?.();
-    } catch (err: unknown) {
-      alert(`Failed to delete: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
   const filtered = packages.filter(pkg => {
     const matchesSearch = !searchQuery || pkg.name.toLowerCase().includes(searchQuery.toLowerCase()) || pkg.visa_type?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = statusFilter === 'all' || pkg.status === statusFilter;
     return matchesSearch && matchesFilter;
   });
+
+  async function handleDelete(pkgId: string, pkgName: string) {
+    if (!confirm(`Delete "${pkgName}"? This cannot be undone.`)) return;
+    setDeletingId(pkgId);
+    try {
+      const res = await fetch(`/api/exhibits/${pkgId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || 'Delete failed');
+      }
+      onRefresh?.();
+    } catch (err: any) {
+      alert(`Failed to delete: ${err.message}`);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <>
@@ -349,13 +331,18 @@ function PackageList({ packages, onCreateNew, onRefresh }: { packages: ExhibitPa
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {pkg.status === 'completed' && pkg.recipient_email && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 text-xs font-medium rounded-xl border border-blue-200">
+                        <Mail className="w-3.5 h-3.5" /> {pkg.recipient_email}
+                      </span>
+                    )}
                     {pkg.status === 'completed' && pkg.download_url && (
                       <a href={toAbsoluteDownloadUrl(pkg.download_url) || '#'} target="_blank" rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700">
                         <Download className="w-4 h-4" /> Download
                       </a>
                     )}
-                    <button onClick={() => handleDelete(pkg)} disabled={deletingId === pkg.id}
+                    <button onClick={() => handleDelete(pkg.id, pkg.name)} disabled={deletingId === pkg.id}
                       className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       title="Delete package">
                       {deletingId === pkg.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
@@ -406,7 +393,7 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
 
   // ── Google Drive ──
   const [driveStatus, setDriveStatus] = useState<'loading' | 'unavailable' | 'ready' | 'connected' | 'importing'>('loading');
-  const [driveConfig, setDriveConfig] = useState<Record<string, string> | null>(null);
+  const [driveConfig, setDriveConfig] = useState<any>(null);
   const [driveToken, setDriveToken] = useState<string | null>(null);
 
   // ── Generation ──
@@ -414,13 +401,7 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
   const [genProgress, setGenProgress] = useState(0);
   const [genStatus, setGenStatus] = useState('');
   const [genLogs, setGenLogs] = useState<string[]>([]);
-  const [genResult, setGenResult] = useState<{
-    totalPages?: number;
-    packageSize?: number;
-    downloadUrl?: string;
-    driveLink?: string;
-    [key: string]: unknown;
-  } | null>(null);
+  const [genResult, setGenResult] = useState<any>(null);
 
   // ── Reorder ──
   const [reorderHistory, setReorderHistory] = useState<ExhibitItem[][]>([]);
@@ -444,14 +425,14 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
         setDriveStatus('ready');
 
         // Pre-load Google API scripts
-        loadGoogleScripts();
+        loadGoogleScripts(cfg);
       } catch {
         setDriveStatus('unavailable');
       }
     })();
   }, []);
 
-  function loadGoogleScripts() {
+  function loadGoogleScripts(cfg: any) {
     // Load GIS
     if (!document.getElementById('google-gis-script')) {
       const s = document.createElement('script');
@@ -464,7 +445,7 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
       const s = document.createElement('script');
       s.id = 'google-api-script';
       s.src = 'https://apis.google.com/js/api.js';
-      s.onload = () => { window.gapi?.load('picker', () => {}); };
+      s.onload = () => { (window as any).gapi?.load('picker', () => {}); };
       document.head.appendChild(s);
     }
   }
@@ -565,8 +546,8 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
   }
 
   function openGooglePicker(token: string) {
-    const gapi = window.gapi;
-    const google = window.google;
+    const gapi = (window as any).gapi;
+    const google = (window as any).google;
 
     if (!google?.picker) {
       // Load picker if not ready
@@ -577,9 +558,8 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
   }
 
   function buildPicker(token: string) {
-    const google = window.google;
+    const google = (window as any).google;
     if (!google?.picker) { alert('Google Picker not loaded. Please try again.'); return; }
-    if (!driveConfig) { alert('Google Drive config not loaded.'); return; }
 
     const picker = new google.picker.PickerBuilder()
       .addView(new google.picker.DocsView().setIncludeFolders(true).setSelectFolderEnabled(false).setLabel('All Files'))
@@ -596,16 +576,16 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
     picker.setVisible(true);
   }
 
-  async function handlePickerResult(data: { action: string; docs?: Array<Record<string, unknown>> }) {
-    const google = window.google;
-    if (data.action !== google?.picker?.Action.PICKED) return;
+  async function handlePickerResult(data: any) {
+    const google = (window as any).google;
+    if (data.action !== google.picker.Action.PICKED) return;
     const docs = data.docs;
     if (!docs?.length) return;
 
     setDriveStatus('importing');
     try {
       // Send picked files to exhibit-maker backend for download
-      const files = docs.map((doc: Record<string, unknown>) => ({
+      const files = docs.map((doc: any) => ({
         id: doc.id, name: doc.name, mimeType: doc.mimeType, sizeBytes: doc.sizeBytes || 0,
       }));
 
@@ -629,12 +609,12 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
       }
       setExhibits(prev => [...prev, ...newItems]);
 
-      const failed = result.files.filter((f: Record<string, unknown>) => !f.success);
-      if (failed.length > 0) alert(`Failed to import: ${failed.map((f: Record<string, unknown>) => f.name).join(', ')}`);
+      const failed = result.files.filter((f: any) => !f.success);
+      if (failed.length > 0) alert(`Failed to import: ${failed.map((f: any) => f.name).join(', ')}`);
 
       setDriveStatus('connected');
-    } catch (err: unknown) {
-      alert(`Google Drive import failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } catch (err: any) {
+      alert(`Google Drive import failed: ${err.message}`);
       setDriveStatus('connected');
     }
   }
@@ -654,6 +634,18 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   async function handleGenerate() {
+    // Validate delivery requirements
+    if ((deliveryMethod === 'drive' || deliveryMethod === 'email') && !recipientEmail.trim()) {
+      alert(deliveryMethod === 'drive'
+        ? 'Please enter a recipient email for Google Drive delivery.'
+        : 'Please enter a recipient email for Email delivery.');
+      return;
+    }
+    if ((deliveryMethod === 'drive' || deliveryMethod === 'email') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim())) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
     setIsGenerating(true);
     setGenProgress(5);
     setGenStatus('Uploading files...');
@@ -705,8 +697,8 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
 
       // Poll for status
       await pollStatus(result.jobId);
-    } catch (err: unknown) {
-      setGenStatus(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } catch (err: any) {
+      setGenStatus(`Error: ${err.message}`);
       setIsGenerating(false);
     }
   }
@@ -724,7 +716,7 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
         setGenProgress(job.progress || 0);
         setGenStatus(job.statusMessage || 'Processing...');
         if (job.logs?.length) {
-          setGenLogs(job.logs.map((l: { time: string; message: string }) => `[${new Date(l.time).toLocaleTimeString()}] ${l.message}`));
+          setGenLogs(job.logs.map((l: any) => `[${new Date(l.time).toLocaleTimeString()}] ${l.message}`));
         }
 
         if (job.status === 'completed') {
@@ -748,6 +740,9 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
               fileSize: job.packageSize || null,
               downloadUrl: downloadUrl,
               status: 'completed',
+              deliveryMethod,
+              recipientEmail: recipientEmail.trim() || null,
+              driveLink: job.driveLink || null,
             }),
           }).catch(() => {/* non-critical */});
 
@@ -759,8 +754,8 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
         } else {
           throw new Error('Generation timed out');
         }
-      } catch (err: unknown) {
-        setGenStatus(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      } catch (err: any) {
+        setGenStatus(`Error: ${err.message}`);
         setIsGenerating(false);
       }
     };
@@ -861,13 +856,30 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
             <div><label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Delivery</label>
               <select value={deliveryMethod} onChange={e => setDeliveryMethod(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                 <option value="download">Download (Browser)</option>
-                <option value="drive">Google Drive</option>
+                {/* <option value="drive">Google Drive</option> */}
                 <option value="email">Email (ZIP)</option>
               </select>
             </div>
             {(deliveryMethod === 'email' || deliveryMethod === 'drive') && (
-              <div><label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">Recipient Email</label>
-                <input type="email" value={recipientEmail} onChange={e => setRecipientEmail(e.target.value)} placeholder="recipient@example.com" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide">
+                  Recipient Email <span className="text-red-500">*</span>
+                </label>
+                <input type="email" value={recipientEmail} onChange={e => setRecipientEmail(e.target.value)} placeholder="recipient@example.com"
+                  className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    recipientEmail.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim())
+                      ? 'border-green-300 bg-green-50/30'
+                      : recipientEmail.trim()
+                        ? 'border-red-300 bg-red-50/30'
+                        : 'border-gray-200'
+                  }`} />
+                {!recipientEmail.trim() && (
+                  <p className="text-xs text-red-500 mt-1">Required for {deliveryMethod === 'drive' ? 'Google Drive' : 'Email'} delivery</p>
+                )}
+                {recipientEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim()) && (
+                  <p className="text-xs text-red-500 mt-1">Please enter a valid email address</p>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -1080,7 +1092,7 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
                     { label: 'Total Exhibits', value: String(exhibits.length), Icon: Package },
                     { label: 'Visa Type', value: visaType || 'Not selected', Icon: BookOpen },
                     { label: 'Numbering', value: numberingStyle === 'letters' ? 'Letters (A, B, C)' : numberingStyle === 'numbers' ? 'Numbers (1, 2, 3)' : 'Roman (I, II, III)', Icon: ListOrdered },
-                    { label: 'Delivery', value: deliveryMethod === 'download' ? 'Download' : deliveryMethod === 'drive' ? 'Google Drive' : 'Email', Icon: FileDown },
+                    { label: 'Delivery', value: deliveryMethod === 'download' ? 'Download' : deliveryMethod === 'drive' ? (recipientEmail.trim() ? `Drive → ${recipientEmail}` : 'Drive — email required!') : (recipientEmail.trim() ? `Email → ${recipientEmail}` : 'Email — email required!'), Icon: FileDown },
                   ].map(item => (
                     <div key={item.label} className="bg-white p-4"><div className="flex items-center gap-2 text-xs text-gray-500 mb-1"><item.Icon className="w-3.5 h-3.5" />{item.label}</div><div className="text-lg font-bold text-gray-900">{item.value}</div></div>
                   ))}
@@ -1123,11 +1135,18 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
                   )}
                 </div>
               ) : (
-                <div className="flex justify-between pt-2">
-                  <button onClick={goBack_} className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 font-medium rounded-xl hover:bg-gray-100"><ChevronLeft className="w-4 h-4" /> Back</button>
-                  <button onClick={handleGenerate} className="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200">
-                    <Zap className="w-5 h-5" /> Generate Package
-                  </button>
+                <div className="flex flex-col items-end gap-2 pt-2">
+                  <div className="flex justify-between w-full">
+                    <button onClick={goBack_} className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 font-medium rounded-xl hover:bg-gray-100"><ChevronLeft className="w-4 h-4" /> Back</button>
+                    <button onClick={handleGenerate}
+                      disabled={(deliveryMethod === 'drive' || deliveryMethod === 'email') && (!recipientEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim()))}
+                      className="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed">
+                      <Zap className="w-5 h-5" /> Generate Package
+                    </button>
+                  </div>
+                  {(deliveryMethod === 'drive' || deliveryMethod === 'email') && (!recipientEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim())) && (
+                    <p className="text-xs text-red-500">Please enter a valid recipient email in the sidebar to continue.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -1151,7 +1170,7 @@ function ExhibitWizard({ cases, employerId, companyName, onBack }: {
               {deliveryMethod === 'drive' && genResult.driveLink && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl inline-block">
                   <p className="text-sm text-green-800 font-medium mb-1">Uploaded to Google Drive!</p>
-                  <a href={genResult.driveLink as string} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 underline hover:text-blue-800">Open in Google Drive →</a>
+                  <a href={genResult.driveLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 underline hover:text-blue-800">Open in Google Drive →</a>
                 </div>
               )}
               {deliveryMethod === 'email' && (

@@ -1,5 +1,3 @@
-// src/app/api/exhibits/generate/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -46,6 +44,9 @@ export async function POST(request: NextRequest) {
       download_url: body.downloadUrl || null,
       enable_toc: body.enableToc ?? true,
       enable_cover_pages: body.enableCoverPages ?? true,
+      delivery_method: body.deliveryMethod || 'download',
+      recipient_email: body.recipientEmail || null,
+      drive_link: body.driveLink || null,
     };
 
     const { data: pkg, error: insertError } = await supabase
