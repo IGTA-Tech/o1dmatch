@@ -83,6 +83,14 @@ interface ScoringSession {
   updated_at: string;
 }
 
+interface CreditInfo {
+  remaining: number;
+  used: number;
+  limit: number;
+  periodStart: string;
+  periodEnd: string;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Spinner                                                            */
 /* ------------------------------------------------------------------ */
@@ -351,12 +359,15 @@ const ScoreDisplay = ({ result, fromDB }: { result: ScoringResult | ScoringSessi
 /*  MAIN PAGE                                                          */
 /* ================================================================== */
 export default function ScoringPage() {
-  const [activeTab, setActiveTab] = useState<"score" | "new">("new");
+  const [activeTab, setActiveTab] = useState<"score" | "new">("score");
 
   /* --- Current Score tab --- */
   const [sessions, setSessions] = useState<ScoringSession[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedSession, setSelectedSession] = useState<ScoringSession | null>(null);
+  const [rescoringId, setRescoringId] = useState<string | null>(null);
+  const [credits, setCredits] = useState<CreditInfo | null>(null);
+  const [creditsLoading, setCreditsLoading] = useState(false);
   /* --- New Scoring tab --- */
   const [step, setStep] = useState<"form" | "upload" | "scoring" | "processing" | "result">("form");
   const [visaType, setVisaType] = useState("");
@@ -372,8 +383,24 @@ export default function ScoringPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (activeTab === "score") loadHistory();
+    if (activeTab === "score") {
+      loadHistory();
+      loadCredits();
+    }
   }, [activeTab]);
+
+  const loadCredits = async () => {
+    setCreditsLoading(true);
+    try {
+      const res = await fetch("/api/scoring-credits");
+      const json = await res.json();
+      if (json.success) setCredits(json.credits);
+    } catch (err) {
+      console.error("Failed to load credits:", err);
+    } finally {
+      setCreditsLoading(false);
+    }
+  };
 
   const loadHistory = async () => {
     setHistoryLoading(true);
@@ -399,6 +426,113 @@ export default function ScoringPage() {
       }
     } catch (err) {
       console.error("Failed to delete session:", err);
+    }
+  };
+
+  /* --- Re-score: check credits, deduct, trigger scoring API, poll for updated results --- */
+  const handleRescore = async (session: ScoringSession) => {
+    // Check credits first
+    if (credits && credits.remaining <= 0) {
+      setError("No re-score credits remaining. Credits reset at the end of the month.");
+      return;
+    }
+
+    const creditsLeft = credits?.remaining ?? 0;
+    if (!confirm(`Re-score "${session.beneficiary_name || session.visa_type}"?\nThis will use 1 credit (${creditsLeft - 1} remaining after this).`)) return;
+
+    const sid = session.session_id;
+    setRescoringId(sid);
+    setError("");
+
+    try {
+      // 1. Deduct 1 credit first
+      const creditRes = await fetch("/api/scoring-credits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deduct" }),
+      });
+      const creditJson = await creditRes.json();
+
+      if (!creditJson.success) {
+        throw new Error(creditJson.error || "No credits remaining. Credits reset at the end of the month.");
+      }
+
+      // Update local credit state immediately
+      setCredits(creditJson.credits);
+
+      // 2. Trigger re-scoring via the existing score action
+      const res = await fetch("/api/scoring", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "score", sessionId: sid }),
+      });
+      const json = await res.json();
+
+      if (!res.ok && res.status !== 202 && !json.success) {
+        throw new Error(json.error?.message || json.error || "Failed to trigger re-scoring");
+      }
+
+      // 3. Update local state to show "scoring" status
+      setSessions((prev) =>
+        prev.map((s) => (s.session_id === sid ? { ...s, status: "scoring" } : s))
+      );
+
+      // 4. Poll for completed results
+      let attempts = 0;
+      const maxAttempts = 120;
+
+      const poll = async (): Promise<void> => {
+        attempts++;
+        try {
+          const dbRes = await fetch(`/api/scoring?action=check&sessionId=${encodeURIComponent(sid)}`);
+          const dbJson = await dbRes.json();
+
+          if (dbJson.found && dbJson.session?.status === "completed" && dbJson.session?.overall_score != null) {
+            setSessions((prev) =>
+              prev.map((s) => (s.session_id === sid ? { ...s, ...dbJson.session } : s))
+            );
+            if (selectedSession?.session_id === sid) setSelectedSession(dbJson.session);
+            setRescoringId(null);
+            return;
+          }
+
+          if (dbJson.found && dbJson.session?.status === "failed") {
+            throw new Error("Re-scoring failed. Please try again.");
+          }
+
+          const pollRes = await fetch(`/api/scoring?sessionId=${encodeURIComponent(sid)}`);
+          const pollJson = await pollRes.json();
+          const status = pollJson?.data?.status || pollJson?.status;
+
+          if (status === "completed") {
+            await loadHistory();
+            setRescoringId(null);
+            return;
+          }
+
+          if (status === "failed" || status === "error") {
+            throw new Error("Re-scoring failed.");
+          }
+
+          if (attempts >= maxAttempts) {
+            throw new Error("Re-scoring is taking too long. Check back later.");
+          }
+
+          await new Promise((r) => setTimeout(r, 5000));
+          return poll();
+        } catch (err: unknown) {
+          setError(err instanceof Error ? err.message : "Re-scoring failed");
+          setRescoringId(null);
+          await loadHistory();
+        }
+      };
+
+      await poll();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to trigger re-scoring");
+      setRescoringId(null);
+      // Refresh credits in case deduction failed
+      await loadCredits();
     }
   };
 
@@ -626,6 +760,56 @@ export default function ScoringPage() {
               </div>
             )}
 
+            {/* Credit Balance Banner */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    credits && credits.remaining > 0 ? "bg-green-50" : "bg-red-50"
+                  }`}>
+                    <Star className={`w-5 h-5 ${credits && credits.remaining > 0 ? "text-green-600" : "text-red-500"}`} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Re-score Credits</h3>
+                    <p className="text-xs text-gray-500">
+                      {credits
+                        ? `Resets ${new Date(credits.periodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
+                        : "Loading..."}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  {creditsLoading ? (
+                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                  ) : credits ? (
+                    <>
+                      <div className="text-right">
+                        <div className="flex items-baseline gap-1">
+                          <span className={`text-2xl font-bold ${credits.remaining > 0 ? "text-green-600" : "text-red-500"}`}>
+                            {credits.remaining}
+                          </span>
+                          <span className="text-sm text-gray-400">/ {credits.limit}</span>
+                        </div>
+                        <p className="text-xs text-gray-400">{credits.used} used this month</p>
+                      </div>
+                      <div className="w-20 bg-gray-100 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-500 ${credits.remaining > 3 ? "bg-green-500" : credits.remaining > 0 ? "bg-yellow-500" : "bg-red-500"}`}
+                          style={{ width: `${(credits.remaining / credits.limit) * 100}%` }}
+                        />
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+              {credits && credits.remaining === 0 && (
+                <div className="mt-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-center gap-2 text-xs text-red-700">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  All re-score credits have been used this month. Credits will reset on {new Date(credits.periodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric" })}.
+                </div>
+              )}
+            </div>
+
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50">
                 <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Clock className="w-4 h-4" /> Scoring History</h3>
@@ -669,6 +853,20 @@ export default function ScoringPage() {
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center gap-2">
                             <button onClick={() => { setSelectedSession(s); }} className="text-blue-600 hover:text-blue-800 text-xs font-medium hover:underline">View</button>
+                              {rescoringId === s.session_id ? (
+                                <span className="text-orange-500 text-xs font-medium flex items-center gap-1">
+                                  <Loader2 className="w-3 h-3 animate-spin" /> Scoring...
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => handleRescore(s)}
+                                  disabled={rescoringId !== null || (credits !== null && credits.remaining <= 0)}
+                                  title={credits && credits.remaining <= 0 ? "No credits remaining — resets at month end" : `${credits?.remaining ?? "..."} credits remaining`}
+                                  className="text-orange-600 hover:text-orange-800 text-xs font-medium hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+                                >
+                                  Re-score
+                                </button>
+                              )}
                               <button onClick={() => handleDeleteSession(s.session_id)} className="text-red-500 hover:text-red-700 text-xs font-medium hover:underline">Delete</button>
                             </div>
                           </td>
