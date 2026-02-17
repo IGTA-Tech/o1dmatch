@@ -45,7 +45,7 @@ export default function Navbar() {
   const [loading, setLoading] = useState(true);
   const waitlistRef = useRef<HTMLDivElement>(null);
   const dashboardRef = useRef<HTMLDivElement>(null);
-  const legalRef = useRef<HTMLDivElement>(null);
+  // const legalRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
