@@ -1,11 +1,20 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "regions": ["iad1"],
+  "regions": [
+    "iad1"
+  ],
   "crons": [
     {
       "path": "/api/cron/scoring-sync",
       "schedule": "0 0 * * 0"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/o1dmatch500",
+      "destination": "https://buy.stripe.com/8x200i8bI6CbbWQ1ryebu29",
+      "permanent": false
     }
   ]
 }
