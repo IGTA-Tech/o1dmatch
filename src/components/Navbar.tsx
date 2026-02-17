@@ -205,7 +205,7 @@ export default function Navbar() {
             </Link>
 
             {/* Legal Dropdown */}
-            <div className="relative" ref={legalRef}>
+            {/* <div className="relative" ref={legalRef}>
               <button
                 onClick={() => setIsLegalOpen(!isLegalOpen)}
                 className={`flex items-center gap-1 py-2 hover:text-gray-900 ${
@@ -237,7 +237,7 @@ export default function Navbar() {
                   </Link>
                 </div>
               )}
-            </div>
+            </div> */}
 
             {/* Waitlist Dropdown */}
             <div className="relative" ref={waitlistRef}>
