@@ -238,11 +238,11 @@ export default function SignupPage() {
             />
             <span className="text-sm text-gray-600">
               I agree to the{' '}
-              <Link href="#" className="text-blue-600 hover:text-blue-700">
+              <Link target='__blank' href="/terms" className="text-blue-600 hover:text-blue-700">
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link href="#" className="text-blue-600 hover:text-blue-700">
+              <Link target='__blank' href="/privacy" className="text-blue-600 hover:text-blue-700">
                 Privacy Policy
               </Link>
             </span>
