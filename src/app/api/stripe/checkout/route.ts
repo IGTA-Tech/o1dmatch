@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getOrCreateStripeCustomer, createCheckoutSession, STRIPE_PRICE_IDS } from '@/lib/stripe';
+import { getOrCreateStripeCustomer, createCheckoutSession, createStripeCoupon, STRIPE_PRICE_IDS } from '@/lib/stripe';
 import { EMPLOYER_TIERS, TALENT_TIERS, EmployerTier, TalentTier } from '@/lib/subscriptions/tiers';
 
 export async function POST(request: Request) {
@@ -60,8 +60,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to create customer' }, { status: 500 });
     }
 
-    // Check for promo code and get trial days
+    // Check for promo code and get trial days / discount
     let trialDays = 0;
+    let couponId: string | undefined;
+
     if (promoCode) {
       const { data: promo } = await supabase
         .from('promo_codes')
@@ -71,8 +73,23 @@ export async function POST(request: Request) {
         .single();
 
       if (promo) {
+        // Handle trial type
         if (promo.type === 'trial' && promo.trial_days) {
           trialDays = promo.trial_days;
+        }
+
+        // Handle discount type — create a Stripe coupon
+        if (promo.type === 'discount' && promo.discount_percent > 0) {
+          try {
+            const coupon = await createStripeCoupon({
+              discountPercent: promo.discount_percent,
+              promoCode: promo.code,
+            });
+            couponId = coupon.id;
+          } catch (couponError) {
+            console.error('Failed to create Stripe coupon:', couponError);
+            // Continue without discount rather than blocking checkout
+          }
         }
 
         // Record promo code usage
@@ -149,6 +166,7 @@ export async function POST(request: Request) {
       successUrl,
       cancelUrl,
       trialDays,
+      couponId,
       metadata: {
         userId: user.id,
         userType,

@@ -19,6 +19,8 @@ import {
   Clock,
   DollarSign,
   Shield,
+  Ticket,
+  Percent,
 } from 'lucide-react';
 import { TALENT_TIERS, TalentTier } from '@/lib/subscriptions/tiers';
 
@@ -60,6 +62,14 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'canceled'; message: string } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoStatus, setPromoStatus] = useState<{
+    valid: boolean;
+    message: string;
+    promo?: { type: string; trialDays?: number; discountPercent?: number; grantsIGTAMember?: boolean };
+  } | null>(null);
+  const [validatingPromo, setValidatingPromo] = useState(false);
+  const [showPromoInput, setShowPromoInput] = useState(false);
 
   // Handle success/canceled and sync subscription
   useEffect(() => {
@@ -142,6 +152,37 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
     setIsRefreshing(false);
   }
 
+  async function validatePromo() {
+    if (!promoCode.trim()) return;
+    setValidatingPromo(true);
+    try {
+      const response = await fetch('/api/promo/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: promoCode, userType: 'talent' }),
+      });
+      const data = await response.json();
+      if (data.valid) {
+        let message = 'Code applied! ';
+        if (data.promo.trialDays) message += `${data.promo.trialDays}-day free trial included.`;
+        if (data.promo.discountPercent) message += `${data.promo.discountPercent}% discount applied.`;
+        if (data.promo.grantsIGTAMember) message = 'IGTA member code verified!';
+        setPromoStatus({ valid: true, message, promo: data.promo });
+      } else {
+        setPromoStatus({ valid: false, message: data.error || 'Invalid code' });
+      }
+    } catch {
+      setPromoStatus({ valid: false, message: 'Failed to validate code' });
+    } finally {
+      setValidatingPromo(false);
+    }
+  }
+
+  function clearPromo() {
+    setPromoCode('');
+    setPromoStatus(null);
+  }
+
   async function handleUpgrade(tier: TalentTier) {
     if (tier === 'profile_only') return;
 
@@ -155,6 +196,7 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
         body: JSON.stringify({
           userType: 'talent',
           tier,
+          promoCode: promoStatus?.valid ? promoCode : undefined,
         }),
       });
 
@@ -384,6 +426,102 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
         </Card>
       )}
 
+      {/* Promo Code Section */}
+      <Card>
+        <CardContent>
+          {!showPromoInput && !promoStatus?.valid ? (
+            <button
+              onClick={() => setShowPromoInput(true)}
+              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            >
+              <Ticket className="w-4 h-4" />
+              Have a promo code?
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Ticket className="w-4 h-4 text-blue-600" />
+                <h3 className="text-sm font-semibold text-gray-700">Promo Code</h3>
+              </div>
+
+              {promoStatus?.valid ? (
+                <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-green-800">
+                        <span className="font-mono bg-green-100 px-1.5 py-0.5 rounded text-xs tracking-wider mr-2">
+                          {promoCode.toUpperCase()}
+                        </span>
+                        {promoStatus.message}
+                      </p>
+                      {promoStatus.promo?.discountPercent && (
+                        <p className="text-xs text-green-600 mt-0.5 flex items-center gap-1">
+                          <Percent className="w-3 h-3" />
+                          {promoStatus.promo.discountPercent}% off will be applied at checkout
+                        </p>
+                      )}
+                      {promoStatus.promo?.trialDays && (
+                        <p className="text-xs text-green-600 mt-0.5 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {promoStatus.promo.trialDays}-day free trial will be applied at checkout
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={clearPromo}
+                    className="p-1 text-green-600 hover:bg-green-100 rounded transition-colors"
+                    title="Remove promo code"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoCode}
+                      onChange={(e) => {
+                        setPromoCode(e.target.value.toUpperCase());
+                        if (promoStatus) setPromoStatus(null);
+                      }}
+                      onKeyDown={(e) => e.key === 'Enter' && validatePromo()}
+                      placeholder="Enter promo code"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono uppercase tracking-wider focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <button
+                      onClick={validatePromo}
+                      disabled={!promoCode.trim() || validatingPromo}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                    >
+                      {validatingPromo ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Apply'
+                      )}
+                    </button>
+                    <button
+                      onClick={() => { setShowPromoInput(false); clearPromo(); }}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {promoStatus && !promoStatus.valid && (
+                    <div className="flex items-center gap-2 mt-2 text-sm text-red-600">
+                      <XCircle className="w-4 h-4 flex-shrink-0" />
+                      {promoStatus.message}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Available Plans */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Plans</h2>
@@ -420,9 +558,34 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
                       {isIGTA && <Shield className="w-4 h-4 text-purple-600" />}
                     </div>
                     <div className="mt-2">
-                      <span className="text-2xl font-bold">${tier.price}</span>
-                      <span className="text-gray-500">/mo</span>
+                      {promoStatus?.valid && promoStatus.promo?.discountPercent && tier.price > 0 && !isIGTA ? (
+                        <>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-bold text-green-600">
+                              ${Math.round(tier.price * (1 - promoStatus.promo.discountPercent / 100))}
+                            </span>
+                            <span className="text-gray-500">/mo</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-sm text-gray-400 line-through">${tier.price}/mo</span>
+                            <span className="text-xs font-medium bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
+                              {promoStatus.promo.discountPercent}% OFF
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-2xl font-bold">${tier.price}</span>
+                          <span className="text-gray-500">/mo</span>
+                        </>
+                      )}
                     </div>
+                    {promoStatus?.valid && promoStatus.promo?.trialDays && tier.price > 0 && !isIGTA && (
+                      <p className="text-xs font-medium text-blue-600 mt-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {promoStatus.promo.trialDays}-day free trial
+                      </p>
+                    )}
 
                     <ul className="mt-4 space-y-2">
                       {tier.features.slice(0, 4).map((feature, i) => (

@@ -79,6 +79,7 @@ export async function createCheckoutSession(params: {
   successUrl: string;
   cancelUrl: string;
   trialDays?: number;
+  couponId?: string;
   metadata?: Record<string, string>;
 }): Promise<Stripe.Checkout.Session> {
   const stripeClient = getStripe();
@@ -111,11 +112,48 @@ export async function createCheckoutSession(params: {
       sessionParams.subscription_data!.trial_period_days = params.trialDays;
     }
 
+    // Add discount coupon if applicable
+    if (params.couponId) {
+      sessionParams.discounts = [{ coupon: params.couponId }];
+    }
+
     const session = await stripeClient.checkout.sessions.create(sessionParams);
     return session;
   } catch (error) {
     console.error('Stripe checkout session error:', error);
     throw new Error(`Failed to create checkout session: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+// Create a Stripe coupon from a promo code discount
+export async function createStripeCoupon(params: {
+  discountPercent: number;
+  promoCode: string;
+  duration?: 'once' | 'repeating' | 'forever';
+  durationInMonths?: number;
+}): Promise<Stripe.Coupon> {
+  const stripeClient = getStripe();
+  if (!stripeClient) {
+    throw new Error('Stripe not initialized');
+  }
+
+  // Use a deterministic ID so we reuse the same coupon for the same promo code
+  const couponId = `promo-${params.promoCode.toUpperCase()}`;
+
+  try {
+    // Try to retrieve existing coupon first
+    const existing = await stripeClient.coupons.retrieve(couponId);
+    return existing;
+  } catch {
+    // Coupon doesn't exist — create it
+    const coupon = await stripeClient.coupons.create({
+      id: couponId,
+      percent_off: params.discountPercent,
+      duration: params.duration || 'once',
+      duration_in_months: params.duration === 'repeating' ? params.durationInMonths : undefined,
+      name: `Promo: ${params.promoCode.toUpperCase()}`,
+    });
+    return coupon;
   }
 }
 

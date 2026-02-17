@@ -11,6 +11,7 @@ import {
   CheckCircle,
   XCircle,
   ArrowRight,
+  Ticket,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -221,7 +222,7 @@ export default async function AdminDashboardPage() {
       </Card>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link href="/dashboard/admin/letters">
           <Card hover className="h-full">
             <CardContent className="flex items-center gap-4">
@@ -232,6 +233,23 @@ export default async function AdminDashboardPage() {
                 <h3 className="font-medium text-gray-900">Manage Letters</h3>
                 <p className="text-sm text-gray-500">
                   Review, approve, or reject interest letters
+                </p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/admin/promo-codes">
+          <Card hover className="h-full">
+            <CardContent className="flex items-center gap-4">
+              <div className="p-3 bg-purple-50 rounded-lg">
+                <Ticket className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900">Promo Codes</h3>
+                <p className="text-sm text-gray-500">
+                  Create and manage promotional codes
                 </p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />

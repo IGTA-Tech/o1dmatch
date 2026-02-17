@@ -18,6 +18,7 @@ import {
   Files,
   CreditCard,
   FolderOpen,
+  Ticket,
 } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SignOutButton } from '@/components/auth/SignOutButton';
@@ -53,6 +54,7 @@ const navigationItems = {
     { href: '/dashboard/admin/letters', label: 'Letters', icon: Mail },
     { href: '/dashboard/admin/users', label: 'Users', icon: Users },
     { href: '/dashboard/admin/documents', label: 'Documents', icon: Files },
+    { href: '/dashboard/admin/promo-codes', label: 'Promo Codes', icon: Ticket },
     { href: '/dashboard/admin/settings', label: 'Settings', icon: Settings },
   ],
   agency: [

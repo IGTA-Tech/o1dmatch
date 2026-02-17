@@ -1,3 +1,4 @@
+/*\src\app\api\promo\verify-igta\route.ts*/
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
