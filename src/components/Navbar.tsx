@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
   Star,
   FolderOpen,
+  Shield,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
@@ -38,11 +39,13 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [isLegalOpen, setIsLegalOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const waitlistRef = useRef<HTMLDivElement>(null);
   const dashboardRef = useRef<HTMLDivElement>(null);
+  const legalRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -52,6 +55,9 @@ export default function Navbar() {
       }
       if (dashboardRef.current && !dashboardRef.current.contains(event.target as Node)) {
         setIsDashboardOpen(false);
+      }
+      if (legalRef.current && !legalRef.current.contains(event.target as Node)) {
+        setIsLegalOpen(false);
       }
     };
 
@@ -197,6 +203,41 @@ export default function Navbar() {
               <BookOpen className="w-4 h-4" />
               Blog
             </Link>
+
+            {/* Legal Dropdown */}
+            <div className="relative" ref={legalRef}>
+              <button
+                onClick={() => setIsLegalOpen(!isLegalOpen)}
+                className={`flex items-center gap-1 py-2 hover:text-gray-900 ${
+                  pathname === "/privacy" || pathname === "/terms" ? "text-blue-600" : "text-gray-600"
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                Legal
+                <ChevronDown className={`w-4 h-4 transition-transform ${isLegalOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isLegalOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <Link
+                    href="/privacy"
+                    onClick={() => setIsLegalOpen(false)}
+                    className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/privacy" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                  >
+                    <Shield className="w-4 h-4" />
+                    Privacy Policy
+                  </Link>
+                  <Link
+                    href="/terms"
+                    onClick={() => setIsLegalOpen(false)}
+                    className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/terms" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    Terms of Service
+                  </Link>
+                </div>
+              )}
+            </div>
 
             {/* Waitlist Dropdown */}
             <div className="relative" ref={waitlistRef}>
@@ -410,6 +451,27 @@ export default function Navbar() {
               >
                 Lawyer Directory
               </Link>
+
+              {/* Mobile Legal Links */}
+              <div className="py-2 border-t border-gray-100 mt-2">
+                <p className="text-sm font-medium text-gray-500 mb-2">Legal</p>
+                <Link
+                  href="/privacy"
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Shield className="w-4 h-4" />
+                  Privacy Policy
+                </Link>
+                <Link
+                  href="/terms"
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <FileText className="w-4 h-4" />
+                  Terms of Service
+                </Link>
+              </div>
 
               {/* Mobile Waitlist Links */}
               <div className="py-2 border-t border-gray-100 mt-2">
