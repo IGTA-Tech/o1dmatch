@@ -39,7 +39,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
-  const [isLegalOpen, setIsLegalOpen] = useState(false);
+  // const [isLegalOpen, setIsLegalOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,9 +56,9 @@ export default function Navbar() {
       if (dashboardRef.current && !dashboardRef.current.contains(event.target as Node)) {
         setIsDashboardOpen(false);
       }
-      if (legalRef.current && !legalRef.current.contains(event.target as Node)) {
-        setIsLegalOpen(false);
-      }
+      // if (legalRef.current && !legalRef.current.contains(event.target as Node)) {
+      //   setIsLegalOpen(false);
+      // }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
