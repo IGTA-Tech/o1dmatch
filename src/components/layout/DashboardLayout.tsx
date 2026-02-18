@@ -56,6 +56,7 @@ const navigationItems = {
     { href: '/dashboard/admin/documents', label: 'Documents', icon: Files },
     { href: '/dashboard/admin/promo-codes', label: 'Promo Codes', icon: Ticket },
     { href: '/dashboard/admin/settings', label: 'Settings', icon: Settings },
+    { href: '/dashboard/admin/articles', label: 'Articles', icon: FileText },
   ],
   agency: [
     { href: '/dashboard/agency', label: 'Dashboard', icon: LayoutDashboard },
