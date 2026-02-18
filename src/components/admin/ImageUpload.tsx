@@ -3,7 +3,6 @@
 
 import { useState, useRef, useCallback } from "react";
 import {
-  Upload,
   X,
   Loader2,
   ImageIcon,
