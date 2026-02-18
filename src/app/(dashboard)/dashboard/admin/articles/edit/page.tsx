@@ -54,7 +54,6 @@ function slugify(text: string): string {
 }
 
 export default function EditArticlePage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const articleId = searchParams.get("id");
 

@@ -70,7 +70,7 @@ export default function NewArticlePage() {
   const [featuredImageUrl, setFeaturedImageUrl] = useState("");
   const [readingTime, setReadingTime] = useState("5 min read");
   const [googleDocUrl, setGoogleDocUrl] = useState("");
-  const [articleStatus, setArticleStatus] = useState("draft");
+  const [articleStatus] = useState("draft");
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
