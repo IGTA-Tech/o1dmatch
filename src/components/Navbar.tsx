@@ -16,7 +16,7 @@ import {
   ClipboardCheck,
   Star,
   FolderOpen,
-  Shield,
+  // Shield,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
