@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { ArrowLeft, /* ...existing imports */ } from "lucide-react";
 import {
   Star,
   FileUp,
@@ -169,7 +170,7 @@ const CriteriaCard = ({ c }: { c: CriteriaScore }) => {
           <p className="text-sm font-medium text-gray-900 text-left">{c.criterionNumber ? `#${c.criterionNumber} ` : ""}{c.criterionName || "Criterion"}</p>
         </div>
         <div className="flex items-center gap-2">
-        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ratingColor(c.rating ?? "")}`}>{c.rating}</span>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ratingColor(c.rating ?? "")}`}>{c.rating}</span>
           {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
         </div>
       </button>
@@ -249,11 +250,10 @@ const ScoreDisplay = ({ result, fromDB }: { result: ScoringResult | ScoringSessi
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-500">Status:</span>
-            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              status === "completed" ? "bg-green-100 text-green-800"
+            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${status === "completed" ? "bg-green-100 text-green-800"
                 : status === "scoring" || status === "processing" ? "bg-blue-100 text-blue-800"
                   : status === "failed" ? "bg-red-100 text-red-800" : "bg-gray-100 text-gray-800"
-            }`}>
+              }`}>
               {status === "completed" && <CheckCircle className="w-3 h-3" />}
               {(status === "scoring" || status === "processing") && <Loader2 className="w-3 h-3 animate-spin" />}
               {status}
@@ -747,303 +747,314 @@ export default function ScoringPage() {
         {/* ============ TAB 1: Current Score ============ */}
         {activeTab === "score" && (
           <div className="space-y-6">
-            {selectedSession && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{selectedSession.beneficiary_name || selectedSession.visa_type} — {selectedSession.document_type?.replace(/_/g, " ")}</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">Session: <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">{selectedSession.session_id}</code> · {fmtDate(selectedSession.created_at)}</p>
-                  </div>
-                  <button onClick={() => setSelectedSession(null)} className="text-gray-400 hover:text-gray-600"><XCircle className="w-5 h-5" /></button>
-                </div>
-                <ScoreDisplay result={selectedSession} fromDB />
-              </div>
-            )}
-
-            {/* Credit Balance Banner */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    credits && credits.remaining > 0 ? "bg-green-50" : "bg-red-50"
-                  }`}>
-                    <Star className={`w-5 h-5 ${credits && credits.remaining > 0 ? "text-green-600" : "text-red-500"}`} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Re-score Credits</h3>
-                    <p className="text-xs text-gray-500">
-                      {credits
-                        ? `Resets ${new Date(credits.periodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
-                        : "Loading..."}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  {creditsLoading ? (
-                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                  ) : credits ? (
-                    <>
-                      <div className="text-right">
-                        <div className="flex items-baseline gap-1">
-                          <span className={`text-2xl font-bold ${credits.remaining > 0 ? "text-green-600" : "text-red-500"}`}>
-                            {credits.remaining}
-                          </span>
-                          <span className="text-sm text-gray-400">/ {credits.limit}</span>
-                        </div>
-                        <p className="text-xs text-gray-400">{credits.used} used this month</p>
-                      </div>
-                      <div className="w-20 bg-gray-100 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-500 ${credits.remaining > 3 ? "bg-green-500" : credits.remaining > 0 ? "bg-yellow-500" : "bg-red-500"}`}
-                          style={{ width: `${(credits.remaining / credits.limit) * 100}%` }}
-                        />
-                      </div>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-              {credits && credits.remaining === 0 && (
-                <div className="mt-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-center gap-2 text-xs text-red-700">
-                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                  All re-score credits have been used this month. Credits will reset on {new Date(credits.periodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric" })}.
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50">
-                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Clock className="w-4 h-4" /> Scoring History</h3>
-                <button onClick={loadHistory} disabled={historyLoading} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                  <RefreshCw className={`w-3 h-3 ${historyLoading ? "animate-spin" : ""}`} /> Refresh
+            {selectedSession ? (
+              <div className="space-y-4">
+                {/* Back button */}
+                <button
+                  onClick={() => setSelectedSession(null)}
+                  className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Scoring History
                 </button>
-              </div>
-              {historyLoading && sessions.length === 0 && <Spinner text="Loading history..." />}
-              {!historyLoading && sessions.length === 0 && (
-                <div className="text-center py-10">
-                  <BarChart3 className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-400 text-sm">No scoring sessions yet</p>
-                  <button onClick={() => setActiveTab("new")} className="mt-3 text-sm text-blue-600 hover:underline">Start a new scoring →</button>
+
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{selectedSession.beneficiary_name || selectedSession.visa_type} — {selectedSession.document_type?.replace(/_/g, " ")}</h3>
+                      <p className="text-xs text-gray-400 mt-0.5">Session: <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">{selectedSession.session_id}</code> · {fmtDate(selectedSession.created_at)}</p>
+                    </div>
+                    <button onClick={() => setSelectedSession(null)} className="text-gray-400 hover:text-gray-600"><XCircle className="w-5 h-5" /></button>
+                  </div>
+                  <ScoreDisplay result={selectedSession} fromDB />
                 </div>
-              )}
-              {sessions.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
-                      <tr>
-                        <th className="px-4 py-3 text-left">Beneficiary</th>
-                        <th className="px-4 py-3 text-left">Visa</th>
-                        <th className="px-4 py-3 text-left">Doc Type</th>
-                        <th className="px-4 py-3 text-center">Score</th>
-                        <th className="px-4 py-3 text-center">Rating</th>
-                        <th className="px-4 py-3 text-center">Status</th>
-                        <th className="px-4 py-3 text-left">Date</th>
-                        <th className="px-4 py-3 text-center">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {sessions.map((s) => (
-                        <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3 font-medium text-gray-900">{s.beneficiary_name || "—"}</td>
-                          <td className="px-4 py-3 text-gray-600">{s.visa_type}</td>
-                          <td className="px-4 py-3 text-gray-600 capitalize">{s.document_type?.replace(/_/g, " ")}</td>
-                          <td className="px-4 py-3 text-center">{s.overall_score != null ? <span className="font-bold text-blue-600">{s.overall_score}%</span> : <span className="text-gray-400">—</span>}</td>
-                          <td className="px-4 py-3 text-center">{s.overall_rating ? <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${s.overall_rating.toLowerCase() === "approve" ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"}`}>{s.overall_rating}</span> : <span className="text-gray-400">—</span>}</td>
-                          <td className="px-4 py-3 text-center"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadge(s.status)}`}>{s.status}</span></td>
-                          <td className="px-4 py-3 text-gray-500 text-xs">{fmtDate(s.created_at)}</td>
-                          <td className="px-4 py-3 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                            <button onClick={() => { setSelectedSession(s); }} className="text-blue-600 hover:text-blue-800 text-xs font-medium hover:underline">View</button>
-                              {rescoringId === s.session_id ? (
-                                <span className="text-orange-500 text-xs font-medium flex items-center gap-1">
-                                  <Loader2 className="w-3 h-3 animate-spin" /> Scoring...
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={() => handleRescore(s)}
-                                  disabled={rescoringId !== null || (credits !== null && credits.remaining <= 0)}
-                                  title={credits && credits.remaining <= 0 ? "No credits remaining — resets at month end" : `${credits?.remaining ?? "..."} credits remaining`}
-                                  className="text-orange-600 hover:text-orange-800 text-xs font-medium hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
-                                >
-                                  Re-score
-                                </button>
-                              )}
-                              <button onClick={() => handleDeleteSession(s.session_id)} className="text-red-500 hover:text-red-700 text-xs font-medium hover:underline">Delete</button>
+              </div>
+            ) : (
+              <>
+                {/* Credit Balance Banner */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${credits && credits.remaining > 0 ? "bg-green-50" : "bg-red-50"
+                        }`}>
+                        <Star className={`w-5 h-5 ${credits && credits.remaining > 0 ? "text-green-600" : "text-red-500"}`} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">Re-score Credits</h3>
+                        <p className="text-xs text-gray-500">
+                          {credits
+                            ? `Resets ${new Date(credits.periodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
+                            : "Loading..."}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {creditsLoading ? (
+                        <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                      ) : credits ? (
+                        <>
+                          <div className="text-right">
+                            <div className="flex items-baseline gap-1">
+                              <span className={`text-2xl font-bold ${credits.remaining > 0 ? "text-green-600" : "text-red-500"}`}>
+                                {credits.remaining}
+                              </span>
+                              <span className="text-sm text-gray-400">/ {credits.limit}</span>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            <p className="text-xs text-gray-400">{credits.used} used this month</p>
+                          </div>
+                          <div className="w-20 bg-gray-100 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-500 ${credits.remaining > 3 ? "bg-green-500" : credits.remaining > 0 ? "bg-yellow-500" : "bg-red-500"}`}
+                              style={{ width: `${(credits.remaining / credits.limit) * 100}%` }}
+                            />
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  {credits && credits.remaining === 0 && (
+                    <div className="mt-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-center gap-2 text-xs text-red-700">
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      All re-score credits have been used this month. Credits will reset on {new Date(credits.periodEnd).toLocaleDateString("en-US", { month: "long", day: "numeric" })}.
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+                    <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Clock className="w-4 h-4" /> Scoring History</h3>
+                    <button onClick={loadHistory} disabled={historyLoading} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                      <RefreshCw className={`w-3 h-3 ${historyLoading ? "animate-spin" : ""}`} /> Refresh
+                    </button>
+                  </div>
+                  {historyLoading && sessions.length === 0 && <Spinner text="Loading history..." />}
+                  {!historyLoading && sessions.length === 0 && (
+                    <div className="text-center py-10">
+                      <BarChart3 className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-400 text-sm">No scoring sessions yet</p>
+                      <button onClick={() => setActiveTab("new")} className="mt-3 text-sm text-blue-600 hover:underline">Start a new scoring →</button>
+                    </div>
+                  )}
+                  {sessions.length > 0 && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                          <tr>
+                            <th className="px-4 py-3 text-left">Beneficiary</th>
+                            <th className="px-4 py-3 text-left">Visa</th>
+                            <th className="px-4 py-3 text-left">Doc Type</th>
+                            <th className="px-4 py-3 text-center">Score</th>
+                            <th className="px-4 py-3 text-center">Rating</th>
+                            <th className="px-4 py-3 text-center">Status</th>
+                            <th className="px-4 py-3 text-left">Date</th>
+                            <th className="px-4 py-3 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {sessions.map((s) => (
+                            <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-3 font-medium text-gray-900">{s.beneficiary_name || "—"}</td>
+                              <td className="px-4 py-3 text-gray-600">{s.visa_type}</td>
+                              <td className="px-4 py-3 text-gray-600 capitalize">{s.document_type?.replace(/_/g, " ")}</td>
+                              <td className="px-4 py-3 text-center">{s.overall_score != null ? <span className="font-bold text-blue-600">{s.overall_score}%</span> : <span className="text-gray-400">—</span>}</td>
+                              <td className="px-4 py-3 text-center">{s.overall_rating ? <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${s.overall_rating.toLowerCase() === "approve" ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"}`}>{s.overall_rating}</span> : <span className="text-gray-400">—</span>}</td>
+                              <td className="px-4 py-3 text-center"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadge(s.status)}`}>{s.status}</span></td>
+                              <td className="px-4 py-3 text-gray-500 text-xs">{fmtDate(s.created_at)}</td>
+                              <td className="px-4 py-3 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button onClick={() => { setSelectedSession(s); }} className="text-blue-600 hover:text-blue-800 text-xs font-medium hover:underline">View</button>
+                                  {rescoringId === s.session_id ? (
+                                    <span className="text-orange-500 text-xs font-medium flex items-center gap-1">
+                                      <Loader2 className="w-3 h-3 animate-spin" /> Scoring...
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleRescore(s)}
+                                      disabled={rescoringId !== null || (credits !== null && credits.remaining <= 0)}
+                                      title={credits && credits.remaining <= 0 ? "No credits remaining — resets at month end" : `${credits?.remaining ?? "..."} credits remaining`}
+                                      className="text-orange-600 hover:text-orange-800 text-xs font-medium hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+                                    >
+                                      Re-score
+                                    </button>
+                                  )}
+                                  <button onClick={() => handleDeleteSession(s.session_id)} className="text-red-500 hover:text-red-700 text-xs font-medium hover:underline">Delete</button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+                </>
+              )} 
+            </div>  
         )}
 
-        {/* ============ TAB 2: New Scoring ============ */}
-        {activeTab === "new" && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            {/* Step indicator */}
-            <div className="flex items-center gap-2 mb-6">
-              {[
-                { key: "form", label: "Details", num: 1 },
-                { key: "upload", label: "Upload", num: 2 },
-                { key: "scoring", label: "Score", num: 3 },
-                { key: "processing", label: "Processing", num: 4 },
-                { key: "result", label: "Results", num: 5 },
-              ].map((s, i, arr) => {
-                const currentIdx = allSteps.indexOf(step);
-                const stepIdx = allSteps.indexOf(s.key);
-                return (
-                  <div key={s.key} className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                      step === s.key ? "bg-blue-600 text-white" : currentIdx > stepIdx ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"
-                    }`}>{currentIdx > stepIdx ? <CheckCircle className="w-4 h-4" /> : s.num}</div>
-                    <span className={`text-xs font-medium hidden sm:inline ${step === s.key ? "text-blue-600" : "text-gray-400"}`}>{s.label}</span>
-                    {i < arr.length - 1 && <div className="w-6 h-px bg-gray-200 mx-0.5" />}
-                  </div>
-                );
-              })}
-            </div>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
-                <XCircle className="w-4 h-4 flex-shrink-0" /><div className="flex-1">{error}</div>
-                <button onClick={() => setError("")} className="text-red-400 hover:text-red-600"><XCircle className="w-4 h-4" /></button>
-              </div>
-            )}
-
-            {/* Step 1: Form */}
-            {step === "form" && (
-              <form onSubmit={handleCreateSession} className="space-y-5">
-                <h2 className="text-lg font-semibold text-gray-900">Petition Details</h2>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Visa Type <span className="text-red-500">*</span></label>
-                  <select value={visaType} onChange={(e) => setVisaType(e.target.value)} required className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                    <option value="">Select visa type...</option>
-                    <option value="O-1A">O-1A — Extraordinary Ability</option>
-                    <option value="O-1B">O-1B — Extraordinary Achievement (Arts)</option>
-                    <option value="P-1A">P-1A — Internationally Recognized Athlete</option>
-                    <option value="EB-1A">EB-1A — Employment-Based First Preference</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Document Type <span className="text-red-500">*</span></label>
-                  <select value={documentType} onChange={(e) => setDocumentType(e.target.value)} required className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                    <option value="">Select document type...</option>
-                    <option value="full_petition">Full Petition</option>
-                    <option value="rfe_response">RFE Response</option>
-                    <option value="exhibit_packet">Exhibit Packet</option>
-                    <option value="contract_deal_memo">Contract / Deal Memo</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Beneficiary Name <span className="text-gray-400 text-xs">(optional)</span></label>
-                  <input type="text" value={beneficiaryName} onChange={(e) => setBeneficiaryName(e.target.value)} placeholder="Enter beneficiary name..." className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
-                </div>
-                <button type="submit" disabled={loading || !visaType || !documentType} className="w-full py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating Session...</> : <>Create Scoring Session <ChevronRight className="w-4 h-4" /></>}
-                </button>
-              </form>
-            )}
-
-            {/* Step 2: Upload */}
-            {step === "upload" && (
-              <div className="space-y-5">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Upload Documents</h2>
-                  <p className="text-sm text-gray-500 mt-1">Session ID: <code className="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono">{sessionId}</code></p>
-                </div>
-                <input id="scoring-file-input" ref={fileInputRef} type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp,.tiff,.txt,.doc,.docx" onChange={handleFileSelect} style={{ display: "none" }} />
-                <label htmlFor="scoring-file-input" className="block border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
-                  <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                  <p className="text-sm font-medium text-gray-700">Click to select files</p>
-                  <p className="text-xs text-gray-400 mt-1">PDF, images, text, or Word documents — Max 150MB per file</p>
-                </label>
-                {files.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-700">{files.length} file{files.length !== 1 ? "s" : ""} selected</p>
-                    {files.map((file, i) => (
-                      <div key={`${file.name}-${i}`} className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
-                        <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                        <div className="flex-1 min-w-0"><p className="text-sm text-gray-800 truncate">{file.name}</p><p className="text-xs text-gray-400">{formatFileSize(file.size)}</p></div>
-                        <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+            {/* ============ TAB 2: New Scoring ============ */}
+            {activeTab === "new" && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                {/* Step indicator */}
+                <div className="flex items-center gap-2 mb-6">
+                  {[
+                    { key: "form", label: "Details", num: 1 },
+                    { key: "upload", label: "Upload", num: 2 },
+                    { key: "scoring", label: "Score", num: 3 },
+                    { key: "processing", label: "Processing", num: 4 },
+                    { key: "result", label: "Results", num: 5 },
+                  ].map((s, i, arr) => {
+                    const currentIdx = allSteps.indexOf(step);
+                    const stepIdx = allSteps.indexOf(s.key);
+                    return (
+                      <div key={s.key} className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${step === s.key ? "bg-blue-600 text-white" : currentIdx > stepIdx ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"
+                          }`}>{currentIdx > stepIdx ? <CheckCircle className="w-4 h-4" /> : s.num}</div>
+                        <span className={`text-xs font-medium hidden sm:inline ${step === s.key ? "text-blue-600" : "text-gray-400"}`}>{s.label}</span>
+                        {i < arr.length - 1 && <div className="w-6 h-px bg-gray-200 mx-0.5" />}
                       </div>
-                    ))}
+                    );
+                  })}
+                </div>
+
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+                    <XCircle className="w-4 h-4 flex-shrink-0" /><div className="flex-1">{error}</div>
+                    <button onClick={() => setError("")} className="text-red-400 hover:text-red-600"><XCircle className="w-4 h-4" /></button>
                   </div>
                 )}
-                {uploadProgress && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2"><Loader2 className="w-4 h-4 text-blue-600 animate-spin" /><span className="text-sm font-medium text-blue-700">Uploading file {uploadProgress.current} of {uploadProgress.total}...</span></div>
-                    <div className="w-full bg-blue-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }} /></div>
+
+                {/* Step 1: Form */}
+                {step === "form" && (
+                  <form onSubmit={handleCreateSession} className="space-y-5">
+                    <h2 className="text-lg font-semibold text-gray-900">Petition Details</h2>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Visa Type <span className="text-red-500">*</span></label>
+                      <select value={visaType} onChange={(e) => setVisaType(e.target.value)} required className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                        <option value="">Select visa type...</option>
+                        <option value="O-1A">O-1A — Extraordinary Ability</option>
+                        <option value="O-1B">O-1B — Extraordinary Achievement (Arts)</option>
+                        <option value="P-1A">P-1A — Internationally Recognized Athlete</option>
+                        <option value="EB-1A">EB-1A — Employment-Based First Preference</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Document Type <span className="text-red-500">*</span></label>
+                      <select value={documentType} onChange={(e) => setDocumentType(e.target.value)} required className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                        <option value="">Select document type...</option>
+                        <option value="full_petition">Full Petition</option>
+                        <option value="rfe_response">RFE Response</option>
+                        <option value="exhibit_packet">Exhibit Packet</option>
+                        <option value="contract_deal_memo">Contract / Deal Memo</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Beneficiary Name <span className="text-gray-400 text-xs">(optional)</span></label>
+                      <input type="text" value={beneficiaryName} onChange={(e) => setBeneficiaryName(e.target.value)} placeholder="Enter beneficiary name..." className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+                    </div>
+                    <button type="submit" disabled={loading || !visaType || !documentType} className="w-full py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                      {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating Session...</> : <>Create Scoring Session <ChevronRight className="w-4 h-4" /></>}
+                    </button>
+                  </form>
+                )}
+
+                {/* Step 2: Upload */}
+                {step === "upload" && (
+                  <div className="space-y-5">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">Upload Documents</h2>
+                      <p className="text-sm text-gray-500 mt-1">Session ID: <code className="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono">{sessionId}</code></p>
+                    </div>
+                    <input id="scoring-file-input" ref={fileInputRef} type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp,.tiff,.txt,.doc,.docx" onChange={handleFileSelect} style={{ display: "none" }} />
+                    <label htmlFor="scoring-file-input" className="block border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
+                      <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                      <p className="text-sm font-medium text-gray-700">Click to select files</p>
+                      <p className="text-xs text-gray-400 mt-1">PDF, images, text, or Word documents — Max 150MB per file</p>
+                    </label>
+                    {files.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-700">{files.length} file{files.length !== 1 ? "s" : ""} selected</p>
+                        {files.map((file, i) => (
+                          <div key={`${file.name}-${i}`} className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
+                            <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                            <div className="flex-1 min-w-0"><p className="text-sm text-gray-800 truncate">{file.name}</p><p className="text-xs text-gray-400">{formatFileSize(file.size)}</p></div>
+                            <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {uploadProgress && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2"><Loader2 className="w-4 h-4 text-blue-600 animate-spin" /><span className="text-sm font-medium text-blue-700">Uploading file {uploadProgress.current} of {uploadProgress.total}...</span></div>
+                        <div className="w-full bg-blue-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }} /></div>
+                      </div>
+                    )}
+                    <div className="flex gap-3">
+                      <button onClick={() => { setStep("form"); setFiles([]); setError(""); }} className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">Back</button>
+                      <button onClick={handleUploadDocuments} disabled={loading || files.length === 0} className="flex-1 py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : <><Upload className="w-4 h-4" /> Upload Documents</>}
+                      </button>
+                    </div>
                   </div>
                 )}
-                <div className="flex gap-3">
-                  <button onClick={() => { setStep("form"); setFiles([]); setError(""); }} className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">Back</button>
-                  <button onClick={handleUploadDocuments} disabled={loading || files.length === 0} className="flex-1 py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : <><Upload className="w-4 h-4" /> Upload Documents</>}
-                  </button>
-                </div>
-              </div>
-            )}
 
-            {/* Step 3: Trigger Scoring */}
-            {step === "scoring" && (
-              <div className="space-y-5">
-                <div className="text-center py-4">
-                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                  <h2 className="text-lg font-semibold text-gray-900">Documents Uploaded Successfully</h2>
-                  <p className="text-sm text-gray-500 mt-1">{files.length} document{files.length !== 1 ? "s" : ""} uploaded to session <code className="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono">{sessionId}</code></p>
-                </div>
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <h4 className="text-sm font-semibold text-blue-800 mb-2">Ready to Score</h4>
-                  <p className="text-xs text-gray-600">Click the button below to start the AI scoring analysis. This will evaluate your petition documents against USCIS officer criteria and generate a detailed score report.</p>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={() => { setStep("upload"); setError(""); }} className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">Back</button>
-                  <button onClick={handleTriggerScoring} disabled={loading} className="flex-1 py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting Scoring...</> : <><Star className="w-4 h-4" /> Start Scoring Analysis</>}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Processing */}
-            {step === "processing" && (
-              <div className="text-center py-8">
-                <Spinner text="AI is scoring your petition... This may take a few minutes." />
-                <p className="text-xs text-gray-400 mt-4">Session ID: <code className="bg-gray-100 px-2 py-0.5 rounded font-mono">{sessionId}</code></p>
-                <p className="text-xs text-gray-400 mt-1">You can check the score later in the &quot;Current Score&quot; tab.</p>
-              </div>
-            )}
-
-            {/* Step 5: Results */}
-            {step === "result" && (result || resultFromDB) && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">Scoring Results</h2>
-                  <div className="flex gap-2">
-                    <button onClick={() => pollForResults(sessionId)} disabled={loading} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1">
-                      <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
-                    </button>
-                    <button onClick={resetForm} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1">
-                      <Star className="w-3.5 h-3.5" /> New Scoring
-                    </button>
+                {/* Step 3: Trigger Scoring */}
+                {step === "scoring" && (
+                  <div className="space-y-5">
+                    <div className="text-center py-4">
+                      <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                      <h2 className="text-lg font-semibold text-gray-900">Documents Uploaded Successfully</h2>
+                      <p className="text-sm text-gray-500 mt-1">{files.length} document{files.length !== 1 ? "s" : ""} uploaded to session <code className="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono">{sessionId}</code></p>
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                      <h4 className="text-sm font-semibold text-blue-800 mb-2">Ready to Score</h4>
+                      <p className="text-xs text-gray-600">Click the button below to start the AI scoring analysis. This will evaluate your petition documents against USCIS officer criteria and generate a detailed score report.</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={() => { setStep("upload"); setError(""); }} className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50">Back</button>
+                      <button onClick={handleTriggerScoring} disabled={loading} className="flex-1 py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting Scoring...</> : <><Star className="w-4 h-4" /> Start Scoring Analysis</>}
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-3 flex items-center gap-2 text-xs text-gray-500">
-                  <AlertCircle className="w-3.5 h-3.5" /> Session ID: <code className="bg-white px-2 py-0.5 rounded border font-mono">{sessionId}</code>
-                </div>
-                {resultFromDB ? (
-                  <ScoreDisplay result={resultFromDB} fromDB />
-                ) : (
-                  <ScoreDisplay result={result!} />
+                )}
+
+                {/* Step 4: Processing */}
+                {step === "processing" && (
+                  <div className="text-center py-8">
+                    <Spinner text="AI is scoring your petition... This may take a few minutes." />
+                    <p className="text-xs text-gray-400 mt-4">Session ID: <code className="bg-gray-100 px-2 py-0.5 rounded font-mono">{sessionId}</code></p>
+                    <p className="text-xs text-gray-400 mt-1">You can check the score later in the &quot;Current Score&quot; tab.</p>
+                  </div>
+                )}
+
+                {/* Step 5: Results */}
+                {step === "result" && (result || resultFromDB) && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-semibold text-gray-900">Scoring Results</h2>
+                      <div className="flex gap-2">
+                        <button onClick={() => pollForResults(sessionId)} disabled={loading} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1">
+                          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+                        </button>
+                        <button onClick={resetForm} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1">
+                          <Star className="w-3.5 h-3.5" /> New Scoring
+                        </button>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3 flex items-center gap-2 text-xs text-gray-500">
+                      <AlertCircle className="w-3.5 h-3.5" /> Session ID: <code className="bg-white px-2 py-0.5 rounded border font-mono">{sessionId}</code>
+                    </div>
+                    {resultFromDB ? (
+                      <ScoreDisplay result={resultFromDB} fromDB />
+                    ) : (
+                      <ScoreDisplay result={result!} />
+                    )}
+                  </div>
                 )}
               </div>
             )}
           </div>
-        )}
-      </div>
     </div>
-  );
+      );
 }
