@@ -1157,9 +1157,9 @@ function NewCaseTab({ onCaseCreated }: { onCaseCreated: () => void }) {
   const [error, setError] = useState<string | null>(null);
 
   const { user } = useCurrentUser();
-  useEffect(() => {
-    console.log("user==>", user?.id);
-  }, [user]);
+  // useEffect(() => {
+  //   console.log("user==>", user?.id);
+  // }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
