@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface PetitionCase {
@@ -149,6 +150,10 @@ function useActionModal() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<unknown>(null);
   const [formCaseId, setFormCaseId] = useState<string | null>(null);
+  const [formPrefill, setFormPrefill] = useState<{ fullName: string; visaType: string } | null>(null);
+
+  // Store last request for auto-refresh
+  const lastRequestRef = useRef<{ url: string; method: "GET" | "POST" } | null>(null);
 
   const execute = useCallback(
     async (label: string, url: string, method: "GET" | "POST" = "GET") => {
@@ -158,6 +163,7 @@ function useActionModal() {
       setError(null);
       setData(null);
       setFormCaseId(null);
+      lastRequestRef.current = { url, method };
 
       try {
         const res = await fetch(url, { method, headers: API_HEADERS });
@@ -178,7 +184,20 @@ function useActionModal() {
     []
   );
 
-  const [formPrefill, setFormPrefill] = useState<{ fullName: string; visaType: string } | null>(null);
+  // Silent refresh — updates data without showing loading spinner
+  const refresh = useCallback(async () => {
+    const req = lastRequestRef.current;
+    if (!req) return;
+    try {
+      const res = await fetch(req.url, { method: req.method, headers: API_HEADERS });
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch {
+      // silent fail on refresh
+    }
+  }, []);
 
   const openForm = useCallback((label: string, caseId: string, prefill?: { fullName: string; visaType: string }) => {
     setTitle(label);
@@ -188,6 +207,7 @@ function useActionModal() {
     setLoading(false);
     setError(null);
     setData(null);
+    lastRequestRef.current = null;
   }, []);
 
   const close = useCallback(() => {
@@ -196,9 +216,10 @@ function useActionModal() {
     setError(null);
     setFormCaseId(null);
     setFormPrefill(null);
+    lastRequestRef.current = null;
   }, []);
 
-  return { open, title, loading, error, data, formCaseId, formPrefill, execute, openForm, close, setData, setError };
+  return { open, title, loading, error, data, formCaseId, formPrefill, execute, openForm, close, setData, setError, refresh };
 }
 
 // ─── PDF Download Row ────────────────────────────────────────────────────────
@@ -863,12 +884,36 @@ function MyCasesTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const modal = useActionModal();
+  const { user } = useCurrentUser();
+
+  // Auto-refresh Progress & Generate Documents modal every 10 seconds
+  useEffect(() => {
+    if (!modal.open) return;
+    if (modal.title === "Progress") {
+      // always refresh Progress
+    } else if (modal.title === "Generate Documents" && modal.data) {
+      // refresh Generate Documents only after form is submitted (data loaded)
+    } else {
+      return; // don't refresh other modals
+    }
+
+    const interval = setInterval(() => {
+      modal.refresh();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [modal.open, modal.title, modal.data, modal.refresh]);
+
 
   const fetchCases = useCallback(async () => {
+    if (!user?.id) {
+      setError("Not logged in.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/cases`, {
+      const res = await fetch(`${API_BASE}/api/v1/cases?externalId=${user.id}`, {
         method: "GET",
         headers: API_HEADERS,
       });
@@ -880,10 +925,10 @@ function MyCasesTab() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
-    fetchCases();
+    if (user?.id) fetchCases();
   }, [fetchCases]);
 
   const handleProgress = (caseId: string) => {
@@ -1111,6 +1156,11 @@ function NewCaseTab({ onCaseCreated }: { onCaseCreated: () => void }) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { user } = useCurrentUser();
+  useEffect(() => {
+    console.log("user==>", user?.id);
+  }, [user]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -1129,6 +1179,10 @@ function NewCaseTab({ onCaseCreated }: { onCaseCreated: () => void }) {
       return;
     }
 
+    if (!user?.id) {
+      setError("Not logged in.");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch(`${API_BASE}/api/v1/cases`, {
@@ -1137,6 +1191,7 @@ function NewCaseTab({ onCaseCreated }: { onCaseCreated: () => void }) {
         body: JSON.stringify({
           beneficiaryName: form.beneficiaryName.trim(),
           visaType: form.visaType,
+          externalId: user.id,
           fieldOfWork: form.fieldOfWork.trim() || undefined,
         }),
       });
