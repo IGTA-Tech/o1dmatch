@@ -40,6 +40,9 @@ export default function ResetPasswordPage() {
         return;
       }
 
+      // Sign out immediately to prevent auth state change from redirecting
+      await supabase.auth.signOut();
+
       setIsLoading(false);
       setSuccess(true);
       setTimeout(() => {
