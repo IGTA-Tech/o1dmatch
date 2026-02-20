@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { resetPasswordSchema, ResetPasswordFormData } from '@/types/forms';
-import { createClient } from '@/lib/supabase/client';
 import { Loader2, Lock, AlertCircle, Check } from 'lucide-react';
 
 export default function ResetPasswordPage() {
@@ -28,20 +27,19 @@ export default function ResetPasswordPage() {
     setError(null);
 
     try {
-      const supabase = createClient();
-
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: data.password,
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: data.password }),
       });
 
-      if (updateError) {
-        setError(updateError.message);
+      const result = await response.json();
+
+      if (!response.ok) {
+        setError(result.error || 'Failed to update password');
         setIsLoading(false);
         return;
       }
-
-      // Sign out immediately to prevent auth state change from redirecting
-      await supabase.auth.signOut();
 
       setIsLoading(false);
       setSuccess(true);
