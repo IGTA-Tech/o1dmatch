@@ -142,7 +142,7 @@ async function uploadLogo(
     const storagePath = `${userId}/logo.${ext}`;
 
     // Upload to Supabase Storage (bucket: "logos")
-    const { data, error } = await supabaseAdmin.storage
+    const { error } = await supabaseAdmin.storage
       .from('logos')
       .upload(storagePath, buffer, {
         contentType: mimeType,
