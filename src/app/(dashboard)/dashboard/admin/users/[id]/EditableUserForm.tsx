@@ -11,18 +11,14 @@ import {
   Building2,
   Scale,
   Shield,
-  Mail,
-  Calendar,
   CheckCircle,
   XCircle,
-  MapPin,
   Briefcase,
   Loader2,
   Save,
   Pencil,
   X,
   Plus,
-  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
