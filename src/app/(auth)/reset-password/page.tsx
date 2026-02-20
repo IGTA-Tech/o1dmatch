@@ -36,16 +36,17 @@ export default function ResetPasswordPage() {
 
       if (updateError) {
         setError(updateError.message);
+        setIsLoading(false);
         return;
       }
 
+      setIsLoading(false);
       setSuccess(true);
       setTimeout(() => {
         router.push('/login');
       }, 2000);
     } catch {
       setError('An unexpected error occurred. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
