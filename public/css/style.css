@@ -1,0 +1,17 @@
+.prose h2,
+.prose p,
+.prose h3,
+.prose ul li {
+    color: #000 !important;
+    -webkit-text-fill-color: #000;
+    opacity: 1 !important; 
+}
+@supports (-webkit-touch-callout: none) {
+  .prose h2,
+  .prose p,
+  .prose h3,
+  .prose ul li {
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+  }
+}
