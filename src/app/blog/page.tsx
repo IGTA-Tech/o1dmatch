@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import Navbar from '@/components/Navbar';
-import "@/../../public/css/style.css";
 
 export const metadata: Metadata = {
   title: 'Immigration Insights | O1DMatch',
