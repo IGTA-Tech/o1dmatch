@@ -292,6 +292,17 @@ export default async function EmployerLettersPage() {
                           Signed PDF
                         </a>
                       )}
+                      {letter.generated_pdf_url && (
+                        <a
+                          href={letter.generated_pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-3 py-1.5 text-sm text-teal-600 hover:bg-teal-50 rounded-lg"
+                        >
+                          <FileText className="w-4 h-4" />
+                          USCIS PDF
+                        </a>
+                      )}
                       {letter.pdf_url && (
                         <a
                           href={letter.pdf_url}
