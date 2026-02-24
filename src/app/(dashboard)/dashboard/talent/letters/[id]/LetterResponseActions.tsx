@@ -153,7 +153,7 @@ export default function LetterResponseActions({
 
     // Fallback: getSession with a 5s timeout
     const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
-    const sessionPromise = supabase.auth.getSession().then(({ data }) => data.session?.access_token || null);
+    const sessionPromise = supabase.auth.getSession().then((res: any) => res.data?.session?.access_token || null);
     return Promise.race([sessionPromise, timeoutPromise]);
   };
 
