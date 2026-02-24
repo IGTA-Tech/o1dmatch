@@ -120,6 +120,43 @@ export default function LetterResponseActions({
     return canvas.toDataURL('image/png');
   };
 
+  // Helper to get access token without relying on getSession() which can hang
+  const getAccessToken = async (): Promise<string | null> => {
+    // Try to get token from cookie directly (avoids getSession hanging)
+    const projectRef = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').match(/\/\/([^.]+)\./)?.[1];
+    if (projectRef) {
+      const cookieName = `sb-${projectRef}-auth-token`;
+      const allCookies = document.cookie.split(';').map(c => c.trim());
+      
+      for (const cookie of allCookies) {
+        if (cookie.startsWith(`${cookieName}=`) || cookie.startsWith(`${cookieName}.0=`)) {
+          let tokenStr = '';
+          const chunkCookies = allCookies.filter(c => c.startsWith(`${cookieName}.`));
+          
+          if (chunkCookies.length > 0) {
+            const sorted = chunkCookies.sort();
+            tokenStr = sorted.map(c => c.split('=').slice(1).join('=')).join('');
+          } else {
+            tokenStr = cookie.split('=').slice(1).join('=');
+          }
+
+          try {
+            const decoded = decodeURIComponent(tokenStr);
+            const parsed = JSON.parse(decoded.startsWith('base64-') ? atob(decoded.slice(7)) : decoded);
+            return parsed.access_token || null;
+          } catch {
+            // Fall through to getSession with timeout
+          }
+        }
+      }
+    }
+
+    // Fallback: getSession with a 5s timeout
+    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+    const sessionPromise = supabase.auth.getSession().then(({ data }) => data.session?.access_token || null);
+    return Promise.race([sessionPromise, timeoutPromise]);
+  };
+
   const handleRespond = async () => {
     if (!selectedAction) {
       setError('Please select Accept or Decline');
@@ -141,8 +178,13 @@ export default function LetterResponseActions({
       const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-      // Get session for auth
-      const { data: { session } } = await supabase.auth.getSession();
+      // Get access token (avoids getSession() hanging)
+      const accessToken = await getAccessToken();
+      console.log('Got access token:', !!accessToken);
+
+      if (!accessToken) {
+        throw new Error('Unable to authenticate. Please refresh the page and try again.');
+      }
 
       const updateData: Record<string, unknown> = {
         status: selectedAction === 'accept' ? 'accepted' : 'declined',
@@ -154,25 +196,30 @@ export default function LetterResponseActions({
       if (selectedAction === 'accept' && signatureData) {
         updateData.talent_signature_data = signatureData;
         updateData.talent_signed_at = new Date().toISOString();
-        updateData.signature_status = 'admin_reviewing'; // Routes to admin for review
+        updateData.signature_status = 'admin_reviewing';
       }
 
-      console.log('Sending update with data:', updateData);
+      console.log('Sending update...');
       
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       const response = await fetch(
         `${supabaseUrl}/rest/v1/interest_letters?id=eq.${letterId}`,
         {
           method: 'PATCH',
           headers: {
-            'Authorization': `Bearer ${session?.access_token || anonKey}`,
+            'Authorization': `Bearer ${accessToken}`,
             'apikey': anonKey!,
             'Content-Type': 'application/json',
             'Prefer': 'return=representation',
           },
           body: JSON.stringify(updateData),
+          signal: controller.signal,
         }
       );
 
+      clearTimeout(timeoutId);
       console.log('Response status:', response.status);
       
       if (response.ok) {
@@ -185,7 +232,11 @@ export default function LetterResponseActions({
       }
     } catch (err) {
       console.error('Error responding:', err);
-      setError(err instanceof Error ? err.message : 'Failed to respond');
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Request timed out. Please check your connection and try again.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to respond');
+      }
     } finally {
       setResponding(false);
     }
