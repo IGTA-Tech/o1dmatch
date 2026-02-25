@@ -642,7 +642,7 @@ export function InterestLetterForm({
                         )}
                         {talent.skills && talent.skills.length > 0 && (
                             <div className="mt-4">
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Skills</p>
+                                <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Skills</p>
                                 <div className="flex flex-wrap gap-2">
                                     {talent.skills.map((skill, index) => (
                                         <span
@@ -679,7 +679,7 @@ export function InterestLetterForm({
                                 <select
                                     value={selectedJob}
                                     onChange={(e) => setSelectedJob(e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                 >
                                     <option value="">Select a job posting...</option>
                                     {jobs.map((job) => (
@@ -700,7 +700,7 @@ export function InterestLetterForm({
                                     type="text"
                                     value={jobTitle}
                                     onChange={(e) => setJobTitle(e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                     placeholder="e.g., Senior AI Engineer"
                                     required
                                 />
@@ -713,7 +713,7 @@ export function InterestLetterForm({
                                     type="text"
                                     value={department}
                                     onChange={(e) => setDepartment(e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                     placeholder="e.g., Engineering, Research"
                                 />
                             </div>
@@ -726,7 +726,7 @@ export function InterestLetterForm({
                             <select
                                 value={commitmentLevel}
                                 onChange={(e) => setCommitmentLevel(e.target.value as CommitmentLevel)}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                             >
                                 <option value="exploratory_interest">Exploratory Interest</option>
                                 <option value="intent_to_engage">Intent to Engage</option>
@@ -744,7 +744,7 @@ export function InterestLetterForm({
                                 <select
                                     value={engagementType}
                                     onChange={(e) => setEngagementType(e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                 >
                                     <option value="full_time">Full-time</option>
                                     <option value="part_time">Part-time</option>
@@ -760,7 +760,7 @@ export function InterestLetterForm({
                                 <select
                                     value={workArrangement}
                                     onChange={(e) => setWorkArrangement(e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                 >
                                     <option value="on_site">On-site</option>
                                     <option value="hybrid">Hybrid</option>
@@ -778,7 +778,7 @@ export function InterestLetterForm({
                                 type="text"
                                 value={locations}
                                 onChange={(e) => setLocations(e.target.value)}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                 placeholder="e.g., San Francisco, New York (comma separated)"
                             />
                         </div>
@@ -821,27 +821,27 @@ export function InterestLetterForm({
                                     type="text"
                                     value={startTiming}
                                     onChange={(e) => setStartTiming(e.target.value)}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                     placeholder="e.g., Immediately, Q2 2026, Upon visa approval"
                                 />
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Start Date</label>
+                                        <label className="block text-xs text-gray-600 mb-1">Start Date</label>
                                         <input
                                             type="date"
                                             value={startDate}
                                             onChange={(e) => setStartDate(e.target.value)}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-500 mb-1">End Date (auto +3 years)</label>
+                                        <label className="block text-xs text-gray-600 mb-1">End Date (auto +3 years)</label>
                                         <input
                                             type="date"
                                             value={endDate}
                                             onChange={(e) => setEndDate(e.target.value)}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                         />
                                     </div>
                                 </div>
@@ -865,7 +865,7 @@ export function InterestLetterForm({
                                     type="number"
                                     value={salaryMin}
                                     onChange={(e) => setSalaryMin(e.target.value ? Number(e.target.value) : '')}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                     placeholder="e.g., 150000"
                                 />
                             </div>
@@ -877,12 +877,12 @@ export function InterestLetterForm({
                                     type="number"
                                     value={salaryMax}
                                     onChange={(e) => setSalaryMax(e.target.value ? Number(e.target.value) : '')}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                     placeholder="e.g., 250000"
                                 />
                             </div>
                         </div>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-600">
                             Salary range is required for O-1 visa sponsorship letters.
                         </p>
                         <div className="flex items-center gap-2">
@@ -914,11 +914,11 @@ export function InterestLetterForm({
                                 value={dutiesDescription}
                                 onChange={(e) => setDutiesDescription(e.target.value)}
                                 rows={4}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                 placeholder="Describe the key duties and responsibilities for this position..."
                                 required
                             />
-                            <p className="mt-1 text-xs text-gray-500">
+                            <p className="mt-1 text-xs text-gray-600">
                                 This will be used in the O-1 petition to demonstrate the role requires extraordinary ability.
                             </p>
                         </div>
@@ -931,11 +931,11 @@ export function InterestLetterForm({
                                 value={requiredSkills}
                                 onChange={(e) => setRequiredSkills(e.target.value)}
                                 rows={3}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                 placeholder="List specific skills, technologies, qualifications required for this role..."
                                 required
                             />
-                            <p className="mt-1 text-xs text-gray-500">
+                            <p className="mt-1 text-xs text-gray-600">
                                 List the technical skills, certifications, or qualifications needed.
                             </p>
                         </div>
@@ -948,11 +948,11 @@ export function InterestLetterForm({
                                 value={whyO1Required}
                                 onChange={(e) => setWhyO1Required(e.target.value)}
                                 rows={4}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                 placeholder="Explain why this position requires someone with extraordinary ability..."
                                 required
                             />
-                            <p className="mt-1 text-xs text-gray-500">
+                            <p className="mt-1 text-xs text-gray-600">
                                 Explain the specialized nature of the work and why ordinary talent cannot fulfill this role.
                             </p>
                         </div>
@@ -973,7 +973,7 @@ export function InterestLetterForm({
                                 value={letterContent}
                                 onChange={(e) => setLetterContent(e.target.value)}
                                 rows={5}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                 placeholder={`Dear ${talent.name},\n\nI came across your profile and was impressed by your background...\n\nBest regards,\n${employerProfile.company_name}`}
                             />
                         </div>
@@ -991,7 +991,7 @@ export function InterestLetterForm({
                                         <p className="text-sm font-medium text-gray-900">
                                             {attachment.name}
                                         </p>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-gray-600">
                                             {(attachment.size / 1024).toFixed(1)} KB
                                         </p>
                                     </div>
@@ -1005,7 +1005,7 @@ export function InterestLetterForm({
                                 </div>
                             ) : (
                                 <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                                    <Paperclip className="w-5 h-5 text-gray-400" />
+                                    <Paperclip className="w-5 h-5 text-gray-500" />
                                     <span className="text-sm text-gray-600">
                                         Attach job description or company info (PDF, max 10MB)
                                     </span>

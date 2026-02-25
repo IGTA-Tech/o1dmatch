@@ -625,7 +625,7 @@ export default function EmployerProfilePage() {
                       </div>
                     ) : (
                       <div className={`w-32 h-32 border-2 border-dashed rounded-lg flex items-center justify-center bg-gray-50 ${logoError ? 'border-red-400' : 'border-gray-300'}`}>
-                        <ImageIcon className={`w-10 h-10 ${logoError ? 'text-red-400' : 'text-gray-400'}`} />
+                        <ImageIcon className={`w-10 h-10 ${logoError ? 'text-red-400' : 'text-gray-500'}`} />
                       </div>
                     )}
                   </div>
@@ -649,7 +649,7 @@ export default function EmployerProfilePage() {
                         {logoPreview ? 'Change Logo' : 'Upload Logo'}
                       </span>
                     </label>
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className="mt-2 text-xs text-gray-600">
                       PNG, JPG, or GIF. Max 5MB. Recommended: 200x200px or larger.
                     </p>
                     {logoError && (
@@ -674,7 +674,7 @@ export default function EmployerProfilePage() {
                   </label>
                   <input
                     {...register('company_name')}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   />
                   {errors.company_name && (
                     <p className="mt-1 text-sm text-red-600">{errors.company_name.message}</p>
@@ -686,7 +686,7 @@ export default function EmployerProfilePage() {
                   </label>
                   <input
                     {...register('legal_name')}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                     placeholder="If different from company name"
                   />
                 </div>
@@ -699,7 +699,7 @@ export default function EmployerProfilePage() {
                   </label>
                   <input
                     {...register('dba_name')}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                     placeholder="Doing Business As"
                   />
                 </div>
@@ -710,7 +710,7 @@ export default function EmployerProfilePage() {
                   <input
                     {...register('company_website')}
                     type="url"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                     placeholder="https://example.com"
                   />
                 </div>
@@ -721,7 +721,7 @@ export default function EmployerProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
                   <input
                     {...register('industry')}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                     placeholder="e.g., Technology, Finance"
                   />
                 </div>
@@ -731,7 +731,7 @@ export default function EmployerProfilePage() {
                   </label>
                   <select
                     {...register('company_size')}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   >
                     <option value="">Select size</option>
                     <option value="1-10">1-10 employees</option>
@@ -751,7 +751,7 @@ export default function EmployerProfilePage() {
                     type="number"
                     min="1800"
                     max={new Date().getFullYear()}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
               </div>
@@ -763,7 +763,7 @@ export default function EmployerProfilePage() {
                 <textarea
                   {...register('company_description')}
                   rows={4}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   placeholder="Describe your company and what makes it unique..."
                 />
               </div>
@@ -799,7 +799,7 @@ export default function EmployerProfilePage() {
                 </label>
                 <input
                   {...register('street_address')}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
@@ -808,28 +808,28 @@ export default function EmployerProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
                   <input
                     {...register('city')}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
                   <input
                     {...register('state')}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
                   <input
                     {...register('zip_code')}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
                   <input
                     {...register('country')}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
               </div>
@@ -869,7 +869,7 @@ export default function EmployerProfilePage() {
                   </label>
                   <input
                     {...register('signatory_name')}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   />
                   {errors.signatory_name && (
                     <p className="mt-1 text-sm text-red-600">{errors.signatory_name.message}</p>
@@ -882,7 +882,7 @@ export default function EmployerProfilePage() {
                   <input
                     {...register('signatory_title')}
                     placeholder="e.g., CEO, Director of HR"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   />
                   {errors.signatory_title && (
                     <p className="mt-1 text-sm text-red-600">{errors.signatory_title.message}</p>
@@ -898,7 +898,7 @@ export default function EmployerProfilePage() {
                   <input
                     {...register('signatory_email')}
                     type="email"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   />
                   {errors.signatory_email && (
                     <p className="mt-1 text-sm text-red-600">{errors.signatory_email.message}</p>
@@ -911,7 +911,7 @@ export default function EmployerProfilePage() {
                   <input
                     {...register('signatory_phone')}
                     type="tel"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
               </div>

@@ -237,7 +237,7 @@ export default function NewJobPage() {
                             </label>
                             <input
                                 {...register('title', { required: 'Job title is required' })}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                 placeholder="e.g., Senior Software Engineer"
                             />
                             {errors.title && (
@@ -252,7 +252,7 @@ export default function NewJobPage() {
                             <textarea
                                 {...register('description', { required: 'Description is required' })}
                                 rows={5}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                 placeholder="Describe the role, responsibilities, and what you're looking for..."
                             />
                             {errors.description && (
@@ -263,11 +263,11 @@ export default function NewJobPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    locations
+                                    Location
                                 </label>
                                 <input
                                     {...register('locations')}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                     placeholder="e.g., San Francisco, CA or Remote"
                                 />
                             </div>
@@ -278,7 +278,7 @@ export default function NewJobPage() {
                                 </label>
                                 <select
                                     {...register('engagement_type')}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
                                 >
                                     <option value="full_time">Full Time</option>
                                     <option value="part_time">Part Time</option>
@@ -295,7 +295,7 @@ export default function NewJobPage() {
                                 <input
                                     {...register('salary_min', { valueAsNumber: true })}
                                     type="number"
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                     placeholder="e.g., 100000"
                                 />
                             </div>
@@ -307,7 +307,7 @@ export default function NewJobPage() {
                                 <input
                                     {...register('salary_max', { valueAsNumber: true })}
                                     type="number"
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                     placeholder="e.g., 150000"
                                 />
                             </div>
@@ -315,12 +315,12 @@ export default function NewJobPage() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                required_skills
+                                Required Skills
                             </label>
                             <textarea
                                 {...register('required_skills')}
                                 rows={4}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
                                 placeholder="Enter skills separated by commas, e.g., Python, Machine Learning, AWS"
                             />
                         </div>

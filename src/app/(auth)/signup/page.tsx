@@ -139,7 +139,7 @@ export default function SignupPage() {
                   className="sr-only"
                 />
                 <span className="font-medium text-sm text-gray-900">{option.label}</span>
-                <span className="text-xs text-gray-500 mt-0.5">{option.description}</span>
+                <span className="text-xs text-gray-600 mt-0.5">{option.description}</span>
               </label>
             ))}
           </div>
@@ -154,12 +154,12 @@ export default function SignupPage() {
             Full name
           </label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
             <input
               {...register('full_name')}
               type="text"
               id="full_name"
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder:text-gray-500"
               placeholder="John Doe"
             />
           </div>
@@ -174,12 +174,12 @@ export default function SignupPage() {
             Email address
           </label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
             <input
               {...register('email')}
               type="email"
               id="email"
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder:text-gray-500"
               placeholder="you@example.com"
             />
           </div>
@@ -194,12 +194,12 @@ export default function SignupPage() {
             Password
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
             <input
               {...register('password')}
               type="password"
               id="password"
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder:text-gray-500"
               placeholder="••••••••"
             />
           </div>
@@ -214,12 +214,12 @@ export default function SignupPage() {
             Confirm password
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
             <input
               {...register('confirmPassword')}
               type="password"
               id="confirmPassword"
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder:text-gray-500"
               placeholder="••••••••"
             />
           </div>
@@ -238,11 +238,11 @@ export default function SignupPage() {
             />
             <span className="text-sm text-gray-600">
               I agree to the{' '}
-              <Link target='__blank' href="/terms" className="text-blue-600 hover:text-blue-700">
+              <Link target='_blank' href="/terms" className="text-blue-600 hover:text-blue-700">
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link target='__blank' href="/privacy" className="text-blue-600 hover:text-blue-700">
+              <Link target='_blank' href="/privacy" className="text-blue-600 hover:text-blue-700">
                 Privacy Policy
               </Link>
             </span>
