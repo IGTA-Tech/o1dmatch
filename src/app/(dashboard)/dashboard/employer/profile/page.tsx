@@ -362,6 +362,33 @@ export default function EmployerProfilePage() {
     watch('agrees_to_terms') &&
     (logoPreview || profile?.company_logo_url);
 
+  // Compute which required fields are missing for the setup banner (live form values)
+  const missingFields: { label: string; tab: TabKey }[] = [];
+  if (!logoPreview && !profile?.company_logo_url) {
+    missingFields.push({ label: 'Company Logo', tab: 'company' });
+  }
+  if (!watch('company_name') || watch('company_name') === 'My Company') {
+    missingFields.push({ label: 'Company Name', tab: 'company' });
+  }
+  if (!watch('signatory_title')?.trim()) {
+    missingFields.push({ label: 'Signatory Title', tab: 'signatory' });
+  }
+  if (!watch('signatory_email')?.trim()) {
+    missingFields.push({ label: 'Signatory Email', tab: 'signatory' });
+  }
+  const hasRequiredFieldsMissing = missingFields.length > 0;
+
+  // Check if the SAVED profile meets all requirements (not live form values)
+  const savedProfileComplete =
+    !!profile?.company_logo_url &&
+    !!profile?.company_name &&
+    profile.company_name !== 'My Company' &&
+    !!profile?.signatory_title?.trim() &&
+    !!profile?.signatory_email?.trim();
+
+  // Fields are filled in the form but not yet saved
+  const needsSave = !hasRequiredFieldsMissing && !savedProfileComplete;
+
   // Map field names to their respective tabs
   const fieldToTab: Record<string, TabKey> = {
     company_logo: 'company',
@@ -427,6 +454,60 @@ export default function EmployerProfilePage() {
 
   return (
     <div className="space-y-6">
+      {/* Required fields banner */}
+      {hasRequiredFieldsMissing ? (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-amber-800">
+              Complete the required fields to access your dashboard
+            </p>
+            <p className="text-sm text-amber-700 mt-1">
+              The following information is required:{' '}
+              {missingFields.map((field, i) => (
+                <span key={field.label}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab(field.tab)}
+                    className="underline font-medium hover:text-amber-900"
+                  >
+                    {field.label}
+                  </button>
+                  {i < missingFields.length - 1 ? ', ' : ''}
+                </span>
+              ))}
+            </p>
+          </div>
+        </div>
+      ) : needsSave ? (
+        <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 flex items-center gap-3">
+          <Save className="w-5 h-5 text-blue-600 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-blue-800">
+              Almost there! Save your changes to access the dashboard.
+            </p>
+            <p className="text-sm text-blue-700 mt-1">
+              Click &quot;Save Changes&quot; on the current tab to continue.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-green-50 border border-green-300 rounded-lg p-4 flex items-center gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-green-800">
+              Profile requirements met! You can access your dashboard.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/employer"
+            className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 whitespace-nowrap"
+          >
+            Go to Dashboard
+          </Link>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link

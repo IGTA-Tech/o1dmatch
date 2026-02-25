@@ -12,6 +12,7 @@ import {
   Briefcase,
   ArrowRight,
   Plus,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -115,6 +116,13 @@ export default async function TalentDashboardPage() {
       .eq('talent_id', talentProfile.id),
   ]);
 
+  // Determine if this is a first-time login
+  const createdAt = new Date(user.created_at).getTime();
+  const lastSignIn = user.last_sign_in_at
+    ? new Date(user.last_sign_in_at).getTime()
+    : createdAt;
+  const isFirstLogin = Math.abs(lastSignIn - createdAt) < 2 * 60 * 1000;
+
   // Get matching jobs count (jobs where their score meets minimum)
   const { count: matchingJobsCount } = await supabase
     .from('job_listings')
@@ -162,12 +170,26 @@ export default async function TalentDashboardPage() {
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {talentProfile.first_name}!
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Here&apos;s an overview of your O-1 visa profile
-          </p>
+          {isFirstLogin ? (
+            <>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-yellow-500" />
+                Welcome to O1DMatch!
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Get started by uploading evidence to build your O-1 visa profile
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Welcome back, {talentProfile.first_name}!
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Here&apos;s an overview of your O-1 visa profile
+              </p>
+            </>
+          )}
         </div>
         <Link
           href="/dashboard/talent/evidence"
@@ -177,6 +199,33 @@ export default async function TalentDashboardPage() {
           Upload Evidence
         </Link>
       </div>
+
+      {/* First-time user onboarding banner */}
+      {isFirstLogin && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-5">
+          <div className="flex items-start gap-4">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Sparkles className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-blue-900">
+                Here&apos;s how to get started
+              </p>
+              <ul className="text-sm text-blue-800 mt-2 space-y-1">
+                <li>1. Complete your profile with your professional details</li>
+                <li>2. Upload evidence documents for each O-1 criterion</li>
+                <li>3. Browse jobs and connect with employers</li>
+              </ul>
+            </div>
+            <Link
+              href="/dashboard/talent/profile"
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 whitespace-nowrap"
+            >
+              Complete Profile
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Score and Stats Row */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

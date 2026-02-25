@@ -10,6 +10,7 @@ import {
   Plus,
   TrendingUp,
   Building2,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,6 +23,13 @@ export default async function EmployerDashboardPage() {
     redirect('/login');
   }
 
+  // Get user profile for display name
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
   // Get employer profile
   const { data: employerProfile } = await supabase
     .from('employer_profiles')
@@ -31,12 +39,6 @@ export default async function EmployerDashboardPage() {
 
   // If no employer profile exists, create one
   if (!employerProfile) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
     await supabase.from('employer_profiles').insert({
       user_id: user.id,
       company_name: profile?.full_name ? `${profile.full_name}'s Company` : 'My Company',
@@ -46,6 +48,19 @@ export default async function EmployerDashboardPage() {
 
     redirect('/dashboard/employer/profile');
   }
+
+  // If company name is still the default, redirect to profile to complete setup
+  if (employerProfile.company_name === 'My Company') {
+    redirect('/dashboard/employer/profile');
+  }
+
+  // Determine if this is a first-time login
+  // Compare created_at and last_sign_in_at — if within 2 minutes, it's likely the first session
+  const createdAt = new Date(user.created_at).getTime();
+  const lastSignIn = user.last_sign_in_at
+    ? new Date(user.last_sign_in_at).getTime()
+    : createdAt;
+  const isFirstLogin = Math.abs(lastSignIn - createdAt) < 2 * 60 * 1000; // within 2 minutes
 
   // Get stats
   const [
@@ -135,12 +150,26 @@ export default async function EmployerDashboardPage() {
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {employerProfile.company_name}!
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Manage your job postings and connect with O-1 talent
-          </p>
+          {isFirstLogin ? (
+            <>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-yellow-500" />
+                Welcome to O1DMatch!
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Get started by setting up your company profile and posting your first job
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Welcome back, {employerProfile.company_name}!
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Manage your job postings and connect with O-1 talent
+              </p>
+            </>
+          )}
         </div>
         <Link
           href="/dashboard/employer/jobs/new"
@@ -151,8 +180,35 @@ export default async function EmployerDashboardPage() {
         </Link>
       </div>
 
-      {/* Profile completion warning */}
-      {!isProfileComplete && (
+      {/* First-time user onboarding banner */}
+      {isFirstLogin && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-5">
+          <div className="flex items-start gap-4">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Sparkles className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-blue-900">
+                Here&apos;s how to get started
+              </p>
+              <ul className="text-sm text-blue-800 mt-2 space-y-1">
+                <li>1. Complete your company profile with signatory details</li>
+                <li>2. Post a job to attract top O-1 visa talent</li>
+                <li>3. Browse candidates and send interest letters</li>
+              </ul>
+            </div>
+            <Link
+              href="/dashboard/employer/profile"
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 whitespace-nowrap"
+            >
+              Set Up Profile
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Profile completion warning (shown for returning users who haven't completed profile) */}
+      {!isProfileComplete && !isFirstLogin && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <Building2 className="w-5 h-5 text-yellow-600 mt-0.5" />
