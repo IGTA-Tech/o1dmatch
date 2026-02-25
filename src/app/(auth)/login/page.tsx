@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -8,11 +8,83 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { signInSchema, SignInFormData } from '@/types/forms';
 import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
 
+// Map OAuth/auth error codes to user-friendly messages
+function getFriendlyAuthError(
+  errorCode: string | null,
+  errorDescription: string | null
+): string {
+  const code = (errorCode || '').toLowerCase();
+  const desc = (errorDescription || '').toLowerCase();
+
+  // Access denied / user cancelled
+  if (code === 'access_denied' || desc.includes('access_denied') || desc.includes('user denied')) {
+    return 'Sign-in was cancelled. Please try again when you\'re ready.';
+  }
+
+  // OAuth misconfiguration
+  if (desc.includes('redirect_uri') || desc.includes('redirect uri') || desc.includes('callback')) {
+    return 'Something went wrong with sign-in. Please try again. If this continues, contact support.';
+  }
+
+  // Expired or invalid state (e.g. back button, stale tab)
+  if (code === 'invalid_request' || desc.includes('state') || desc.includes('expired')) {
+    return 'Your sign-in session expired. Please try again.';
+  }
+
+  // Server error from provider
+  if (code === 'server_error' || desc.includes('server')) {
+    return 'The sign-in service is temporarily unavailable. Please try again in a few minutes.';
+  }
+
+  // Email not confirmed
+  if (desc.includes('email not confirmed') || desc.includes('not confirmed')) {
+    return 'Please check your email and confirm your account before signing in.';
+  }
+
+  // Rate limited
+  if (desc.includes('rate limit') || desc.includes('too many')) {
+    return 'Too many sign-in attempts. Please wait a moment and try again.';
+  }
+
+  // Generic fallback
+  return 'Something went wrong with sign-in. Please try again.';
+}
+
 function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/dashboard';
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Handle OAuth callback errors from URL params
+  useEffect(() => {
+    const authError = searchParams.get('auth_callback_error')
+      || searchParams.get('error')
+      || searchParams.get('error_code');
+    const errorDescription = searchParams.get('error_description')
+      || searchParams.get('message');
+
+    if (authError || errorDescription) {
+      // Log technical details for debugging
+      console.error('[Auth Callback Error]', {
+        error: authError,
+        description: errorDescription,
+        code: searchParams.get('error_code'),
+        fullParams: Object.fromEntries(searchParams.entries()),
+        timestamp: new Date().toISOString(),
+      });
+
+      // Map known error codes to user-friendly messages
+      const friendlyMessage = getFriendlyAuthError(authError, errorDescription);
+      setError(friendlyMessage);
+
+      // Clean the URL so raw error params aren't visible
+      const cleanUrl = window.location.pathname;
+      const redirect = searchParams.get('redirect');
+      const cleanParams = redirect ? `?redirect=${encodeURIComponent(redirect)}` : '';
+      window.history.replaceState({}, '', `${cleanUrl}${cleanParams}`);
+    }
+  }, [searchParams]);
 
   const {
     register,
@@ -94,9 +166,19 @@ function LoginForm() {
       </h2>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <p className="text-sm">{error}</p>
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 text-red-700">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <p className="text-sm flex-1">{error}</p>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="text-red-400 hover:text-red-600 flex-shrink-0"
+            aria-label="Dismiss error"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
 
