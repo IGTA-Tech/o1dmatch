@@ -86,10 +86,17 @@ export default async function TalentLettersPage() {
         <p className="text-gray-600">Letters from employers interested in your profile</p>
       </div>
 
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+        <FileText className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+        <p className="text-sm text-blue-800">
+          Interest letters are formal expressions of an employer&apos;s intent to sponsor or hire O-1 talent. When you accept and sign a letter, our admin will review and forward the signed document to the employer. Contact information will be revealed once the signed letter is delivered.
+        </p>
+      </div>
+
       {!letters || letters.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <FileText className="w-12 h-12 text-gray-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Letters Yet</h3>
             <p className="text-gray-600">
               When employers express interest in your profile, their letters will appear here.

@@ -19,6 +19,7 @@ import {
   CreditCard,
   FolderOpen,
   Ticket,
+  Scale,
 } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SignOutButton } from '@/components/auth/SignOutButton';
@@ -38,6 +39,7 @@ const navigationItems = {
     { href: '/dashboard/talent/applications', label: 'Applications', icon: Send },
     { href: '/dashboard/talent/letters', label: 'Letters', icon: Mail },
     { href: '/dashboard/talent/billing', label: 'Billing', icon: CreditCard },
+    { href: '/dashboard/talent/petitioner', label: 'Seek a Petitioner', icon: Scale },
   ],
   employer: [
     { href: '/dashboard/employer', label: 'Dashboard', icon: LayoutDashboard },
