@@ -196,13 +196,13 @@ export default function Navbar() {
             </Link>
 
             {/* Blog Link */}
-            <Link
+            {/* <Link
               href="/blog"
               className={`flex items-center gap-1 py-2 hover:text-gray-900 ${pathname.startsWith("/blog") ? "text-blue-600" : "text-gray-600"}`}
             >
               <BookOpen className="w-4 h-4" />
               Blog
-            </Link>
+            </Link> */}
 
             {/* Legal Dropdown */}
             {/* <div className="relative" ref={legalRef}>
