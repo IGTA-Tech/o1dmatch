@@ -38,3 +38,59 @@ ul li{
 h2{
   color: #000;
 }
+
+/*top nvigation bar design*/
+/* Navy Navbar Override — matches hero #0B1D35 */
+.navy-hero-page > header {
+  background: #0B1D35 !important;
+  border-bottom-color: rgba(255,255,255,0.06) !important;
+  backdrop-filter: none !important;
+}
+.navy-hero-page > header .text-gray-600,
+.navy-hero-page > header .text-gray-900 {
+  color: rgba(255,255,255,0.8) !important;
+}
+.navy-hero-page > header .text-gray-600:hover {
+  color: #E8C97A !important;
+}
+.navy-hero-page > header .text-blue-600 {
+  color: #D4A84B !important;
+}
+/* Logo mark */
+.navy-hero-page > header .bg-blue-600 {
+  background: #D4A84B !important;
+}
+.navy-hero-page > header .bg-blue-600 span {
+  color: #0B1D35 !important;
+}
+/* Logo text */
+.navy-hero-page > header .font-semibold.text-gray-900 {
+  color: #FFFFFF !important;
+}
+/* CTA button */
+.navy-hero-page > header .bg-blue-600.text-white {
+  background: #D4A84B !important;
+  color: #0B1D35 !important;
+}
+.navy-hero-page > header .bg-blue-600.text-white:hover {
+  background: #E8C97A !important;
+}
+/* Mobile menu button */
+.navy-hero-page > header .hover\:bg-gray-100:hover {
+  background: rgba(255,255,255,0.1) !important;
+}
+/* Mobile dropdown panel */
+.navy-hero-page > header .border-gray-100 {
+  border-color: rgba(255,255,255,0.08) !important;
+}
+/* Dropdown menus keep white bg */
+.navy-hero-page > header .bg-white.rounded-lg.shadow-lg {
+  background: #FFFFFF !important;
+}
+.navy-hero-page > header .bg-white.rounded-lg.shadow-lg .text-gray-700 {
+  color: #374151 !important;
+}
+/* Icons inherit parent color */
+.navy-hero-page > header svg {
+  color: inherit;
+}
