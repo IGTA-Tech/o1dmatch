@@ -11,7 +11,7 @@ import {
   Eye,
   Briefcase,
   ArrowRight,
-  Sparkles,
+  // Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 
