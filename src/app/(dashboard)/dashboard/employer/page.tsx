@@ -43,7 +43,7 @@ export default async function EmployerDashboardPage() {
     .eq('user_id', user.id)
     .single();
 
-  // If no employer profile, create one and redirect
+  // If no employer profile, create one and redirect to welcome
   if (!employerProfile) {
     await supabase.from('employer_profiles').insert({
       user_id: user.id,
@@ -53,11 +53,7 @@ export default async function EmployerDashboardPage() {
       signatory_name: profile?.full_name || '',
       signatory_email: user.email || '',
     });
-    redirect('/dashboard/employer/profile');
-  }
-
-  if (employerProfile.company_name === 'My Company') {
-    redirect('/dashboard/employer/profile');
+    redirect('/dashboard/employer/welcome');
   }
 
   // First-time login detection
@@ -66,6 +62,15 @@ export default async function EmployerDashboardPage() {
     ? new Date(user.last_sign_in_at).getTime()
     : createdAt;
   const isFirstLogin = Math.abs(lastSignIn - createdAt) < 2 * 60 * 1000;
+
+  // Redirect first-time users to the welcome page
+  if (isFirstLogin) {
+    redirect('/dashboard/employer/welcome');
+  }
+
+  if (employerProfile.company_name === 'My Company') {
+    redirect('/dashboard/employer/profile');
+  }
 
   // Get stats
   const [
@@ -244,14 +249,10 @@ export default async function EmployerDashboardPage() {
             color: '#0B1D35',
           }}
         >
-          {isFirstLogin
-            ? `Welcome to O1DMatch, ${employerProfile.company_name}!`
-            : `Welcome back, ${employerProfile.company_name}!`}
+          Welcome back, {employerProfile.company_name}!
         </h1>
         <p className="text-sm" style={{ color: '#64748B' }}>
-          {isFirstLogin
-            ? "Manage your job postings and connect with O-1 talent. Here's how to get started."
-            : 'Manage your job postings and connect with O-1 talent.'}
+          Manage your job postings and connect with O-1 talent.
         </p>
       </div>
 
@@ -280,7 +281,6 @@ export default async function EmployerDashboardPage() {
             <h2 className="text-white text-lg font-semibold flex items-center gap-2">
               🚀 Get Started in 4 Steps
             </h2>
-            {/* Could add dismiss logic here */}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 relative z-10">
