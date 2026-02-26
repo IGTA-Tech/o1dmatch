@@ -159,7 +159,7 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
       const response = await fetch('/api/promo/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCode, userType: 'talent' }),
+        body: JSON.stringify({ code: promoCode, userType: 'talent', userId }),
       });
       const data = await response.json();
       if (data.valid) {

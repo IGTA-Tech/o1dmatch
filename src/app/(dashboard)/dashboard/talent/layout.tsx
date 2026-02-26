@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { DashboardLayout } from '@/components/layout';
+import TalentSidebar from './TalentSidebar';
 
 export default async function TalentDashboardLayout({
   children,
@@ -20,7 +20,7 @@ export default async function TalentDashboardLayout({
   // Verify user is a talent
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name')
     .eq('id', user.id)
     .single();
 
@@ -28,5 +28,17 @@ export default async function TalentDashboardLayout({
     redirect('/dashboard');
   }
 
-  return <DashboardLayout role="talent">{children}</DashboardLayout>;
+  const fullName = profile?.full_name || user.email?.split('@')[0] || 'Talent';
+  const initials = fullName
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <TalentSidebar talentName={fullName} talentInitials={initials}>
+      {children}
+    </TalentSidebar>
+  );
 }

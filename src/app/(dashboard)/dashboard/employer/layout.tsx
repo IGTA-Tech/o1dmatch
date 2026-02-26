@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import Navbar from "@/components/Navbar";
+import EmployerSidebar from './EmployerSidebar';
 
 export default async function EmployerDashboardLayout({
   children,
@@ -9,7 +9,9 @@ export default async function EmployerDashboardLayout({
 }) {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect('/login');
@@ -25,13 +27,34 @@ export default async function EmployerDashboardLayout({
     redirect('/dashboard');
   }
 
+  // Fetch employer profile for sidebar display
+  const { data: employerProfile } = await supabase
+    .from('employer_profiles')
+    .select('company_name')
+    .eq('user_id', user.id)
+    .single();
+
+  const companyName = employerProfile?.company_name || 'My Company';
+  const companyInitials = companyName
+    .split(' ')
+    .map((w: string) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <>
-      <div className="space-y-6 pt-20"><Navbar />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          {children}
-        </main>
-      </div>
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@600;700&display=swap"
+        rel="stylesheet"
+      />
+      <EmployerSidebar
+        companyName={companyName}
+        companyInitials={companyInitials}
+      >
+        {children}
+      </EmployerSidebar>
     </>
   );
 }

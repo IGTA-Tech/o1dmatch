@@ -40,6 +40,7 @@ interface PromoCode {
   applicable_tier: string | null;
   applicable_user_type: string | null;
   max_uses: number | null;
+  max_uses_per_user: number | null;
   current_uses: number;
   valid_from: string;
   valid_until: string | null;
@@ -58,6 +59,7 @@ interface FormData {
   applicable_tier: string;
   applicable_user_type: string;
   max_uses: string;
+  max_uses_per_user: string;
   valid_from: string;
   valid_until: string;
   is_active: boolean;
@@ -73,6 +75,7 @@ const defaultForm: FormData = {
   applicable_tier: "",
   applicable_user_type: "both",
   max_uses: "",
+  max_uses_per_user: "1",
   valid_from: new Date().toISOString().split("T")[0],
   valid_until: "",
   is_active: true,
@@ -195,6 +198,7 @@ export default function AdminPromoCodesPage() {
         applicable_tier: form.applicable_tier || null,
         applicable_user_type: form.applicable_user_type,
         max_uses: form.max_uses ? parseInt(form.max_uses) : null,
+        max_uses_per_user: form.max_uses_per_user ? parseInt(form.max_uses_per_user) : 1,
         valid_from: form.valid_from ? new Date(form.valid_from).toISOString() : new Date().toISOString(),
         valid_until: form.valid_until ? new Date(form.valid_until).toISOString() : null,
         is_active: form.is_active,
@@ -491,8 +495,8 @@ export default function AdminPromoCodesPage() {
               </div>
             )}
 
-            {/* Row 3: Tier + User Type + Max Uses */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Row 3: Tier + User Type + Max Uses + Max Per User */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Applicable Tier
@@ -527,7 +531,7 @@ export default function AdminPromoCodesPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Max Uses
+                  Max Total Uses
                 </label>
                 <input
                   type="number"
@@ -538,6 +542,20 @@ export default function AdminPromoCodesPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-400 mt-1">Leave blank for unlimited</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Max Uses Per User
+                </label>
+                <input
+                  type="number"
+                  value={form.max_uses_per_user}
+                  onChange={(e) => setForm({ ...form, max_uses_per_user: e.target.value })}
+                  placeholder="Unlimited"
+                  min={1}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-400 mt-1">Defaults to 1 if left blank</p>
               </div>
             </div>
 
@@ -813,6 +831,11 @@ export default function AdminPromoCodesPage() {
                             <span className="text-gray-400"> / ∞</span>
                           )}
                         </span>
+                        {promo.max_uses_per_user !== null && (
+                          <span className="block text-[10px] text-gray-400 mt-0.5">
+                            {promo.max_uses_per_user}x per user
+                          </span>
+                        )}
                       </td>
 
                       {/* Valid dates */}

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { EMPLOYER_TIERS, TALENT_TIERS, EmployerTier, TalentTier } from '@/lib/subscriptions/tiers';
 import Navbar from "@/components/Navbar";
 import { Check, Building2, User, Sparkles, ArrowRight, X, XCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { getSupabaseAuthData } from '@/lib/supabase/getToken';
 
 type ViewType = 'employers' | 'talent';
 
@@ -115,6 +116,15 @@ function PricingPageContent() {
   const [validatingPromo, setValidatingPromo] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'canceled'; message: string } | null>(null);
   const [subscribing, setSubscribing] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Get current user ID for promo validation
+  useEffect(() => {
+    const authData = getSupabaseAuthData();
+    if (authData?.user?.id) {
+      setUserId(authData.user.id);
+    }
+  }, []);
 
   // Handle success/canceled query params
   useEffect(() => {
@@ -149,6 +159,7 @@ function PricingPageContent() {
         body: JSON.stringify({
           code: promoCode,
           userType: view === 'employers' ? 'employer' : 'talent',
+          userId: userId || undefined,
         }),
       });
       const data = await response.json();

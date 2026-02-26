@@ -1,558 +1,370 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import {
-  ArrowRight,
-  Building2,
-  Search,
-  Users,
-  FileText,
-  CheckCircle,
-  Shield,
-  Send,
-  Filter,
-  UserCheck,
-} from 'lucide-react';
-import Navbar from "@/components/Navbar";
+import './employers.css';
+import Navbar from '@/components/Navbar';
 
 export default function HowItWorksEmployersPage() {
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) e.target.classList.add('fade-visible');
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    requestAnimationFrame(() => {
+      const wrapper = document.querySelector('.employer-landing');
+      document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el));
+      wrapper?.classList.add('animations-ready');
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */} 
+    <div className="employer-landing">
       <Navbar />
 
-      {/* Hero */}
-      <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-green-50 to-white">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-6">
-            <Building2 className="w-4 h-4" />
-            For Employers
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
-            How O1DMatch Works
-            <br />
-            <span className="text-green-600">For Employers</span>
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-10">
-            Access a curated pool of O-1 ready talent. Browse anonymized profiles,
-            send interest letters, and connect with extraordinary candidates.
-          </p>
-          <Link
-            href="/signup?role=employer"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors"
-          >
-            Create Employer Account
-            <ArrowRight className="w-5 h-5" />
-          </Link>
-        </div>
-      </section>
+      {/* ─── HERO ─── */}
+      <section className="el-hero">
+        <div className="el-hero-grid-bg" />
+        <div className="el-hero-glow-1" />
+        <div className="el-hero-glow-2" />
 
-      {/* Step 1: Create Company Profile */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-4">
-                Step 1
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Set Up Your Company Profile
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                Create your employer account and complete your company profile. This information
-                will be used to generate official interest letters for candidates.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'Company name and description',
-                  'Authorized signatory information',
-                  'Company logo and branding',
-                  'Contact details for candidates',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
+        <div className="el-hero-inner">
+          {/* Left */}
+          <div className="el-hero-text">
+            <div className="el-hero-badge">
+              <div className="el-pulse-dot" />
+              <span>Now matching O-1 talent across 40+ industries</span>
             </div>
 
-            {/* Visual mockup */}
-            <div className="bg-gray-50 rounded-2xl p-6 shadow-lg">
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  <span className="ml-2 text-sm text-gray-600">Company Profile</span>
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-                      TC
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">TechCorp Inc.</p>
-                      <p className="text-sm text-gray-600">San Francisco, CA</p>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                      <div className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">TechCorp Inc.</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Authorized Signatory</label>
-                      <div className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">John Smith, CEO</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Signatory Email</label>
-                      <div className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">john@techcorp.com</div>
-                    </div>
-                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-sm text-green-800">Profile verified and ready to send letters</span>
-                    </div>
-                  </div>
-                </div>
+            <h1 className="el-hero-h1">
+              Your <em>Extraordinary Ability</em> Deserves an Extraordinary Path
+            </h1>
+
+            <p className="el-hero-sub">
+              O1DMatch connects O-1 visa holders and applicants with US employers
+              actively seeking exceptional international talent. Built by an
+              immigration attorney who has seen the gap firsthand.
+            </p>
+
+            <div className="el-hero-ctas">
+              <Link href="/signup?role=talent" className="el-btn-primary">
+                I&apos;m O-1 Talent →
+              </Link>
+              <Link href="/signup?role=employer" className="el-btn-secondary">
+                I&apos;m Hiring O-1 Talent
+              </Link>
+            </div>
+
+            <div className="el-hero-stats">
+              <div className="el-hero-stat">
+                <div className="el-stat-num">500+</div>
+                <div className="el-stat-label">O-1 Candidates</div>
+              </div>
+              <div className="el-hero-stat">
+                <div className="el-stat-num">120+</div>
+                <div className="el-stat-label">Hiring Companies</div>
+              </div>
+              <div className="el-hero-stat">
+                <div className="el-stat-num">98%</div>
+                <div className="el-stat-label">Match Accuracy</div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Step 2: Post Jobs */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Visual mockup */}
-            <div className="order-2 lg:order-1 bg-white rounded-2xl p-6 shadow-lg">
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  <span className="ml-2 text-sm text-gray-600">Post a Job</span>
+          {/* Right — Dashboard Preview */}
+          <div className="el-hero-preview">
+            <div className="el-preview-card">
+              <div className="el-preview-header">
+                <h3>Your O-1 Profile</h3>
+                <span className="el-preview-badge">● Active</span>
+              </div>
+
+              <div className="el-score-ring">
+                <svg viewBox="0 0 120 120">
+                  <circle className="el-ring-bg" cx="60" cy="60" r="54" />
+                  <circle className="el-ring-fill" cx="60" cy="60" r="54" />
+                </svg>
+                <div className="el-score-center">
+                  <span className="el-score-pct">50%</span>
+                  <span className="el-score-lbl">O-1 Score</span>
                 </div>
-                <div className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
-                    <div className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-900">Senior AI Engineer</div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <div className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 text-sm h-20">
-                      We&apos;re looking for an exceptional AI engineer to lead our ML team...
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Min O-1 Score</label>
-                      <div className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-900">50%</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                      <div className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-900">Remote / SF</div>
-                    </div>
-                  </div>
-                  <button className="w-full py-3 bg-green-600 text-white rounded-lg font-medium">
-                    Post Job
-                  </button>
+              </div>
+
+              <div className="el-criteria-badge">
+                <span>4 of 8 Criteria Met</span>
+              </div>
+
+              <div className="el-preview-metrics">
+                <div className="el-metric">
+                  <div className="el-metric-val">12</div>
+                  <div className="el-metric-lbl">Documents</div>
+                </div>
+                <div className="el-metric">
+                  <div className="el-metric-val">7</div>
+                  <div className="el-metric-lbl">Matching Jobs</div>
+                </div>
+                <div className="el-metric">
+                  <div className="el-metric-val">3</div>
+                  <div className="el-metric-lbl">Letters</div>
                 </div>
               </div>
             </div>
 
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-4">
-                Step 2
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Post Job Listings
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                Create job listings for positions you want to fill with O-1 talent.
-                Set minimum score requirements and let candidates apply directly.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'Set minimum O-1 score requirements',
-                  'Receive applications from qualified candidates',
-                  'Track all applicants in one place',
-                  'Filter by criteria match and experience',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="el-floating-card el-float el-fc-match">
+              <div className="el-fc-icon el-fc-icon-green">🎯</div>
+              <div className="el-fc-title">New Match!</div>
+              <div className="el-fc-sub">Google — ML Engineer</div>
+            </div>
+
+            <div className="el-floating-card el-float-delay el-fc-letter">
+              <div className="el-fc-icon el-fc-icon-blue">✉️</div>
+              <div className="el-fc-title">Interest Letter</div>
+              <div className="el-fc-sub">From: Stripe Inc.</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Step 3: Browse Talent */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
-                Step 3
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Browse Pre-Qualified Talent
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                Access our database of O-1 ready candidates. All profiles are pre-qualified
-                with verified evidence and calculated readiness scores.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'Search by industry, skills, and experience',
-                  'Filter by minimum O-1 readiness score',
-                  'See which visa criteria each candidate meets',
-                  'View professional headlines and backgrounds',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Visual mockup - Browse Talent */}
-            <div className="bg-gray-50 rounded-2xl p-6 shadow-lg">
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  <span className="ml-2 text-sm text-gray-600">Browse Talent</span>
-                </div>
-                <div className="p-4">
-                  {/* Search bar */}
-                  <div className="flex gap-2 mb-4">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <div className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-400">Search talent...</div>
-                    </div>
-                    <button className="px-3 py-2 border border-gray-300 rounded-lg">
-                      <Filter className="w-4 h-4 text-gray-600" />
-                    </button>
-                  </div>
-
-                  {/* Talent cards */}
-                  <div className="space-y-3">
-                    {[
-                      { id: 'O1D-4821', industry: 'Technology', score: 82, criteria: ['Awards', 'Original Contributions', 'High Salary'] },
-                      { id: 'O1D-7392', industry: 'Research', score: 75, criteria: ['Scholarly Articles', 'Judging', 'Memberships'] },
-                      { id: 'O1D-1056', industry: 'Business', score: 68, criteria: ['Critical Role', 'Awards', 'Published Material'] },
-                    ].map((talent) => (
-                      <div key={talent.id} className="p-3 border border-gray-200 rounded-lg hover:border-green-300 transition-colors">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-                              {talent.id.substring(4, 6)}
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900 text-sm">{talent.id}</p>
-                              <p className="text-xs text-gray-500">{talent.industry}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-lg font-bold text-green-600">{talent.score}%</span>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {talent.criteria.map((c) => (
-                            <span key={c} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{c}</span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Step 4: Send Interest Letters */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Visual mockup */}
-            <div className="order-2 lg:order-1 bg-white rounded-2xl p-6 shadow-lg">
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  <span className="ml-2 text-sm text-gray-600">Send Interest Letter</span>
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold">
-                      48
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">Candidate O1D-4821</p>
-                      <p className="text-sm text-gray-600">Technology - 82% O-1 Score</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Position Offered</label>
-                      <div className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-900">Senior AI Engineer</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Why this candidate?</label>
-                      <div className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-600 text-sm h-16">
-                        Their expertise in ML and proven track record of innovation...
-                      </div>
-                    </div>
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        <strong>Note:</strong> A USCIS-compliant interest letter will be generated
-                        with your company details and digital signature.
-                      </p>
-                    </div>
-                    <button className="w-full py-3 bg-green-600 text-white rounded-lg font-medium flex items-center justify-center gap-2">
-                      <Send className="w-5 h-5" />
-                      Send Interest Letter
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium mb-4">
-                Step 4
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Send Interest Letters
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                Found a candidate you like? Send them a USCIS-compliant interest letter
-                with just a few clicks. The letter is automatically generated with your
-                company details and digital signature.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'One-click letter generation',
-                  'USCIS-compliant format',
-                  'Automatic digital signature',
-                  'Candidate notified immediately',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Step 5: Connect */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-4">
-                Step 5
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Connect When They Accept
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                When a candidate accepts your interest letter, their full profile is revealed.
-                Now you can contact them directly and begin the hiring process.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'Full candidate profile revealed',
-                  'Direct contact information',
-                  'Download the signed interest letter',
-                  'Proceed with visa sponsorship',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Visual mockup */}
-            <div className="bg-gray-50 rounded-2xl p-6 shadow-lg">
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  <span className="ml-2 text-sm text-gray-600">Connected Candidate</span>
-                </div>
-                <div className="p-6">
-                  <div className="text-center mb-6">
-                    <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-blue-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                      <UserCheck className="w-10 h-10 text-white" />
-                    </div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-2">
-                      <CheckCircle className="w-4 h-4" />
-                      Connected
-                    </div>
-                  </div>
-
-                  <div className="text-center mb-6">
-                    <h3 className="text-xl font-bold text-gray-900">Sarah Chen</h3>
-                    <p className="text-gray-600">Senior Machine Learning Engineer</p>
-                    <p className="text-sm text-gray-500">Formerly at Google AI</p>
-                  </div>
-
-                  <div className="space-y-3 border-t border-gray-200 pt-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Email</span>
-                      <span className="text-sm font-medium text-gray-900">sarah.chen@email.com</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Phone</span>
-                      <span className="text-sm font-medium text-gray-900">+1 (555) 123-4567</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">O-1 Score</span>
-                      <span className="text-sm font-bold text-green-600">82%</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex gap-3">
-                    <button
-                      className="flex-1 py-2.5 bg-green-400 text-white/80 rounded-lg font-medium text-sm cursor-not-allowed opacity-75"
-                      disabled
-                      title="Demo button - not functional"
-                    >
-                      Download Letter
-                    </button>
-                    <button
-                      className="flex-1 py-2.5 border border-gray-200 text-gray-400 rounded-lg font-medium text-sm cursor-not-allowed opacity-75"
-                      disabled
-                      title="Demo button - not functional"
-                    >
-                      View Full Profile
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-green-600">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold text-white text-center mb-12">
-            Why Employers Choose O1DMatch
+      {/* ─── HOW IT WORKS ─── */}
+      <section id="how" className="el-section el-section-white">
+        <div className="el-section-header fade-up">
+          <div className="el-section-tag">How It Works</div>
+          <h2 className="el-section-title">
+            Three Steps to Your O-1 Opportunity
           </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Users,
-                title: 'Pre-Qualified Talent',
-                desc: 'Every candidate has verified evidence and a calculated O-1 readiness score. No guessing games.',
-              },
-              {
-                icon: FileText,
-                title: 'USCIS-Ready Letters',
-                desc: 'Generate compliant interest letters with one click. Proper format, digital signatures included.',
-              },
-              {
-                icon: Shield,
-                title: 'Privacy Protected',
-                desc: 'Candidate identities stay hidden until they accept. Reduces bias and protects both parties.',
-              },
-            ].map((benefit) => (
-              <div key={benefit.title} className="bg-white/10 backdrop-blur rounded-xl p-6 text-white">
-                <benefit.icon className="w-10 h-10 mb-4" />
-                <h3 className="text-xl font-semibold mb-2">{benefit.title}</h3>
-                <p className="text-green-100">{benefit.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { value: '500+', label: 'Active Candidates' },
-              { value: '100+', label: 'Companies Hiring' },
-              { value: '1,200+', label: 'Letters Sent' },
-              { value: '85%', label: 'Response Rate' },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <p className="text-4xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-gray-600">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            Ready to Find Extraordinary Talent?
-          </h2>
-          <p className="text-lg text-gray-600 mb-10">
-            Join leading companies who are hiring O-1 talent through O1DMatch.
-            Create your free employer account today.
+          <p className="el-section-desc">
+            Whether you&apos;re extraordinary talent or an employer seeking it,
+            O1DMatch simplifies the journey.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/signup?role=employer"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors"
-            >
-              Create Employer Account
-              <ArrowRight className="w-5 h-5" />
+        </div>
+
+        <div className="el-steps-grid">
+          <div className="el-steps-line" />
+
+          <div className="el-step-card fade-up">
+            <div className="el-step-num">1</div>
+            <h3>Build Your Profile</h3>
+            <p>
+              Upload your evidence — awards, publications, memberships — and
+              watch your O-1 score grow in real time.
+            </p>
+          </div>
+
+          <div className="el-step-card fade-up">
+            <div className="el-step-num">2</div>
+            <h3>Get Matched</h3>
+            <p>
+              Our algorithm connects you with employers who are specifically
+              seeking O-1 talent in your field and expertise.
+            </p>
+          </div>
+
+          <div className="el-step-card fade-up">
+            <div className="el-step-num">3</div>
+            <h3>Receive Interest Letters</h3>
+            <p>
+              Employers send formal sponsorship letters. Accept, sign, and our
+              team reviews and facilitates the next steps.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── DUAL CTA ─── */}
+      <section id="talent" className="el-section el-section-cream">
+        <div className="el-section-header fade-up">
+          <div className="el-section-tag">Built for Both Sides</div>
+          <h2 className="el-section-title">Choose Your Path</h2>
+        </div>
+
+        <div className="el-dual-grid" id="employers">
+          <div className="el-cta-card el-cta-talent fade-up">
+            <div className="el-card-icon el-card-icon-gold">🌟</div>
+            <h3>For O-1 Talent</h3>
+            <p>
+              Track your O-1 eligibility, upload evidence, and connect with
+              companies ready to sponsor your visa.
+            </p>
+            <ul>
+              <li>
+                <span className="el-check-gold">✓</span> Real-time O-1
+                eligibility scoring
+              </li>
+              <li>
+                <span className="el-check-gold">✓</span> AI-powered job matching
+              </li>
+              <li>
+                <span className="el-check-gold">✓</span> Dedicated account
+                manager support
+              </li>
+              <li>
+                <span className="el-check-gold">✓</span> Secure document
+                management
+              </li>
+            </ul>
+            <Link href="/signup?role=talent" className="el-btn-card-gold">
+              Start Your Profile →
             </Link>
-            <Link
-              href="/how-it-works/candidates"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-gray-200 text-gray-900 font-medium rounded-xl hover:border-gray-300 transition-colors"
-            >
-              I&apos;m a Candidate
+          </div>
+
+          <div className="el-cta-card el-cta-employer fade-up">
+            <div className="el-card-icon el-card-icon-blue">🏢</div>
+            <h3>For Employers</h3>
+            <p>
+              Access a curated pool of exceptional international professionals
+              pre-screened for O-1 eligibility.
+            </p>
+            <ul>
+              <li>
+                <span className="el-check-blue">✓</span> Browse pre-vetted O-1
+                candidates
+              </li>
+              <li>
+                <span className="el-check-blue">✓</span> Send interest letters
+                directly
+              </li>
+              <li>
+                <span className="el-check-blue">✓</span> Post jobs to targeted
+                talent pool
+              </li>
+              <li>
+                <span className="el-check-blue">✓</span> Immigration compliance
+                support
+              </li>
+            </ul>
+            <Link href="/signup?role=employer" className="el-btn-card-navy">
+              Hire O-1 Talent →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            {/* Left - Logo */}
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">O1</span>
+      {/* ─── TRUST ─── */}
+      <section id="trust" className="el-section el-section-white">
+        <div className="el-trust-grid">
+          <div className="el-trust-content fade-up">
+            <div className="el-section-tag el-tag-left">Built on Expertise</div>
+            <h2 className="el-trust-title">
+              Founded by an Immigration Attorney Who Knows the System
+            </h2>
+            <p className="el-trust-desc">
+              O1DMatch was built by a practicing immigration attorney with years of
+              experience handling O-1 visa cases. This isn&apos;t just software —
+              it&apos;s the culmination of seeing firsthand how talented individuals
+              struggle to find employers willing to sponsor, and how employers miss
+              out on extraordinary talent.
+            </p>
+
+            <div className="el-trust-features">
+              <div className="el-trust-feat">
+                <div className="el-tf-icon">⚖️</div>
+                <div>
+                  <h4>Licensed Attorney</h4>
+                  <p>Active bar member with immigration law specialization</p>
+                </div>
               </div>
-              <span className="font-semibold text-white">O1DMatch</span>
+              <div className="el-trust-feat">
+                <div className="el-tf-icon">🔒</div>
+                <div>
+                  <h4>Secure &amp; Compliant</h4>
+                  <p>All documents encrypted. Your data stays private.</p>
+                </div>
+              </div>
+              <div className="el-trust-feat">
+                <div className="el-tf-icon">🤝</div>
+                <div>
+                  <h4>Human + Technology</h4>
+                  <p>AI-powered matching with human oversight at every step</p>
+                </div>
+              </div>
             </div>
+          </div>
 
-            {/* Center - Tagline */}
-            <p className="text-gray-400 text-sm text-center">
-              Connecting exceptional talent with opportunities for O-1 visa sponsorship.
-            </p>
+          <div className="el-trust-badges fade-up">
+            <div className="el-badge">
+              <div className="el-badge-num">500+</div>
+              <div className="el-badge-lbl">Candidates Served</div>
+            </div>
+            <div className="el-badge">
+              <div className="el-badge-num">120+</div>
+              <div className="el-badge-lbl">Partner Companies</div>
+            </div>
+            <div className="el-badge">
+              <div className="el-badge-num">40+</div>
+              <div className="el-badge-lbl">Industries</div>
+            </div>
+            <div className="el-badge">
+              <div className="el-badge-num">15+</div>
+              <div className="el-badge-lbl">Years Immigration Exp.</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Right - Copyright */}
-            <p className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} O1DMatch. All rights reserved.
+      {/* ─── INTEREST LETTERS ─── */}
+      <section className="el-section el-section-cream">
+        <div className="el-interest fade-up">
+          <div className="el-section-tag">How Sponsorship Works</div>
+          <h2 className="el-section-title">About Interest Letters</h2>
+          <div className="el-interest-box">
+            <p>
+              Interest letters are formal expressions of your intent to sponsor or
+              hire O-1 talent. When a candidate accepts and signs the letter, our
+              admin will review and forward the signed document to you. Contact
+              information will be revealed once the signed letter is delivered.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FOOTER ─── */}
+      <footer className="el-footer">
+        <div className="el-footer-inner">
+          <div className="el-footer-grid">
+            <div className="el-footer-brand">
+              <span className="el-footer-logo">O1DMatch</span>
+              <p>
+                Connecting exceptional talent with opportunities for O-1 visa
+                sponsorship.
+              </p>
+            </div>
+            <div className="el-footer-col">
+              <h4>Platform</h4>
+              <Link href="/how-it-works/talent">For Candidates</Link>
+              <Link href="/how-it-works/employers">For Employers</Link>
+              <Link href="/pricing">Pricing</Link>
+              <Link href="/blog">Blog</Link>
+            </div>
+            <div className="el-footer-col">
+              <h4>Company</h4>
+              <Link href="/about">About</Link>
+              <Link href="/contact">Contact</Link>
+              <Link href="/careers">Careers</Link>
+            </div>
+            <div className="el-footer-col">
+              <h4>Legal</h4>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+            </div>
+          </div>
+
+          <div className="el-footer-bottom">
+            <span>© 2026 O1DMatch. All rights reserved.</span>
+            <span>Built by a licensed immigration attorney.</span>
           </div>
         </div>
       </footer>

@@ -11,7 +11,6 @@ import {
   Eye,
   Briefcase,
   ArrowRight,
-  Plus,
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -168,36 +167,27 @@ export default async function TalentDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          {isFirstLogin ? (
-            <>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Sparkles className="w-6 h-6 text-yellow-500" />
-                Welcome to O1DMatch!
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Get started by uploading evidence to build your O-1 visa profile
-              </p>
-            </>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Welcome back, {talentProfile.first_name}!
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Here&apos;s an overview of your O-1 visa profile
-              </p>
-            </>
-          )}
-        </div>
-        <Link
-          href="/dashboard/talent/evidence"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Upload Evidence
-        </Link>
+      <div>
+        {isFirstLogin ? (
+          <>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-yellow-500" />
+              Welcome to O1DMatch!
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Get started by uploading evidence to build your O-1 visa profile
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Welcome back, {talentProfile.first_name}!
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Here&apos;s an overview of your O-1 visa profile
+            </p>
+          </>
+        )}
       </div>
 
       {/* First-time user onboarding banner */}

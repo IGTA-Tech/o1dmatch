@@ -177,7 +177,7 @@ export default async function SeekPetitionerPage() {
       </div>
 
       {/* Bottom CTA */}
-      <Card className="bg-gray-50 border-gray-200">
+      {/* <Card className="bg-gray-50 border-gray-200">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-white rounded-lg border border-gray-200 flex-shrink-0">
@@ -199,7 +199,7 @@ export default async function SeekPetitionerPage() {
             </Link>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }
