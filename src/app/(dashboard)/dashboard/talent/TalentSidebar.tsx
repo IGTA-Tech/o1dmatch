@@ -14,7 +14,7 @@ import {
   Scale,
   Menu,
   Plus,
-  Bell,
+  // Bell,
   HelpCircle,
 } from 'lucide-react';
 import { SignOutButton } from '@/components/auth/SignOutButton';

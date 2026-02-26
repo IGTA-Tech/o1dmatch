@@ -2,9 +2,9 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui';
 import {
-  Scale,
+  // Scale,
   ExternalLink,
-  ArrowRight,
+  // ArrowRight,
   Info,
 } from 'lucide-react';
 import Link from 'next/link';
