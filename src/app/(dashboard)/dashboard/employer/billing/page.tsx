@@ -5,7 +5,7 @@ import { BillingClient } from './billing-client';
 export default async function EmployerBillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string; canceled?: string }>;
+  searchParams: Promise<{ success?: string; canceled?: string; promo_applied?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -25,6 +25,7 @@ export default async function EmployerBillingPage({
   const params = await searchParams;
   const showSuccess = params.success === 'true';
   const showCanceled = params.canceled === 'true';
+  const showPromoApplied = params.promo_applied === 'true';
 
   return (
     <BillingClient 
@@ -32,6 +33,7 @@ export default async function EmployerBillingPage({
       userId={user.id}
       showSuccess={showSuccess}
       showCanceled={showCanceled}
+      showPromoApplied={showPromoApplied}
     />
   );
 }

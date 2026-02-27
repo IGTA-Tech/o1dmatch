@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import { ScoreDisplay } from '@/components/talent/ScoreDisplay';
 import { CriteriaBreakdown } from '@/components/talent/CriteriaBreakdown';
 import { O1Criterion, O1_CRITERIA } from '@/types/enums';
+import { checkPromoExpiry } from '@/lib/subscriptions/checkPromoExpiry';
 import {
   FileText,
   Send,
@@ -12,6 +13,7 @@ import {
   Briefcase,
   ArrowRight,
   // Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -35,14 +37,12 @@ export default async function TalentDashboardPage() {
 
   // If no talent profile exists, create one
   if (!talentProfile) {
-    // Get profile for name
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single();
 
-    // Create talent profile
     await supabase.from('talent_profiles').insert({
       user_id: user.id,
       first_name: profile?.full_name?.split(' ')[0] || '',
@@ -60,10 +60,12 @@ export default async function TalentDashboardPage() {
     : createdAt;
   const isFirstLogin = Math.abs(lastSignIn - createdAt) < 2 * 60 * 1000;
 
-  // Redirect first-time users to the welcome page
   if (isFirstLogin) {
     redirect('/dashboard/talent/welcome');
   }
+
+  // Check promo code expiry and downgrade if needed
+  const promoCheck = await checkPromoExpiry(supabase, user.id, 'talent');
 
   // Get all documents for this talent to calculate counts per criterion
   const { data: documents } = await supabase
@@ -74,39 +76,26 @@ export default async function TalentDashboardPage() {
   // Calculate document counts per criterion
   const documentCounts: Record<string, { total: number; verified: number; pending: number; needsReview: number; rejected: number }> = {};
   
-  // Initialize all criteria with 0
   (Object.keys(O1_CRITERIA) as O1Criterion[]).forEach(criterion => {
     documentCounts[criterion] = { total: 0, verified: 0, pending: 0, needsReview: 0, rejected: 0 };
   });
   
-  // Count documents per criterion by status
   documents?.forEach(doc => {
     if (doc.criterion && documentCounts[doc.criterion]) {
       documentCounts[doc.criterion].total += 1;
-      
       switch (doc.status) {
-        case 'verified':
-          documentCounts[doc.criterion].verified += 1;
-          break;
-        case 'pending':
-          documentCounts[doc.criterion].pending += 1;
-          break;
-        case 'needs_review':
-          documentCounts[doc.criterion].needsReview += 1;
-          break;
-        case 'rejected':
-          documentCounts[doc.criterion].rejected += 1;
-          break;
+        case 'verified': documentCounts[doc.criterion].verified += 1; break;
+        case 'pending': documentCounts[doc.criterion].pending += 1; break;
+        case 'needs_review': documentCounts[doc.criterion].needsReview += 1; break;
+        case 'rejected': documentCounts[doc.criterion].rejected += 1; break;
       }
     }
   });
 
-  // Calculate criteria met (criteria with at least one verified document)
   const criteriaMet = (Object.keys(O1_CRITERIA) as O1Criterion[]).filter(
     criterion => documentCounts[criterion]?.verified > 0
   );
 
-  // Get stats
   const [
     { count: documentsCount },
     { count: applicationsCount },
@@ -127,7 +116,6 @@ export default async function TalentDashboardPage() {
       .eq('talent_id', talentProfile.id),
   ]);
 
-  // Get matching jobs count (jobs where their score meets minimum)
   const { count: matchingJobsCount } = await supabase
     .from('job_listings')
     .select('*', { count: 'exact', head: true })
@@ -171,6 +159,27 @@ export default async function TalentDashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Promo Expired Banner */}
+      {promoCheck.downgraded && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-amber-800">
+              Your plan has been moved to the Free tier
+            </p>
+            <p className="text-sm text-amber-700 mt-0.5">
+              {promoCheck.reason || 'Your promotional period has ended.'} Upgrade anytime to restore premium features.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/talent/billing"
+            className="px-4 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 whitespace-nowrap"
+          >
+            Upgrade
+          </Link>
+        </div>
+      )}
+
       {/* Welcome Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
@@ -183,7 +192,6 @@ export default async function TalentDashboardPage() {
 
       {/* Score and Stats Row */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Score Card */}
         <Card className="lg:col-span-1">
           <CardContent className="flex flex-col items-center py-6">
             <ScoreDisplay
@@ -198,7 +206,6 @@ export default async function TalentDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Stats Grid */}
         <div className="lg:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((stat) => (
             <Link key={stat.label} href={stat.href}>
@@ -206,9 +213,7 @@ export default async function TalentDashboardPage() {
                 <CardContent>
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {stat.value}
-                      </p>
+                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
                       <p className="text-sm text-gray-600">{stat.label}</p>
                     </div>
                     <div className={`p-2 rounded-lg ${stat.bgColor}`}>
@@ -255,9 +260,7 @@ export default async function TalentDashboardPage() {
               </div>
               <div>
                 <h3 className="font-medium text-gray-900">Complete Profile</h3>
-                <p className="text-sm text-gray-500">
-                  Add more details to attract employers
-                </p>
+                <p className="text-sm text-gray-500">Add more details to attract employers</p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
             </CardContent>
@@ -272,9 +275,7 @@ export default async function TalentDashboardPage() {
               </div>
               <div>
                 <h3 className="font-medium text-gray-900">Browse Jobs</h3>
-                <p className="text-sm text-gray-500">
-                  Find opportunities matching your profile
-                </p>
+                <p className="text-sm text-gray-500">Find opportunities matching your profile</p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
             </CardContent>
@@ -289,9 +290,7 @@ export default async function TalentDashboardPage() {
               </div>
               <div>
                 <h3 className="font-medium text-gray-900">Find a Lawyer</h3>
-                <p className="text-sm text-gray-500">
-                  Connect with immigration attorneys
-                </p>
+                <p className="text-sm text-gray-500">Connect with immigration attorneys</p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
             </CardContent>

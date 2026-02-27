@@ -44,6 +44,7 @@ interface TalentBillingClientProps {
   userId: string;
   showSuccess: boolean;
   showCanceled: boolean;
+  showPromoApplied?: boolean;
 }
 
 const DEFAULT_SUBSCRIPTION: Subscription = {
@@ -54,7 +55,7 @@ const DEFAULT_SUBSCRIPTION: Subscription = {
   current_period_end: null,
 };
 
-export function TalentBillingClient({ subscription: initialSubscription, userId, showSuccess, showCanceled }: TalentBillingClientProps) {
+export function TalentBillingClient({ subscription: initialSubscription, userId, showSuccess, showCanceled, showPromoApplied }: TalentBillingClientProps) {
   const router = useRouter();
   const [subscription, setSubscription] = useState<Subscription>(initialSubscription || DEFAULT_SUBSCRIPTION);
   const [upgrading, setUpgrading] = useState<string | null>(null);
@@ -73,9 +74,14 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
 
   // Handle success/canceled and sync subscription
   useEffect(() => {
-    console.log('TalentBillingClient mounted - showSuccess:', showSuccess, 'showCanceled:', showCanceled, 'userId:', userId);
-
-    if (showCanceled) {
+    if (showPromoApplied) {
+      setStatusMessage({
+        type: 'success',
+        message: 'Promo code applied! Your plan has been upgraded.',
+      });
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard/talent/billing');
+    } else if (showCanceled) {
       setStatusMessage({
         type: 'canceled',
         message: 'Payment was canceled. You can try again when you\'re ready.',
@@ -95,7 +101,7 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
 
   async function syncSubscription() {
     console.log('Starting syncSubscription for userId:', userId);
-    
+
     try {
       const response = await fetch('/api/stripe/sync-subscription', {
         method: 'POST',
@@ -107,10 +113,10 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
       });
 
       console.log('Sync response status:', response.status);
-      
+
       const data = await response.json();
       console.log('Sync response data:', data);
-      
+
       if (data.success) {
         console.log('Sync successful! Subscription:', data.subscription);
         setSubscription(data.subscription);
@@ -143,10 +149,10 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
   async function handleRefresh() {
     setIsRefreshing(true);
     setError(null);
-    
+
     // Try to sync again
     await syncSubscription();
-    
+
     // Also refresh the page data
     router.refresh();
     setIsRefreshing(false);
@@ -190,6 +196,48 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
     setError(null);
 
     try {
+      // If promo is a trial or free_upgrade, apply directly (bypass Stripe checkout)
+      const promoType = promoStatus?.valid ? promoStatus.promo?.type : null;
+      if (promoType === 'trial' || promoType === 'free_upgrade') {
+        // Warn user if they have an active paid subscription
+        if (subscription.stripe_subscription_id) {
+          const confirmed = window.confirm(
+            'You currently have an active paid subscription. Applying this promo code will:\n\n' +
+            '• Cancel your current Stripe subscription (with proration refund)\n' +
+            '• Upgrade you to the promo tier for the promotional period\n' +
+            '• Move you to the Free plan when the promo expires\n\n' +
+            'Do you want to continue?'
+          );
+          if (!confirmed) {
+            setUpgrading(null);
+            return;
+          }
+        }
+
+        const response = await fetch('/api/promo/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: promoCode,
+            userType: 'talent',
+            tier,
+            userId,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Redirect to billing page with promo_applied flag (not success — that triggers Stripe sync)
+          window.location.href = '/dashboard/talent/billing?promo_applied=true';
+          return;
+        } else {
+          setError(data.error || 'Failed to apply promo code');
+          return;
+        }
+      }
+
+      // Standard Stripe checkout for paid plans / discount promos
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -236,7 +284,7 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
 
   const currentTier = subscription.tier || 'profile_only';
   const currentTierConfig = TALENT_TIERS[currentTier];
-  const hasActiveSubscription = subscription.stripe_subscription_id && 
+  const hasActiveSubscription = subscription.stripe_subscription_id &&
     (subscription.status === 'active' || subscription.status === 'trialing');
 
   return (
@@ -259,11 +307,10 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
       {/* Status Message Banner */}
       {statusMessage && (
         <div
-          className={`flex items-center justify-between p-4 rounded-xl border ${
-            statusMessage.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-amber-50 border-amber-200 text-amber-800'
-          }`}
+          className={`flex items-center justify-between p-4 rounded-xl border ${statusMessage.type === 'success'
+            ? 'bg-green-50 border-green-200 text-green-800'
+            : 'bg-amber-50 border-amber-200 text-amber-800'
+            }`}
         >
           <div className="flex items-center gap-3">
             {statusMessage.type === 'success' ? (
@@ -279,11 +326,10 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
           </div>
           <button
             onClick={() => setStatusMessage(null)}
-            className={`p-1 rounded-lg transition-colors ${
-              statusMessage.type === 'success'
-                ? 'hover:bg-green-100'
-                : 'hover:bg-amber-100'
-            }`}
+            className={`p-1 rounded-lg transition-colors ${statusMessage.type === 'success'
+              ? 'hover:bg-green-100'
+              : 'hover:bg-amber-100'
+              }`}
           >
             <X className="w-4 h-4" />
           </button>
@@ -357,7 +403,7 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
               <Receipt className="w-5 h-5 text-blue-600" />
               <h3 className="text-lg font-semibold text-gray-900">Subscription Details</h3>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Billing Period */}
               <div className="space-y-1">
@@ -366,12 +412,12 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
                   <span>Current Billing Period</span>
                 </div>
                 <p className="font-medium text-gray-900">
-                  {subscription.current_period_start 
+                  {subscription.current_period_start
                     ? new Date(subscription.current_period_start).toLocaleDateString()
                     : 'N/A'
                   }
                   {' - '}
-                  {subscription.current_period_end 
+                  {subscription.current_period_end
                     ? new Date(subscription.current_period_end).toLocaleDateString()
                     : 'N/A'
                   }
@@ -385,7 +431,7 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
                   <span>Next Billing Date</span>
                 </div>
                 <p className="font-medium text-gray-900">
-                  {subscription.current_period_end 
+                  {subscription.current_period_end
                     ? new Date(subscription.current_period_end).toLocaleDateString()
                     : 'N/A'
                   }
@@ -580,10 +626,10 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
                         </>
                       )}
                     </div>
-                    {promoStatus?.valid && promoStatus.promo?.trialDays && tier.price > 0 && !isIGTA && (
-                      <p className="text-xs font-medium text-blue-600 mt-1 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {promoStatus.promo.trialDays}-day free trial
+                    {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade') && tier.price > 0 && !isIGTA && (
+                      <p className="text-xs font-medium text-green-600 mt-1 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        No payment required
                       </p>
                     )}
 
@@ -621,7 +667,9 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <>
-                              {isUpgrade ? 'Upgrade' : 'Switch'}
+                              {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade')
+                                ? (promoStatus.promo?.type === 'trial' ? 'Start Free Trial' : 'Apply Promo')
+                                : (isUpgrade ? 'Upgrade' : 'Switch')}
                               <ArrowRight className="w-4 h-4" />
                             </>
                           )}

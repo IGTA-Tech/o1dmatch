@@ -112,7 +112,11 @@ function PricingPageContent() {
   const searchParams = useSearchParams();
   const [view, setView] = useState<ViewType>('employers');
   const [promoCode, setPromoCode] = useState('');
-  const [promoStatus, setPromoStatus] = useState<{ valid: boolean; message: string } | null>(null);
+  const [promoStatus, setPromoStatus] = useState<{ 
+    valid: boolean; 
+    message: string;
+    promo?: { type: string; trialDays?: number; discountPercent?: number; grantsIGTAMember?: boolean };
+  } | null>(null);
   const [validatingPromo, setValidatingPromo] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'canceled'; message: string } | null>(null);
   const [subscribing, setSubscribing] = useState<string | null>(null);
@@ -130,8 +134,15 @@ function PricingPageContent() {
   useEffect(() => {
     const canceled = searchParams.get('canceled');
     const success = searchParams.get('success');
+    const promoApplied = searchParams.get('promo_applied');
 
-    if (canceled === 'true') {
+    if (promoApplied === 'true') {
+      setStatusMessage({
+        type: 'success',
+        message: 'Promo code applied! Your plan has been upgraded.',
+      });
+      router.replace('/pricing', { scroll: false });
+    } else if (canceled === 'true') {
       setStatusMessage({
         type: 'canceled',
         message: 'Payment was canceled. You can try again when you\'re ready.',
@@ -175,7 +186,7 @@ function PricingPageContent() {
         if (data.promo.grantsIGTAMember) {
           message = 'Innovative Automations member code verified! You qualify for free full access.';
         }
-        setPromoStatus({ valid: true, message });
+        setPromoStatus({ valid: true, message, promo: data.promo });
       } else {
         setPromoStatus({ valid: false, message: data.error || 'Invalid code' });
       }
@@ -188,12 +199,55 @@ function PricingPageContent() {
 
   const handleSubscribe = async (tier: EmployerTier | TalentTier) => {
     setSubscribing(tier);
+    const userType = view === 'employers' ? 'employer' : 'talent';
+
     try {
+      // If promo is trial or free_upgrade, apply directly (bypass Stripe)
+      const promoType = promoStatus?.valid ? promoStatus.promo?.type : null;
+      if (promoType === 'trial' || promoType === 'free_upgrade') {
+        if (!userId) {
+          router.push(`/login?redirect=/pricing&type=${userType}`);
+          return;
+        }
+
+        const response = await fetch('/api/promo/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: promoCode,
+            userType,
+            tier,
+            userId,
+          }),
+        });
+
+        if (response.status === 401) {
+          router.push(`/login?redirect=/pricing&type=${userType}`);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Redirect to appropriate dashboard billing page
+          const dashboardPath = userType === 'employer' 
+            ? '/dashboard/employer/billing?promo_applied=true'
+            : '/dashboard/talent/billing?promo_applied=true';
+          window.location.href = dashboardPath;
+          return;
+        } else {
+          alert(data.error || 'Failed to apply promo code');
+          setSubscribing(null);
+          return;
+        }
+      }
+
+      // Standard Stripe checkout for paid plans / discount promos
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userType: view === 'employers' ? 'employer' : 'talent',
+          userType,
           tier,
           promoCode: promoStatus?.valid ? promoCode : undefined,
         }),
@@ -201,7 +255,6 @@ function PricingPageContent() {
 
       // Check for unauthorized (401) - redirect to login
       if (response.status === 401) {
-        const userType = view === 'employers' ? 'employer' : 'talent';
         router.push(`/login?redirect=/pricing&type=${userType}`);
         return;
       }
@@ -211,9 +264,7 @@ function PricingPageContent() {
       if (data.url) {
         window.location.href = data.url;
       } else if (data.error) {
-        // Check if error message indicates unauthorized
         if (data.error === 'Unauthorized' || data.error.toLowerCase().includes('unauthorized') || data.error.toLowerCase().includes('not logged in') || data.error.toLowerCase().includes('login required')) {
-          const userType = view === 'employers' ? 'employer' : 'talent';
           router.push(`/login?redirect=/pricing&type=${userType}`);
         } else {
           alert(data.error);
@@ -363,13 +414,42 @@ function PricingPageContent() {
 
                       {/* Price */}
                       <div className="mb-4">
-                        <div className="flex items-baseline">
-                          <span className="text-lg text-gray-500">$</span>
-                          <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
-                          <span className="text-gray-500 ml-1">/mo</span>
-                        </div>
+                        {promoStatus?.valid && promoStatus.promo?.discountPercent && tier.price > 0 ? (
+                          <>
+                            <div className="flex items-baseline">
+                              <span className="text-lg text-green-500">$</span>
+                              <span className="text-4xl font-bold text-green-600">
+                                {Math.round(tier.price * (1 - promoStatus.promo.discountPercent / 100))}
+                              </span>
+                              <span className="text-gray-500 ml-1">/mo</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-sm text-gray-400 line-through">${tier.price}/mo</span>
+                              <span className="text-xs font-medium bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
+                                {promoStatus.promo.discountPercent}% OFF
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-baseline">
+                            <span className="text-lg text-gray-500">$</span>
+                            <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
+                            <span className="text-gray-500 ml-1">/mo</span>
+                          </div>
+                        )}
                         {tier.setupFee > 0 && (
                           <p className="text-sm text-gray-500 mt-1">+ ${tier.setupFee} one-time setup</p>
+                        )}
+                        {promoStatus?.valid && promoStatus.promo?.trialDays && tier.price > 0 && (
+                          <p className="text-xs font-medium text-blue-600 mt-1">
+                            {promoStatus.promo.trialDays}-day free trial
+                          </p>
+                        )}
+                        {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade') && tier.price > 0 && (
+                          <p className="text-xs font-medium text-green-600 mt-1 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            No payment required
+                          </p>
                         )}
                       </div>
                     </div>
@@ -430,7 +510,10 @@ function PricingPageContent() {
                             </>
                           ) : (
                             <>
-                              Subscribe <ArrowRight className="w-4 h-4" />
+                              {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade')
+                                ? (promoStatus.promo?.type === 'trial' ? 'Start Free Trial' : 'Apply Promo')
+                                : 'Subscribe'}{' '}
+                              <ArrowRight className="w-4 h-4" />
                             </>
                           )}
                         </button>
@@ -486,12 +569,39 @@ function PricingPageContent() {
                             <span className="text-4xl font-bold text-green-600">FREE</span>
                             <p className="text-sm text-gray-500 mt-1">For verified Innovative Automations clients</p>
                           </>
+                        ) : promoStatus?.valid && promoStatus.promo?.discountPercent && tier.price > 0 ? (
+                          <>
+                            <div className="flex items-baseline">
+                              <span className="text-lg text-green-500">$</span>
+                              <span className="text-4xl font-bold text-green-600">
+                                {Math.round(tier.price * (1 - promoStatus.promo.discountPercent / 100))}
+                              </span>
+                              <span className="text-gray-500 ml-1">/mo</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-sm text-gray-400 line-through">${tier.price}/mo</span>
+                              <span className="text-xs font-medium bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
+                                {promoStatus.promo.discountPercent}% OFF
+                              </span>
+                            </div>
+                          </>
                         ) : (
                           <div className="flex items-baseline">
                             <span className="text-lg text-gray-500">$</span>
                             <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
                             <span className="text-gray-500 ml-1">/mo</span>
                           </div>
+                        )}
+                        {promoStatus?.valid && promoStatus.promo?.trialDays && tier.price > 0 && key !== 'igta_member' && (
+                          <p className="text-xs font-medium text-blue-600 mt-1">
+                            {promoStatus.promo.trialDays}-day free trial
+                          </p>
+                        )}
+                        {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade') && tier.price > 0 && key !== 'igta_member' && (
+                          <p className="text-xs font-medium text-green-600 mt-1 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            No payment required
+                          </p>
                         )}
                       </div>
                     </div>
@@ -559,7 +669,10 @@ function PricingPageContent() {
                             </>
                           ) : (
                             <>
-                              Subscribe <ArrowRight className="w-4 h-4" />
+                              {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade')
+                                ? (promoStatus.promo?.type === 'trial' ? 'Start Free Trial' : 'Apply Promo')
+                                : 'Subscribe'}{' '}
+                              <ArrowRight className="w-4 h-4" />
                             </>
                           )}
                         </button>

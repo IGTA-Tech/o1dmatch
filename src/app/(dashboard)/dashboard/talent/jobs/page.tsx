@@ -10,7 +10,7 @@ import {
   JobMatchProfile,
 } from '@/lib/matching';
 import { O1Criterion } from '@/types/enums';
-import { Briefcase, Sparkles } from 'lucide-react';
+import { Briefcase, Sparkles, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { JobsList } from './JobsList';
 
@@ -35,6 +35,15 @@ export default async function TalentJobsPage() {
   if (!talentProfile) {
     redirect('/dashboard/talent');
   }
+
+  // Check subscription tier
+  const { data: subscription } = await supabase
+    .from('talent_subscriptions')
+    .select('tier')
+    .eq('talent_id', user.id)
+    .single();
+
+  const isFreeTier = !subscription || subscription.tier === 'profile_only';
 
   // Get active jobs
   const { data: jobs } = await supabase
@@ -128,6 +137,27 @@ export default async function TalentJobsPage() {
         </div>
       </div>
 
+      {/* Upgrade Banner for Free Users */}
+      {isFreeTier && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+          <Lock className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-amber-800">
+              Upgrade to view job details and apply
+            </p>
+            <p className="text-sm text-amber-700 mt-0.5">
+              You can browse job titles on the free plan. To view full job details, match scores, and apply to positions, upgrade your subscription.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/talent/billing"
+            className="px-4 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 whitespace-nowrap font-medium"
+          >
+            Upgrade
+          </Link>
+        </div>
+      )}
+
       {/* Jobs List with Filters */}
       {!jobs || jobs.length === 0 ? (
         <Card>
@@ -172,7 +202,7 @@ export default async function TalentJobsPage() {
           </CardContent>
         </Card>
       ) : (
-        <JobsList jobs={sortedJobs} availableSkills={availableSkills} />
+        <JobsList jobs={sortedJobs} availableSkills={availableSkills} isFreeTier={isFreeTier} />
       )}
     </div>
   );

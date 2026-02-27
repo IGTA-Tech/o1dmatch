@@ -11,6 +11,7 @@ import {
   FileText,
   Download,
   Clock,
+  Lock,
 } from 'lucide-react';
 import Link from 'next/link';
 import LetterResponseActions from './LetterResponseActions';
@@ -41,6 +42,55 @@ export default async function TalentLetterDetailPage({ params, searchParams }: P
 
   if (!talentProfile) {
     redirect('/dashboard/talent');
+  }
+
+  // Check subscription tier
+  const { data: subscription } = await supabase
+    .from('talent_subscriptions')
+    .select('tier')
+    .eq('talent_id', user.id)
+    .single();
+
+  const isFreeTier = !subscription || subscription.tier === 'profile_only';
+
+  // If free tier, show upgrade prompt instead of letter content
+  if (isFreeTier) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/dashboard/talent/letters"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Interest Letter</h1>
+            <p className="text-gray-600">Upgrade required to view this letter</p>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="text-center py-16">
+            <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-amber-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Upgrade to View This Letter
+            </h3>
+            <p className="text-gray-600 max-w-md mx-auto mb-6">
+              Interest letters from employers are available on paid plans. Upgrade your subscription to view, accept, and sign letters from companies interested in sponsoring your O-1 visa.
+            </p>
+            <Link
+              href="/dashboard/talent/billing"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              View Plans &amp; Upgrade
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   // Get the letter

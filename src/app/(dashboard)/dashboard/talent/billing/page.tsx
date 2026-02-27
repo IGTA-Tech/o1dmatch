@@ -5,7 +5,7 @@ import { TalentBillingClient } from './billing-client';
 export default async function TalentBillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string; canceled?: string }>;
+  searchParams: Promise<{ success?: string; canceled?: string; promo_applied?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -25,6 +25,7 @@ export default async function TalentBillingPage({
   const params = await searchParams;
   const showSuccess = params.success === 'true';
   const showCanceled = params.canceled === 'true';
+  const showPromoApplied = params.promo_applied === 'true';
 
   return (
     <TalentBillingClient 
@@ -32,6 +33,7 @@ export default async function TalentBillingPage({
       userId={user.id}
       showSuccess={showSuccess}
       showCanceled={showCanceled}
+      showPromoApplied={showPromoApplied}
     />
   );
 }

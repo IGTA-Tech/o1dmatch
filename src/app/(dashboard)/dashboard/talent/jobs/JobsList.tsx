@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Building2,
   Target,
+  Lock,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -42,9 +43,10 @@ interface Job {
 interface JobsListProps {
   jobs: Job[];
   availableSkills: string[];
+  isFreeTier?: boolean;
 }
 
-export function JobsList({ jobs, availableSkills }: JobsListProps) {
+export function JobsList({ jobs, availableSkills, isFreeTier = false }: JobsListProps) {
   const [filters, setFilters] = useState<FilterState>({
     skills: [],
     minExperience: null,
@@ -203,6 +205,51 @@ export function JobsList({ jobs, availableSkills }: JobsListProps) {
     </Link>
   );
 
+  const renderFreeJobCard = (job: Job) => (
+    <div key={job.id} className="relative">
+      <Card className="h-full opacity-80">
+        <CardContent className="flex flex-col h-full">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Building2 className="w-6 h-6 text-gray-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">{job.title}</h3>
+                <p className="text-sm text-gray-600">{job.employer?.company_name}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Blurred placeholder content */}
+          <div className="space-y-3 select-none">
+            <div className="flex flex-wrap gap-3">
+              <span className="flex items-center gap-1 text-sm text-gray-400">
+                <MapPin className="w-4 h-4" />
+                <span className="blur-[5px]">City, State</span>
+              </span>
+              <span className="flex items-center gap-1 text-sm text-gray-400">
+                <DollarSign className="w-4 h-4" />
+                <span className="blur-[5px]">$XXk - $XXk</span>
+              </span>
+            </div>
+            <div className="h-10 bg-gray-100 rounded blur-[3px]" />
+          </div>
+
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+            <span className="text-xs text-gray-500">
+              Posted {new Date(job.created_at).toLocaleDateString()}
+            </span>
+            <span className="flex items-center gap-1 text-amber-600 text-sm font-medium">
+              <Lock className="w-3.5 h-3.5" />
+              Upgrade to view
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderSection = (
     title: string,
     jobs: Job[],
@@ -221,7 +268,7 @@ export function JobsList({ jobs, availableSkills }: JobsListProps) {
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {jobs.map(renderJobCard)}
+          {jobs.map(isFreeTier ? renderFreeJobCard : renderJobCard)}
         </div>
       </section>
     );
@@ -229,11 +276,13 @@ export function JobsList({ jobs, availableSkills }: JobsListProps) {
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <JobFilters
-        availableSkills={availableSkills}
-        onFilterChange={handleFilterChange}
-      />
+      {/* Filters - Hidden for free users */}
+      {!isFreeTier && (
+        <JobFilters
+          availableSkills={availableSkills}
+          onFilterChange={handleFilterChange}
+        />
+      )}
 
       {/* Results Count */}
       <div className="flex items-center justify-between">

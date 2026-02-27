@@ -43,6 +43,7 @@ interface BillingClientProps {
   userId: string;
   showSuccess: boolean;
   showCanceled: boolean;
+  showPromoApplied?: boolean;
 }
 
 const DEFAULT_SUBSCRIPTION: Subscription = {
@@ -54,7 +55,7 @@ const DEFAULT_SUBSCRIPTION: Subscription = {
   letters_sent_this_month: 0,
 };
 
-export function BillingClient({ subscription: initialSubscription, userId, showSuccess, showCanceled }: BillingClientProps) {
+export function BillingClient({ subscription: initialSubscription, userId, showSuccess, showCanceled, showPromoApplied }: BillingClientProps) {
   const router = useRouter();
   const [subscription, setSubscription] = useState<Subscription>(initialSubscription || DEFAULT_SUBSCRIPTION);
   const [upgrading, setUpgrading] = useState<string | null>(null);
@@ -73,9 +74,14 @@ export function BillingClient({ subscription: initialSubscription, userId, showS
 
   // Handle success/canceled and sync subscription
   useEffect(() => {
-    console.log('BillingClient mounted - showSuccess:', showSuccess, 'showCanceled:', showCanceled, 'userId:', userId);
-
-    if (showCanceled) {
+    if (showPromoApplied) {
+      setStatusMessage({
+        type: 'success',
+        message: 'Promo code applied! Your plan has been upgraded.',
+      });
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard/employer/billing');
+    } else if (showCanceled) {
       setStatusMessage({
         type: 'canceled',
         message: 'Payment was canceled. You can try again when you\'re ready.',
@@ -159,7 +165,7 @@ export function BillingClient({ subscription: initialSubscription, userId, showS
       const response = await fetch('/api/promo/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: promoCode, userType: 'employer' }),
+        body: JSON.stringify({ code: promoCode, userType: 'employer', userId }),
       });
       const data = await response.json();
       if (data.valid) {
@@ -190,6 +196,48 @@ export function BillingClient({ subscription: initialSubscription, userId, showS
     setError(null);
 
     try {
+      // If promo is a trial or free_upgrade, apply directly (bypass Stripe checkout)
+      const promoType = promoStatus?.valid ? promoStatus.promo?.type : null;
+      if (promoType === 'trial' || promoType === 'free_upgrade') {
+        // Warn user if they have an active paid subscription
+        if (subscription.stripe_subscription_id) {
+          const confirmed = window.confirm(
+            'You currently have an active paid subscription. Applying this promo code will:\n\n' +
+            '• Cancel your current Stripe subscription (with proration refund)\n' +
+            '• Upgrade you to the promo tier for the promotional period\n' +
+            '• Move you to the Free plan when the promo expires\n\n' +
+            'Do you want to continue?'
+          );
+          if (!confirmed) {
+            setUpgrading(null);
+            return;
+          }
+        }
+
+        const response = await fetch('/api/promo/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: promoCode,
+            userType: 'employer',
+            tier,
+            userId,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Redirect to billing page with promo_applied flag (not success — that triggers Stripe sync)
+          window.location.href = '/dashboard/employer/billing?promo_applied=true';
+          return;
+        } else {
+          setError(data.error || 'Failed to apply promo code');
+          return;
+        }
+      }
+
+      // Standard Stripe checkout for paid plans / discount promos
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -582,6 +630,12 @@ export function BillingClient({ subscription: initialSubscription, userId, showS
                         {promoStatus.promo.trialDays}-day free trial
                       </p>
                     )}
+                    {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade') && tier.price > 0 && (
+                      <p className="text-xs font-medium text-green-600 mt-1 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        No payment required
+                      </p>
+                    )}
                     {tier.setupFee > 0 && (
                       <p className="text-sm text-gray-500">+ ${tier.setupFee} setup</p>
                     )}
@@ -629,7 +683,9 @@ export function BillingClient({ subscription: initialSubscription, userId, showS
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <>
-                              {isUpgrade ? 'Upgrade' : 'Switch'}
+                              {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade')
+                                ? (promoStatus.promo?.type === 'trial' ? 'Start Free Trial' : 'Apply Promo')
+                                : (isUpgrade ? 'Upgrade' : 'Switch')}
                               <ArrowRight className="w-4 h-4" />
                             </>
                           )}

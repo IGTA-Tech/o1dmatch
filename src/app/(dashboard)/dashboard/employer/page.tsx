@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { checkPromoExpiry } from '@/lib/subscriptions/checkPromoExpiry';
 import {
   Users,
   Briefcase,
@@ -15,6 +16,7 @@ import {
   Send,
   Lightbulb,
   Handshake,
+  AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -71,6 +73,9 @@ export default async function EmployerDashboardPage() {
   if (employerProfile.company_name === 'My Company') {
     redirect('/dashboard/employer/profile');
   }
+
+  // Check promo code expiry and downgrade if needed
+  const promoCheck = await checkPromoExpiry(supabase, user.id, 'employer');
 
   // Get stats
   const [
@@ -240,6 +245,27 @@ export default async function EmployerDashboardPage() {
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      {/* Promo Expired Banner */}
+      {promoCheck.downgraded && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-amber-800">
+              Your plan has been moved to the Free tier
+            </p>
+            <p className="text-sm text-amber-700 mt-0.5">
+              {promoCheck.reason || 'Your promotional period has ended.'} Upgrade anytime to restore premium features.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/employer/billing"
+            className="px-4 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 whitespace-nowrap"
+          >
+            Upgrade
+          </Link>
+        </div>
+      )}
+
       {/* Welcome */}
       <div className="mb-6">
         <h1
