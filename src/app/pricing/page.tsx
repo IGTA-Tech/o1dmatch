@@ -66,44 +66,37 @@ const EMPLOYER_FEATURES = {
 
 const TALENT_FEATURES = {
   profile_only: [
-    { text: 'Create & maintain profile', included: true },
-    { text: 'Upload evidence documents', included: true },
-    { text: 'AI O-1 score assessment', included: true },
-    { text: 'Browse job listings', included: true },
-    { text: 'Receive interest letters', included: false },
-    { text: 'Apply to job postings', included: false },
-    { text: 'Priority visibility', included: false },
-    { text: 'Dedicated matching specialist', included: false },
+    { text: 'Create & complete profile', included: true },
+    { text: 'Employers can find & browse you', included: true },
+    { text: 'O-1 Score (basic only)', included: true },
+    { text: 'Upload evidence/documents', included: true },
+    { text: 'Browse jobs (titles only)', included: true },
+    { text: 'Receive interest letters (notification only)', included: true },
+    { text: 'Express interest / Apply to jobs', included: false },
+    { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: false },
+    { text: 'Dedicated account manager', included: false },
   ],
   starter: [
-    { text: 'Create & maintain profile', included: true },
-    { text: 'Upload evidence documents', included: true },
-    { text: 'AI O-1 score assessment', included: true },
-    { text: 'Browse job listings', included: true },
-    { text: 'Receive interest letters', included: true },
-    { text: 'Apply to job postings', included: true },
-    { text: 'Priority visibility', included: false },
-    { text: 'Dedicated matching specialist', included: false },
+    { text: 'Create & complete profile', included: true },
+    { text: 'Employers can find & browse you', included: true },
+    { text: 'Full O-1 Score breakdown + recommendations', included: true },
+    { text: 'Upload evidence/documents', included: true },
+    { text: 'Browse jobs (full details)', included: true },
+    { text: 'View & respond to interest letters', included: true },
+    { text: 'Express interest / Apply to jobs', included: true },
+    { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: true },
+    { text: 'Dedicated account manager', included: false },
   ],
   active_match: [
-    { text: 'Create & maintain profile', included: true },
-    { text: 'Upload evidence documents', included: true },
-    { text: 'AI O-1 score assessment', included: true },
-    { text: 'Browse job listings', included: true },
-    { text: 'Receive interest letters', included: true },
-    { text: 'Apply to job postings', included: true },
-    { text: 'Priority visibility', included: true },
-    { text: 'Dedicated matching specialist', included: true },
-  ],
-  igta_member: [
-    { text: 'Create & maintain profile', included: true },
-    { text: 'Upload evidence documents', included: true },
-    { text: 'AI O-1 score assessment', included: true },
-    { text: 'Browse job listings', included: true },
-    { text: 'Receive interest letters', included: true },
-    { text: 'Apply to job postings', included: true },
-    { text: 'Priority visibility', included: true },
-    { text: 'Dedicated matching specialist', included: true },
+    { text: 'Create & complete profile', included: true },
+    { text: 'Priority visibility for employers', included: true },
+    { text: 'Full O-1 Score + Manager review', included: true },
+    { text: 'Upload evidence/documents + Manager helps', included: true },
+    { text: 'Browse jobs (full details)', included: true },
+    { text: 'Interest letters handled by Manager', included: true },
+    { text: 'Express interest / Apply + Manager assists', included: true },
+    { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: true },
+    { text: 'Dedicated account manager', included: true },
   ],
 };
 
@@ -525,7 +518,7 @@ function PricingPageContent() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 max-w-5xl mx-auto">
             {(Object.entries(TALENT_TIERS) as [TalentTier, typeof TALENT_TIERS[TalentTier]][]).map(
               ([key, tier]) => {
                 const features = TALENT_FEATURES[key as keyof typeof TALENT_FEATURES];
@@ -533,43 +526,27 @@ function PricingPageContent() {
                   <div
                     key={key}
                     className={`relative flex flex-col bg-white rounded-2xl border-2 transition-all duration-200 ${
-                      key === 'active_match'
+                      key === 'starter'
                         ? 'border-blue-600 shadow-xl shadow-blue-100 scale-[1.02] z-10'
-                        : key === 'igta_member'
-                        ? 'border-green-500 shadow-lg shadow-green-50'
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'
                     }`}
                   >
-                    {/* Best Value Badge */}
-                    {key === 'active_match' && (
+                    {/* Most Popular Badge */}
+                    {key === 'starter' && (
                       <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                         <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1 shadow-lg">
-                          <Sparkles className="w-3.5 h-3.5" /> Best Value
-                        </span>
-                      </div>
-                    )}
-
-                    {/* IGTA Badge */}
-                    {key === 'igta_member' && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                        <span className="bg-green-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
-                          ✨ Our Clients
+                          <Sparkles className="w-3.5 h-3.5" /> Most Popular
                         </span>
                       </div>
                     )}
 
                     {/* Card Header */}
-                    <div className={`p-6 ${key === 'active_match' || key === 'igta_member' ? 'pt-8' : ''}`}>
+                    <div className={`p-6 ${key === 'starter' ? 'pt-8' : ''}`}>
                       <h3 className="text-xl font-bold text-gray-900 mb-2">{tier.name}</h3>
 
                       {/* Price */}
                       <div className="mb-4">
-                        {key === 'igta_member' ? (
-                          <>
-                            <span className="text-4xl font-bold text-green-600">FREE</span>
-                            <p className="text-sm text-gray-500 mt-1">For verified Innovative Automations clients</p>
-                          </>
-                        ) : promoStatus?.valid && promoStatus.promo?.discountPercent && tier.price > 0 ? (
+                        {promoStatus?.valid && promoStatus.promo?.discountPercent && tier.price > 0 ? (
                           <>
                             <div className="flex items-baseline">
                               <span className="text-lg text-green-500">$</span>
@@ -592,12 +569,12 @@ function PricingPageContent() {
                             <span className="text-gray-500 ml-1">/mo</span>
                           </div>
                         )}
-                        {promoStatus?.valid && promoStatus.promo?.trialDays && tier.price > 0 && key !== 'igta_member' && (
+                        {promoStatus?.valid && promoStatus.promo?.trialDays && tier.price > 0 && (
                           <p className="text-xs font-medium text-blue-600 mt-1">
                             {promoStatus.promo.trialDays}-day free trial
                           </p>
                         )}
-                        {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade') && tier.price > 0 && key !== 'igta_member' && (
+                        {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade') && tier.price > 0 && (
                           <p className="text-xs font-medium text-green-600 mt-1 flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
                             No payment required
@@ -645,19 +622,12 @@ function PricingPageContent() {
                         >
                           Create Free Profile
                         </Link>
-                      ) : key === 'igta_member' ? (
-                        <Link
-                          href="/signup?type=talent&igta=true"
-                          className="block w-full text-center py-3 px-4 bg-green-500 text-white rounded-xl hover:bg-green-600 font-semibold shadow-md shadow-green-200 transition-all"
-                        >
-                          Verify Membership
-                        </Link>
                       ) : (
                         <button
                           onClick={() => handleSubscribe(key)}
                           disabled={subscribing !== null}
                           className={`w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed ${
-                            key === 'active_match'
+                            key === 'starter'
                               ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200'
                               : 'bg-gray-900 text-white hover:bg-gray-800'
                           }`}
@@ -716,10 +686,11 @@ function PricingPageContent() {
             </div>
 
             <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-2">I&apos;m an Innovative Automations client. How do I get free access?</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">What does the dedicated account manager do?</h3>
               <p className="text-gray-600">
-                If you&apos;re enrolled in an Innovative Global Talent Agency visa program, you&apos;ll receive a verification code via
-                email. Use this code during signup to unlock full access at no cost.
+                With the Active Match plan ($500/mo), your dedicated account manager helps review your O-1 evidence,
+                assists with job applications, handles interest letter responses, and provides personalized guidance
+                throughout your visa journey.
               </p>
             </div>
 

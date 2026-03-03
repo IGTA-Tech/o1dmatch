@@ -16,6 +16,9 @@ import {
   Plus,
   // Bell,
   HelpCircle,
+  BarChart3,
+  ClipboardCheck,
+  Shield,
 } from 'lucide-react';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -42,6 +45,14 @@ const navSections = [
       { href: '/dashboard/talent/applications', label: 'Applications', icon: Send },
       { href: '/dashboard/talent/letters', label: 'Letters', icon: Mail },
       { href: '/dashboard/talent/petitioner', label: 'Seek a Petitioner', icon: Scale },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      { href: '/dashboard/talent/scoring', label: 'O-1 Scoring', icon: BarChart3 },
+      { href: '/dashboard/talent/visa-evaluations', label: 'Visa Evaluations', icon: ClipboardCheck },
+      { href: '/dashboard/talent/social-media-scanner', label: 'Social Media Scanner', icon: Shield },
     ],
   },
   {

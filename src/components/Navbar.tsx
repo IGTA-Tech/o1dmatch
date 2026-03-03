@@ -16,7 +16,8 @@ import {
   ClipboardCheck,
   Star,
   FolderOpen,
-  // Shield,
+  Shield,
+  BarChart3,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
@@ -371,6 +372,36 @@ export default function Navbar() {
                           Billing
                         </Link>
                       )}
+                      {userRole === 'talent' && (
+                        <Link
+                          href="/dashboard/talent/scoring"
+                          onClick={() => setIsDashboardOpen(false)}
+                          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/dashboard/talent/scoring" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                        >
+                          <BarChart3 className="w-4 h-4" />
+                          Scoring
+                        </Link>
+                      )}
+                      {userRole === 'talent' && (
+                        <Link
+                          href="/dashboard/talent/visa-evaluations"
+                          onClick={() => setIsDashboardOpen(false)}
+                          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/dashboard/talent/visa-evaluations" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                        >
+                          <ClipboardCheck className="w-4 h-4" />
+                          Visa Evaluations
+                        </Link>
+                      )}
+                      {userRole === 'talent' && (
+                        <Link
+                          href="/dashboard/talent/social-media-scanner"
+                          onClick={() => setIsDashboardOpen(false)}
+                          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/dashboard/talent/social-media-scanner" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                        >
+                          <Shield className="w-4 h-4" />
+                          Social Media Scanner
+                        </Link>
+                      )}
                       <div className="border-t border-gray-100 my-1" />
                       <div className="px-4 py-2">
                         <SignOutButton variant="menu" />
@@ -577,6 +608,36 @@ export default function Navbar() {
                     >
                       <CreditCard className="w-4 h-4" />
                       Billing
+                    </Link>
+                  )}
+                  {userRole === 'talent' && (
+                    <Link
+                      href="/dashboard/talent/scoring"
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      Scoring
+                    </Link>
+                  )}
+                  {userRole === 'talent' && (
+                    <Link
+                      href="/dashboard/talent/visa-evaluations"
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <ClipboardCheck className="w-4 h-4" />
+                      Visa Evaluations
+                    </Link>
+                  )}
+                  {userRole === 'talent' && (
+                    <Link
+                      href="/dashboard/talent/social-media-scanner"
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Shield className="w-4 h-4" />
+                      Social Media Scanner
                     </Link>
                   )}
                   {/* Use SignOutButton component for mobile */}

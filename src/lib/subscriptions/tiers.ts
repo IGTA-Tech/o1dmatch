@@ -1,7 +1,7 @@
 // Subscription tier definitions for O1DMatch
 
 export type EmployerTier = 'free' | 'starter' | 'growth' | 'business' | 'enterprise';
-export type TalentTier = 'profile_only' | 'starter' | 'active_match' | 'igta_member';
+export type TalentTier = 'profile_only' | 'starter' | 'active_match';
 
 export interface TierLimits {
   activeJobs: number;
@@ -129,27 +129,30 @@ export const EMPLOYER_TIERS: Record<EmployerTier, EmployerTierConfig> = {
 export const TALENT_TIERS: Record<TalentTier, TalentTierConfig> = {
   profile_only: {
     id: 'profile_only',
-    name: 'Profile Only',
+    name: 'Free',
     price: 0,
     features: [
-      'Create and maintain profile',
-      'Upload evidence documents',
-      'Get AI O-1 score assessment',
-      'Browse job listings',
-      'View employer profiles',
+      'Create & complete profile',
+      'Employers can find & browse you',
+      'Basic O-1 Score',
+      'Upload evidence/documents',
+      'Browse jobs (titles only)',
+      'Receive interest letters (notification only)',
     ],
   },
   starter: {
     id: 'starter',
     name: 'Starter',
-    price: 250,
+    price: 100,
     features: [
-      'All Profile Only features',
-      'Receive interest letters from employers',
-      'Apply to job postings',
-      'Appear in employer talent search',
-      // 'Direct messaging with employers',
-      'Email notifications for opportunities',
+      'Create & complete profile',
+      'Employers can find & browse you',
+      'Full O-1 Score breakdown + recommendations',
+      'Upload evidence/documents',
+      'Browse jobs (full details)',
+      'Express interest / Apply to jobs',
+      'View & respond to interest letters',
+      'Immigration tools (AI Eval, Scoring, VisaClear)',
     ],
   },
   active_match: {
@@ -157,25 +160,15 @@ export const TALENT_TIERS: Record<TalentTier, TalentTierConfig> = {
     name: 'Active Match',
     price: 500,
     features: [
-      'All Starter features',
-      'Priority visibility in search results',
-      'Active matching with employers on/off platform',
-      'Dedicated matching specialist',
-      'Resume/profile optimization review',
-      'Interview preparation support',
-      'Priority customer support',
-    ],
-  },
-  igta_member: {
-    id: 'igta_member',
-    name: 'Innovative Automations Member',
-    price: 0,
-    features: [
-      'All Active Match features included FREE',
-      'Verified Innovative Automations program participant badge',
-      'Direct integration with Innovative Automations case management',
-      'Priority access to new features',
-      'Exclusive Innovative Automations member events',
+      'Create & complete profile',
+      'Priority visibility for employers',
+      'Full O-1 Score + Manager review',
+      'Upload evidence/documents + Manager helps',
+      'Browse jobs (full details)',
+      'Express interest / Apply + Manager assists',
+      'Interest letters handled by Manager',
+      'Immigration tools (AI Eval, Scoring, VisaClear)',
+      'Dedicated account manager',
     ],
   },
 };
@@ -204,10 +197,6 @@ export function getTalentCanReceiveLetters(tier: TalentTier): boolean {
 
 export function getTalentCanApply(tier: TalentTier): boolean {
   return tier !== 'profile_only';
-}
-
-export function isIGTAMember(tier: TalentTier): boolean {
-  return tier === 'igta_member';
 }
 
 // Calculate remaining resources
