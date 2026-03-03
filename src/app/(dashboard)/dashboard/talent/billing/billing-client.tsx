@@ -576,7 +576,7 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
             ([key, tier]) => {
               const isCurrentPlan = key === currentTier;
               const isUpgrade = Object.keys(TALENT_TIERS).indexOf(key) > Object.keys(TALENT_TIERS).indexOf(currentTier);
-              const isIGTA = key === 'igta_member';
+              const isIGTA = (key as string) === 'igta_member';
 
               return (
                 <Card
