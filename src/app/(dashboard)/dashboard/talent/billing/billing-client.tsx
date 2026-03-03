@@ -24,6 +24,43 @@ import {
 } from 'lucide-react';
 import { TALENT_TIERS, TalentTier } from '@/lib/subscriptions/tiers';
 
+// Features with included status for each tier — matches /pricing page exactly
+const TALENT_FEATURES: Record<string, { text: string; included: boolean }[]> = {
+  profile_only: [
+    { text: 'Create & complete profile', included: true },
+    { text: 'Employers can find & browse you', included: true },
+    { text: 'O-1 Score (basic only)', included: true },
+    { text: 'Upload evidence/documents', included: true },
+    { text: 'Browse jobs (titles only)', included: true },
+    { text: 'Receive interest letters (notification only)', included: true },
+    { text: 'Express interest / Apply to jobs', included: false },
+    { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: false },
+    { text: 'Dedicated account manager', included: false },
+  ],
+  starter: [
+    { text: 'Create & complete profile', included: true },
+    { text: 'Employers can find & browse you', included: true },
+    { text: 'Full O-1 Score breakdown + recommendations', included: true },
+    { text: 'Upload evidence/documents', included: true },
+    { text: 'Browse jobs (full details)', included: true },
+    { text: 'View & respond to interest letters', included: true },
+    { text: 'Express interest / Apply to jobs', included: true },
+    { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: true },
+    { text: 'Dedicated account manager', included: false },
+  ],
+  active_match: [
+    { text: 'Create & complete profile', included: true },
+    { text: 'Priority visibility for employers', included: true },
+    { text: 'Full O-1 Score + Manager review', included: true },
+    { text: 'Upload evidence/documents + Manager helps', included: true },
+    { text: 'Browse jobs (full details)', included: true },
+    { text: 'Interest letters handled by Manager', included: true },
+    { text: 'Express interest / Apply + Manager assists', included: true },
+    { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: true },
+    { text: 'Dedicated account manager', included: true },
+  ],
+};
+
 interface Subscription {
   tier: TalentTier;
   status: string;
@@ -382,12 +419,22 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
 
           {/* Features/Limits */}
           <div className="mt-6 pt-6 border-t border-gray-100">
-            <p className="text-sm text-gray-500 mb-3">Plan Features</p>
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {currentTierConfig.features.slice(0, 4).map((feature, i) => (
-                <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  {feature}
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">What&apos;s included</p>
+            <ul className="space-y-3">
+              {(TALENT_FEATURES[currentTier] || []).map((feature, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  {feature.included ? (
+                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Check className="w-3 h-3 text-green-600" />
+                    </div>
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <X className="w-3 h-3 text-gray-400" />
+                    </div>
+                  )}
+                  <span className={`text-sm ${feature.included ? 'text-gray-700' : 'text-gray-400'}`}>
+                    {feature.text}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -633,14 +680,35 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
                       </p>
                     )}
 
-                    <ul className="mt-4 space-y-2">
-                      {tier.features.slice(0, 4).map((feature, i) => (
-                        <li key={i} className="flex items-start gap-2 text-xs text-gray-600">
-                          <Check className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
+                    {/* Divider */}
+                    <div className="mt-4 mb-4">
+                      <div className="border-t border-gray-100" />
+                    </div>
+
+                    {/* Features List */}
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                        What&apos;s included
+                      </p>
+                      <ul className="space-y-2.5">
+                        {(TALENT_FEATURES[key] || []).map((feature, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            {feature.included ? (
+                              <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <Check className="w-2.5 h-2.5 text-green-600" />
+                              </div>
+                            ) : (
+                              <div className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <X className="w-2.5 h-2.5 text-gray-400" />
+                              </div>
+                            )}
+                            <span className={`text-xs ${feature.included ? 'text-gray-700' : 'text-gray-400'}`}>
+                              {feature.text}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
 
                     <div className="mt-4">
                       {isCurrentPlan ? (
