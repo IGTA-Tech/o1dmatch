@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import PaidTierGate from '@/components/PaidTierGate';
 
 const VISA_TYPES = ["O-1A", "O-1B", "EB-1A", "EB-2 NIW"] as const;
 const LANGUAGES = [
@@ -501,8 +502,8 @@ function StatusDisplay({ data }: { data: Record<string, unknown> }) {
     status === "completed"
       ? "bg-green-500"
       : status === "failed"
-      ? "bg-red-500"
-      : "bg-blue-500";
+        ? "bg-red-500"
+        : "bg-blue-500";
 
   return (
     <div className="space-y-4">
@@ -688,79 +689,79 @@ function EvaluationHistory({ refreshKey }: { refreshKey: number }) {
 
   return (
     <>
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Candidate</th>
-            <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Visa Type</th>
-            <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Industry</th>
-            <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-            <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Job ID</th>
-            <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Submitted</th>
-            <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200 bg-white">
-          {evaluations.map((ev) => (
-            <tr key={ev.id} className="hover:bg-gray-50 transition-colors">
-              <td className="whitespace-nowrap px-6 py-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-900 capitalize">{ev.full_name.toLowerCase()}</p>
-                  <p className="text-xs text-gray-500">{ev.email}</p>
-                </div>
-              </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm">
-                <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">{ev.visa_type}</span>
-              </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{ev.industry || "—"}</td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm">
-                <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${getStatusStyle(ev.status)}`}>
-                  {getStatusIcon(ev.status)} {ev.status}
-                </span>
-              </td>
-              <td className="whitespace-nowrap px-6 py-4 text-xs font-mono text-gray-500">
-                {ev.job_id ? ev.job_id.slice(0, 12) + "…" : "—"}
-              </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                {new Date(ev.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-              </td>
-              <td className="whitespace-nowrap px-6 py-4 text-sm">
-                {ev.job_id ? (
-                  <button
-                    onClick={() => handleCheckStatus(ev.job_id!)}
-                    className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    Status
-                  </button>
-                ) : (
-                  <span className="text-xs text-gray-400">—</span>
-                )}
-              </td>
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Candidate</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Visa Type</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Industry</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Job ID</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Submitted</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-gray-200 bg-white">
+            {evaluations.map((ev) => (
+              <tr key={ev.id} className="hover:bg-gray-50 transition-colors">
+                <td className="whitespace-nowrap px-6 py-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 capitalize">{ev.full_name.toLowerCase()}</p>
+                    <p className="text-xs text-gray-500">{ev.email}</p>
+                  </div>
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm">
+                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">{ev.visa_type}</span>
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">{ev.industry || "—"}</td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm">
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${getStatusStyle(ev.status)}`}>
+                    {getStatusIcon(ev.status)} {ev.status}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-xs font-mono text-gray-500">
+                  {ev.job_id ? ev.job_id.slice(0, 12) + "…" : "—"}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                  {new Date(ev.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm">
+                  {ev.job_id ? (
+                    <button
+                      onClick={() => handleCheckStatus(ev.job_id!)}
+                      className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      Status
+                    </button>
+                  ) : (
+                    <span className="text-xs text-gray-400">—</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-    {/* Status Modal */}
-    <StatusModal open={modalOpen} onClose={closeModal}>
-      {modalLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-          <span className="ml-3 text-gray-500">Loading status…</span>
-        </div>
-      ) : modalError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-red-700">{modalError}</p>
-        </div>
-      ) : modalData ? (
-        <StatusDisplay data={modalData} />
-      ) : null}
-    </StatusModal>
+      {/* Status Modal */}
+      <StatusModal open={modalOpen} onClose={closeModal}>
+        {modalLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+            <span className="ml-3 text-gray-500">Loading status…</span>
+          </div>
+        ) : modalError ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm text-red-700">{modalError}</p>
+          </div>
+        ) : modalData ? (
+          <StatusDisplay data={modalData} />
+        ) : null}
+      </StatusModal>
     </>
   );
 }
@@ -782,38 +783,42 @@ export default function VisaEvaluationsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Visa Evaluations</h1>
-        <p className="mt-1 text-sm text-gray-500">Evaluate a candidate&apos;s eligibility for extraordinary ability visas</p>
-      </div>
+    <PaidTierGate
+      featureName="O-1 Scoring"
+      featureDescription="Upgrade your plan to access O-1 visa scoring and detailed analysis."
+    >
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Visa Evaluations</h1>
+          <p className="mt-1 text-sm text-gray-500">Evaluate a candidate&apos;s eligibility for extraordinary ability visas</p>
+        </div>
 
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors ${
-                activeTab === tab.key
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors ${activeTab === tab.key
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-      <div className="mt-6">
-        {activeTab === "new-evaluation" && (
-          <div className="mx-auto max-w-3xl">
-            <EvaluationForm onSuccess={handleSuccess} />
-          </div>
-        )}
-        {activeTab === "history" && <EvaluationHistory refreshKey={refreshKey} />}
+        <div className="mt-6">
+          {activeTab === "new-evaluation" && (
+            <div className="mx-auto max-w-3xl">
+              <EvaluationForm onSuccess={handleSuccess} />
+            </div>
+          )}
+          {activeTab === "history" && <EvaluationHistory refreshKey={refreshKey} />}
+        </div>
       </div>
-    </div>
+    </PaidTierGate>
   );
 }

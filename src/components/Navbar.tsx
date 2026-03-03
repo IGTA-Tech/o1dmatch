@@ -43,6 +43,7 @@ export default function Navbar() {
   // const [isLegalOpen, setIsLegalOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [talentTier, setTalentTier] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const waitlistRef = useRef<HTMLDivElement>(null);
   const dashboardRef = useRef<HTMLDivElement>(null);
@@ -87,7 +88,35 @@ export default function Navbar() {
       if (response.ok) {
         const profiles = await response.json();
         if (profiles && profiles[0]) {
-          setUserRole(profiles[0].role);
+          const role = profiles[0].role;
+          setUserRole(role);
+
+          // If talent, fetch subscription tier
+          if (role === 'talent') {
+            try {
+              const subResponse = await fetch(
+                `${supabaseUrl}/rest/v1/talent_subscriptions?talent_id=eq.${userId}&select=tier`,
+                {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'apikey': anonKey,
+                    'Content-Type': 'application/json',
+                  },
+                }
+              );
+              if (subResponse.ok) {
+                const subs = await subResponse.json();
+                if (subs && subs[0]) {
+                  setTalentTier(subs[0].tier);
+                } else {
+                  setTalentTier('profile_only');
+                }
+              }
+            } catch {
+              setTalentTier('profile_only');
+            }
+          }
         }
       }
     } catch (err) {
@@ -161,6 +190,10 @@ export default function Navbar() {
 
   // Show logged-in state if we have a user, even if role is still loading
   const isLoggedIn = !!user;
+
+  // Talent tools require a paid plan
+  // Only show when we KNOW the user has a paid tier - hide for free and unknown/loading
+  const isFreeTalent = userRole === 'talent' && (talentTier === null || talentTier === 'profile_only');
 
   const profileLink = getProfileLink();
 
@@ -372,7 +405,7 @@ export default function Navbar() {
                           Billing
                         </Link>
                       )}
-                      {userRole === 'talent' && (
+                      {userRole === 'talent' && !isFreeTalent && (
                         <Link
                           href="/dashboard/talent/scoring"
                           onClick={() => setIsDashboardOpen(false)}
@@ -382,7 +415,7 @@ export default function Navbar() {
                           Scoring
                         </Link>
                       )}
-                      {userRole === 'talent' && (
+                      {userRole === 'talent' && !isFreeTalent && (
                         <Link
                           href="/dashboard/talent/visa-evaluations"
                           onClick={() => setIsDashboardOpen(false)}
@@ -392,7 +425,7 @@ export default function Navbar() {
                           Visa Evaluations
                         </Link>
                       )}
-                      {userRole === 'talent' && (
+                      {userRole === 'talent' && !isFreeTalent && (
                         <Link
                           href="/dashboard/talent/social-media-scanner"
                           onClick={() => setIsDashboardOpen(false)}
@@ -610,7 +643,7 @@ export default function Navbar() {
                       Billing
                     </Link>
                   )}
-                  {userRole === 'talent' && (
+                  {userRole === 'talent' && !isFreeTalent && (
                     <Link
                       href="/dashboard/talent/scoring"
                       className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
@@ -620,7 +653,7 @@ export default function Navbar() {
                       Scoring
                     </Link>
                   )}
-                  {userRole === 'talent' && (
+                  {userRole === 'talent' && !isFreeTalent && (
                     <Link
                       href="/dashboard/talent/visa-evaluations"
                       className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
@@ -630,7 +663,7 @@ export default function Navbar() {
                       Visa Evaluations
                     </Link>
                   )}
-                  {userRole === 'talent' && (
+                  {userRole === 'talent' && !isFreeTalent && (
                     <Link
                       href="/dashboard/talent/social-media-scanner"
                       className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"

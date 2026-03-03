@@ -21,6 +21,7 @@ import {
   Download,
   Clock,
 } from "lucide-react";
+import PaidTierGate from '@/components/PaidTierGate';
 
 /* ================================================================== */
 /*  Types                                                              */
@@ -361,108 +362,113 @@ export default function SocialMediaScannerPage() {
   /* ================================================================ */
   if (!selectedPlatform) {
     return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Shield className="w-7 h-7 text-[#D4A84B]" />
-            Social Media Scanner
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Scan your social media content for keywords that could flag your USCIS visa application
-          </p>
-        </div>
-
-        {/* Platform Selection Grid */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Select a platform to scan</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {PLATFORMS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setSelectedPlatform(p.id)}
-                className="p-6 rounded-xl border-2 border-gray-200 text-left transition hover:border-[#D4A84B] hover:shadow-md bg-white group"
-              >
-                <div className="text-3xl mb-3">{p.icon}</div>
-                <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-[#0B1D35]">
-                  {p.name}
-                </h3>
-                <p className="text-sm text-gray-500">{p.description}</p>
-              </button>
-            ))}
+      <PaidTierGate
+        featureName="O-1 Scoring"
+        featureDescription="Upgrade your plan to access O-1 visa scoring and detailed analysis."
+      >
+        <div className="space-y-6">
+          {/* Header */}
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Shield className="w-7 h-7 text-[#D4A84B]" />
+              Social Media Scanner
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Scan your social media content for keywords that could flag your USCIS visa application
+            </p>
           </div>
-        </div>
 
-        {/* How It Works */}
-        <div className="p-6 bg-blue-50 border border-blue-200 rounded-xl">
-          <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-            <Info className="w-5 h-5" />
-            How It Works
-          </h3>
-          <div className="space-y-2 text-sm text-blue-700">
-            <p><strong>1. Select a platform</strong> — Choose which social media to scan</p>
-            <p><strong>2. Connect or paste</strong> — Enter a YouTube channel URL, or follow the export guide and paste your content for other platforms</p>
-            <p><strong>3. Review results</strong> — See flagged content with risk levels and matched keywords</p>
-            <p><strong>4. Take action</strong> — Delete, archive, or prepare explanations for flagged content</p>
-          </div>
-        </div>
-
-        {/* USCIS Warning */}
-        <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-xl">
-          <h3 className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
-            USCIS Social Media Screening
-          </h3>
-          <p className="text-sm text-yellow-700 mb-3">
-            USCIS has significantly expanded social media screening for visa applicants. H-1B, H-4, O-1,
-            EB-1, and other visa applicants may now be required to make their social media profiles public
-            for review. Content from years ago can resurface during adjudication.
-          </p>
-          <p className="text-sm text-yellow-700">
-            Proactively audit your content across all platforms before filing your petition. This tool scans
-            text content against a database of ~500 USCIS-flagged terms across categories including
-            extremism, controlled substances, immigration fraud, and political activism.
-          </p>
-        </div>
-
-        {/* Quick Tips */}
-        <div className="bg-[#0B1D35] text-white rounded-xl p-6">
-          <h3 className="font-semibold text-[#E8C97A] mb-3 flex items-center gap-2">
-            <Lightbulb className="w-5 h-5" />
-            Quick Tips Before You Scan
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-white/70">
-            <div className="space-y-2">
-              <p>• Scan <strong className="text-white/90">all</strong> your social media accounts, not just one</p>
-              <p>• Even casual language or jokes can trigger keyword matches</p>
-              <p>• Academic discussions and news commentary can still be flagged</p>
-              <p>• Scan content in every language you post in — not just English</p>
-            </div>
-            <div className="space-y-2">
-              <p>• Deleted content may still exist in cached versions or screenshots</p>
-              <p>• Review content posted by others that tags or mentions you</p>
-              <p>• Group chats and shared posts can also surface in screening</p>
-              <p>• Re-scan after making changes to verify your cleanup is complete</p>
+          {/* Platform Selection Grid */}
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Select a platform to scan</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {PLATFORMS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedPlatform(p.id)}
+                  className="p-6 rounded-xl border-2 border-gray-200 text-left transition hover:border-[#D4A84B] hover:shadow-md bg-white group"
+                >
+                  <div className="text-3xl mb-3">{p.icon}</div>
+                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-[#0B1D35]">
+                    {p.name}
+                  </h3>
+                  <p className="text-sm text-gray-500">{p.description}</p>
+                </button>
+              ))}
             </div>
           </div>
-          {/* Risk Level Legend */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-5 pt-5 border-t border-white/10">
-            {[
-              { label: "Critical", color: "bg-red-500", desc: "Delete immediately" },
-              { label: "High", color: "bg-orange-500", desc: "Recommend removal" },
-              { label: "Medium", color: "bg-yellow-500", desc: "Review context carefully" },
-              { label: "Low", color: "bg-blue-400", desc: "Monitor" },
-              { label: "Safe", color: "bg-green-500", desc: "No action needed" },
-            ].map((level) => (
-              <div key={level.label} className="text-center">
-                <div className={`h-2 rounded-full ${level.color} mb-1.5`} />
-                <div className="text-xs font-medium text-white/90">{level.label}</div>
-                <div className="text-[10px] text-white/50">{level.desc}</div>
+
+          {/* How It Works */}
+          <div className="p-6 bg-blue-50 border border-blue-200 rounded-xl">
+            <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              <Info className="w-5 h-5" />
+              How It Works
+            </h3>
+            <div className="space-y-2 text-sm text-blue-700">
+              <p><strong>1. Select a platform</strong> — Choose which social media to scan</p>
+              <p><strong>2. Connect or paste</strong> — Enter a YouTube channel URL, or follow the export guide and paste your content for other platforms</p>
+              <p><strong>3. Review results</strong> — See flagged content with risk levels and matched keywords</p>
+              <p><strong>4. Take action</strong> — Delete, archive, or prepare explanations for flagged content</p>
+            </div>
+          </div>
+
+          {/* USCIS Warning */}
+          <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-xl">
+            <h3 className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              USCIS Social Media Screening
+            </h3>
+            <p className="text-sm text-yellow-700 mb-3">
+              USCIS has significantly expanded social media screening for visa applicants. H-1B, H-4, O-1,
+              EB-1, and other visa applicants may now be required to make their social media profiles public
+              for review. Content from years ago can resurface during adjudication.
+            </p>
+            <p className="text-sm text-yellow-700">
+              Proactively audit your content across all platforms before filing your petition. This tool scans
+              text content against a database of ~500 USCIS-flagged terms across categories including
+              extremism, controlled substances, immigration fraud, and political activism.
+            </p>
+          </div>
+
+          {/* Quick Tips */}
+          <div className="bg-[#0B1D35] text-white rounded-xl p-6">
+            <h3 className="font-semibold text-[#E8C97A] mb-3 flex items-center gap-2">
+              <Lightbulb className="w-5 h-5" />
+              Quick Tips Before You Scan
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-white/70">
+              <div className="space-y-2">
+                <p>• Scan <strong className="text-white/90">all</strong> your social media accounts, not just one</p>
+                <p>• Even casual language or jokes can trigger keyword matches</p>
+                <p>• Academic discussions and news commentary can still be flagged</p>
+                <p>• Scan content in every language you post in — not just English</p>
               </div>
-            ))}
+              <div className="space-y-2">
+                <p>• Deleted content may still exist in cached versions or screenshots</p>
+                <p>• Review content posted by others that tags or mentions you</p>
+                <p>• Group chats and shared posts can also surface in screening</p>
+                <p>• Re-scan after making changes to verify your cleanup is complete</p>
+              </div>
+            </div>
+            {/* Risk Level Legend */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-5 pt-5 border-t border-white/10">
+              {[
+                { label: "Critical", color: "bg-red-500", desc: "Delete immediately" },
+                { label: "High", color: "bg-orange-500", desc: "Recommend removal" },
+                { label: "Medium", color: "bg-yellow-500", desc: "Review context carefully" },
+                { label: "Low", color: "bg-blue-400", desc: "Monitor" },
+                { label: "Safe", color: "bg-green-500", desc: "No action needed" },
+              ].map((level) => (
+                <div key={level.label} className="text-center">
+                  <div className={`h-2 rounded-full ${level.color} mb-1.5`} />
+                  <div className="text-xs font-medium text-white/90">{level.label}</div>
+                  <div className="text-[10px] text-white/50">{level.desc}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </PaidTierGate>
     );
   }
 
@@ -470,210 +476,215 @@ export default function SocialMediaScannerPage() {
   /*  RENDER: Scanner View (platform selected)                         */
   /* ================================================================ */
   return (
-    <div className="space-y-5">
-      {/* Back Button */}
-      <button
-        onClick={handleBack}
-        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition text-sm"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to platforms
-      </button>
-
-      {/* Platform Header */}
-      <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200">
-        <span className="text-3xl">{platform!.icon}</span>
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">
-            {platform!.name} Scanner
-          </h2>
-          <p className="text-sm text-gray-500">{platform!.description}</p>
-        </div>
-      </div>
-
-      {/* ── Export / Data Guide (collapsible) ─────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <PaidTierGate
+      featureName="O-1 Scoring"
+      featureDescription="Upgrade your plan to access O-1 visa scoring and detailed analysis."
+    >
+      <div className="space-y-5">
+        {/* Back Button */}
         <button
-          onClick={() => setShowExportSteps(!showExportSteps)}
-          className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-gray-50 transition"
+          onClick={handleBack}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition text-sm"
         >
-          <div className="flex items-center gap-2">
-            <Download className="w-4 h-4 text-[#D4A84B]" />
-            <span className="text-sm font-semibold text-gray-700">
-              {selectedPlatform === "youtube"
-                ? "How to find your YouTube channel URL"
-                : `How to export your ${platform!.name} data`}
-            </span>
-          </div>
-          {showExportSteps ? (
-            <ChevronUp className="w-4 h-4 text-gray-400" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-gray-400" />
-          )}
+          <ArrowLeft className="w-4 h-4" />
+          Back to platforms
         </button>
-        {showExportSteps && (
-          <div className="px-5 pb-4 border-t border-gray-100">
-            <ol className="mt-3 space-y-2.5">
-              {platform!.exportSteps.map((step, i) => (
-                <li key={i} className="flex gap-3 text-sm text-gray-600">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#D4A84B]/10 text-[#D4A84B] flex items-center justify-center text-xs font-bold mt-0.5">
-                    {i + 1}
+
+        {/* Platform Header */}
+        <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200">
+          <span className="text-3xl">{platform!.icon}</span>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {platform!.name} Scanner
+            </h2>
+            <p className="text-sm text-gray-500">{platform!.description}</p>
+          </div>
+        </div>
+
+        {/* ── Export / Data Guide (collapsible) ─────────────────────── */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <button
+            onClick={() => setShowExportSteps(!showExportSteps)}
+            className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-gray-50 transition"
+          >
+            <div className="flex items-center gap-2">
+              <Download className="w-4 h-4 text-[#D4A84B]" />
+              <span className="text-sm font-semibold text-gray-700">
+                {selectedPlatform === "youtube"
+                  ? "How to find your YouTube channel URL"
+                  : `How to export your ${platform!.name} data`}
+              </span>
+            </div>
+            {showExportSteps ? (
+              <ChevronUp className="w-4 h-4 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-gray-400" />
+            )}
+          </button>
+          {showExportSteps && (
+            <div className="px-5 pb-4 border-t border-gray-100">
+              <ol className="mt-3 space-y-2.5">
+                {platform!.exportSteps.map((step, i) => (
+                  <li key={i} className="flex gap-3 text-sm text-gray-600">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#D4A84B]/10 text-[#D4A84B] flex items-center justify-center text-xs font-bold mt-0.5">
+                      {i + 1}
+                    </span>
+                    <span className="leading-relaxed">{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
+
+        {/* ── Scanner Input Area ────────────────────────────────────── */}
+        {!result && (
+          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+            {selectedPlatform === "youtube" ? (
+              /* YouTube: URL input with auto-fetch */
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  YouTube Channel URL
+                </label>
+                <input
+                  type="url"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder={platform!.placeholder}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A84B]/40 focus:border-[#D4A84B]"
+                />
+                <div className="mt-2 flex items-start gap-2 text-xs text-gray-400 bg-gray-50 rounded-lg p-2.5">
+                  <Clock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                  <span>
+                    Just paste your channel URL — we&apos;ll automatically fetch all public videos and scan their titles,
+                    descriptions, and metadata. Processing takes 30–60 seconds depending on channel size.
                   </span>
-                  <span className="leading-relaxed">{step}</span>
+                </div>
+              </div>
+            ) : (
+              /* Other platforms: textarea input */
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Paste your {platform!.name} content
+                </label>
+                <textarea
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder={platform!.placeholder}
+                  rows={10}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A84B]/40 focus:border-[#D4A84B] resize-y font-mono"
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-xs text-gray-400">
+                    {inputText.length > 0
+                      ? `${inputText.split(/\s+/).filter(Boolean).length} words · ${inputText.length} characters`
+                      : "Paste your content above"}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div className="flex items-center justify-end gap-2 pt-2">
+              {inputText && (
+                <button
+                  onClick={() => setInputText("")}
+                  className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Clear
+                </button>
+              )}
+              <button
+                onClick={handleScan}
+                disabled={scanning || !inputText.trim()}
+                className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
+                style={{ background: "#D4A84B", color: "#0B1D35" }}
+              >
+                {scanning ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {selectedPlatform === "youtube" ? "Fetching & Scanning Channel..." : "Scanning..."}
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4" />
+                    {selectedPlatform === "youtube" ? "Scan Channel" : "Scan Content"}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Error ─────────────────────────────────────────────────── */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-red-800">Scan Failed</p>
+              <p className="text-sm text-red-600 mt-0.5">{error}</p>
+              <button
+                onClick={() => { setError(null); }}
+                className="text-xs text-red-700 underline mt-2"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Results ───────────────────────────────────────────────── */}
+        {result && (
+          <>
+            <ScanResults
+              result={result}
+              expandedItems={expandedItems}
+              toggleExpand={toggleExpand}
+              onCopy={handleCopyResults}
+              copied={copied}
+            />
+
+            {/* New Scan / Back Buttons */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleNewScan}
+                className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition hover:-translate-y-0.5"
+                style={{ background: "#D4A84B", color: "#0B1D35" }}
+              >
+                <Search className="w-4 h-4" />
+                New {platform!.name} Scan
+              </button>
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-2 px-5 py-2.5 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Switch Platform
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── Platform Tips (shown when no results yet) ─────────────── */}
+        {!result && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-amber-900 mb-3 flex items-center gap-2">
+              <Lightbulb className="w-4 h-4" />
+              {platform!.name} Tips
+            </h3>
+            <ul className="space-y-2">
+              {platform!.tips.map((tip, i) => (
+                <li key={i} className="text-sm text-amber-700 flex items-start gap-2">
+                  <span className="text-amber-400 mt-0.5 flex-shrink-0">•</span>
+                  <span className="leading-relaxed">{tip}</span>
                 </li>
               ))}
-            </ol>
+            </ul>
           </div>
         )}
       </div>
-
-      {/* ── Scanner Input Area ────────────────────────────────────── */}
-      {!result && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          {selectedPlatform === "youtube" ? (
-            /* YouTube: URL input with auto-fetch */
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                YouTube Channel URL
-              </label>
-              <input
-                type="url"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder={platform!.placeholder}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A84B]/40 focus:border-[#D4A84B]"
-              />
-              <div className="mt-2 flex items-start gap-2 text-xs text-gray-400 bg-gray-50 rounded-lg p-2.5">
-                <Clock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                <span>
-                  Just paste your channel URL — we&apos;ll automatically fetch all public videos and scan their titles,
-                  descriptions, and metadata. Processing takes 30–60 seconds depending on channel size.
-                </span>
-              </div>
-            </div>
-          ) : (
-            /* Other platforms: textarea input */
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Paste your {platform!.name} content
-              </label>
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder={platform!.placeholder}
-                rows={10}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A84B]/40 focus:border-[#D4A84B] resize-y font-mono"
-              />
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-xs text-gray-400">
-                  {inputText.length > 0
-                    ? `${inputText.split(/\s+/).filter(Boolean).length} words · ${inputText.length} characters`
-                    : "Paste your content above"}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Buttons */}
-          <div className="flex items-center justify-end gap-2 pt-2">
-            {inputText && (
-              <button
-                onClick={() => setInputText("")}
-                className="flex items-center gap-1.5 px-4 py-2.5 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                Clear
-              </button>
-            )}
-            <button
-              onClick={handleScan}
-              disabled={scanning || !inputText.trim()}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
-              style={{ background: "#D4A84B", color: "#0B1D35" }}
-            >
-              {scanning ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {selectedPlatform === "youtube" ? "Fetching & Scanning Channel..." : "Scanning..."}
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4" />
-                  {selectedPlatform === "youtube" ? "Scan Channel" : "Scan Content"}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Error ─────────────────────────────────────────────────── */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-red-800">Scan Failed</p>
-            <p className="text-sm text-red-600 mt-0.5">{error}</p>
-            <button
-              onClick={() => { setError(null); }}
-              className="text-xs text-red-700 underline mt-2"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Results ───────────────────────────────────────────────── */}
-      {result && (
-        <>
-          <ScanResults
-            result={result}
-            expandedItems={expandedItems}
-            toggleExpand={toggleExpand}
-            onCopy={handleCopyResults}
-            copied={copied}
-          />
-
-          {/* New Scan / Back Buttons */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleNewScan}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition hover:-translate-y-0.5"
-              style={{ background: "#D4A84B", color: "#0B1D35" }}
-            >
-              <Search className="w-4 h-4" />
-              New {platform!.name} Scan
-            </button>
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Switch Platform
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* ── Platform Tips (shown when no results yet) ─────────────── */}
-      {!result && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-amber-900 mb-3 flex items-center gap-2">
-            <Lightbulb className="w-4 h-4" />
-            {platform!.name} Tips
-          </h3>
-          <ul className="space-y-2">
-            {platform!.tips.map((tip, i) => (
-              <li key={i} className="text-sm text-amber-700 flex items-start gap-2">
-                <span className="text-amber-400 mt-0.5 flex-shrink-0">•</span>
-                <span className="leading-relaxed">{tip}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+    </PaidTierGate>
   );
 }
 

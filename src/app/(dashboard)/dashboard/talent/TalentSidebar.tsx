@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -70,6 +70,38 @@ export default function TalentSidebar({
 }: TalentSidebarProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentTier, setCurrentTier] = useState<string | null>(null);
+
+  // Fetch talent subscription tier on mount
+  useEffect(() => {
+    const fetchTier = async () => {
+      try {
+        console.log('[SIDEBAR] Fetching /api/talent/tier...');
+        const response = await fetch('/api/talent/tier');
+        console.log('[SIDEBAR] Response status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[SIDEBAR] Response data:', JSON.stringify(data));
+          setCurrentTier(data.tier || 'profile_only');
+        } else {
+          console.log('[SIDEBAR] Non-OK response');
+          setCurrentTier('profile_only');
+        }
+      } catch (err) {
+        console.error('[SIDEBAR] Fetch error:', err);
+        setCurrentTier('profile_only');
+      }
+    };
+
+    fetchTier();
+  }, []);
+console.log("CurrentTier=====> ",currentTier);
+  // Hide "Tools" section for free-tier users (also hide when tier unknown/not yet loaded)
+  const isFreePlan = !currentTier || currentTier === 'profile_only';
+  const filteredSections = isFreePlan
+    ? navSections.filter((section) => section.label !== 'Tools')
+    : navSections;
 
   const isActive = (href: string) => {
     if (href === '/dashboard/talent') return pathname === href;
@@ -98,7 +130,7 @@ export default function TalentSidebar({
 
       {/* Navigation */}
       <nav className="flex-1 py-5 overflow-y-auto">
-        {navSections.map((section) => (
+        {filteredSections.map((section) => (
           <div key={section.label} className="px-4 mb-2">
             <div className="px-2 mb-2 text-[0.65rem] font-semibold uppercase tracking-widest text-white/30">
               {section.label}
