@@ -9,7 +9,7 @@ import {
   ChevronDown,
   Users,
   Building2,
-  BookOpen,
+  // BookOpen,
   User,
   CreditCard,
   FileText,
@@ -17,7 +17,7 @@ import {
   Star,
   FolderOpen,
   Shield,
-  BarChart3,
+  // BarChart3,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';

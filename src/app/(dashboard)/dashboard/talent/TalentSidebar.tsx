@@ -16,8 +16,8 @@ import {
   Plus,
   // Bell,
   HelpCircle,
-  BarChart3,
-  ClipboardCheck,
+  // BarChart3,
+  // ClipboardCheck,
   Shield,
 } from 'lucide-react';
 import { SignOutButton } from '@/components/auth/SignOutButton';
