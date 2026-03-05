@@ -405,7 +405,7 @@ export default function Navbar() {
                           Billing
                         </Link>
                       )}
-                      {userRole === 'talent' && !isFreeTalent && (
+                      {/* {userRole === 'talent' && !isFreeTalent && (
                         <Link
                           href="/dashboard/talent/scoring"
                           onClick={() => setIsDashboardOpen(false)}
@@ -424,7 +424,7 @@ export default function Navbar() {
                           <ClipboardCheck className="w-4 h-4" />
                           Visa Evaluations
                         </Link>
-                      )}
+                      )} */}
                       {userRole === 'talent' && !isFreeTalent && (
                         <Link
                           href="/dashboard/talent/social-media-scanner"
@@ -500,7 +500,7 @@ export default function Navbar() {
               >
                 Pricing
               </Link>
-              <Link
+             {/* <Link
                 href="/blog"
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -508,7 +508,7 @@ export default function Navbar() {
                 <BookOpen className="w-4 h-4" />
                 Blog
               </Link>
-              {/* <Link
+               <Link
                 href="/lawyers"
                 className="text-gray-600 hover:text-gray-900 py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -643,7 +643,7 @@ export default function Navbar() {
                       Billing
                     </Link>
                   )}
-                  {userRole === 'talent' && !isFreeTalent && (
+                  {/* {userRole === 'talent' && !isFreeTalent && (
                     <Link
                       href="/dashboard/talent/scoring"
                       className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
@@ -662,7 +662,7 @@ export default function Navbar() {
                       <ClipboardCheck className="w-4 h-4" />
                       Visa Evaluations
                     </Link>
-                  )}
+                  )} */}
                   {userRole === 'talent' && !isFreeTalent && (
                     <Link
                       href="/dashboard/talent/social-media-scanner"

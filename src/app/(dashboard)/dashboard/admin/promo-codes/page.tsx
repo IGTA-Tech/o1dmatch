@@ -203,6 +203,8 @@ export default function AdminPromoCodesPage() {
         valid_until: form.valid_until ? new Date(form.valid_until).toISOString() : null,
         is_active: form.is_active,
       };
+      // console.log(payload);
+      // return;
 
       const res = await fetch("/api/admin/promo-codes", {
         method: "POST",

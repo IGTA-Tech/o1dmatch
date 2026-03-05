@@ -73,7 +73,8 @@ const TALENT_FEATURES = {
     { text: 'Browse jobs (titles only)', included: true },
     { text: 'Receive interest letters (notification only)', included: true },
     { text: 'Express interest / Apply to jobs', included: false },
-    { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: false },
+    { text: 'Immigration tools (VisaClear)', included: false },
+    // { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: false },
     { text: 'Dedicated account manager', included: false },
   ],
   starter: [
@@ -84,7 +85,8 @@ const TALENT_FEATURES = {
     { text: 'Browse jobs (full details)', included: true },
     { text: 'View & respond to interest letters', included: true },
     { text: 'Express interest / Apply to jobs', included: true },
-    { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: true },
+    { text: 'Immigration tools (VisaClear)', included: true },
+    // { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: true },
     { text: 'Dedicated account manager', included: false },
   ],
   active_match: [
@@ -95,7 +97,8 @@ const TALENT_FEATURES = {
     { text: 'Browse jobs (full details)', included: true },
     { text: 'Interest letters handled by Manager', included: true },
     { text: 'Express interest / Apply + Manager assists', included: true },
-    { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: true },
+    { text: 'Immigration tools (VisaClear)', included: true },
+    // { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: true },
     { text: 'Dedicated account manager', included: true },
   ],
 };

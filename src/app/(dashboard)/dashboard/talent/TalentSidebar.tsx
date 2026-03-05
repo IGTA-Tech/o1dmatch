@@ -50,8 +50,8 @@ const navSections = [
   {
     label: 'Tools',
     items: [
-      { href: '/dashboard/talent/scoring', label: 'O-1 Scoring', icon: BarChart3 },
-      { href: '/dashboard/talent/visa-evaluations', label: 'Visa Evaluations', icon: ClipboardCheck },
+      // { href: '/dashboard/talent/scoring', label: 'O-1 Scoring', icon: BarChart3 },
+      // { href: '/dashboard/talent/visa-evaluations', label: 'Visa Evaluations', icon: ClipboardCheck },
       { href: '/dashboard/talent/social-media-scanner', label: 'Social Media Scanner', icon: Shield },
     ],
   },
