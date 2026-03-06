@@ -232,6 +232,7 @@ export default async function JobApplicationsPage({
                     <ApplicationActions
                       applicationId={application.id}
                       currentStatus={application.status}
+                      jobTitle={job.title}
                     />
                   </div>
                 </div>

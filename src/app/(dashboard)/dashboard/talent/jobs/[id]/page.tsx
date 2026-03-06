@@ -111,12 +111,9 @@ export default async function JobDetailPage({
         {/* Blurred Content Preview */}
         <div className="relative select-none pointer-events-none" aria-hidden="true">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 blur-[6px] opacity-50">
-            {/* Main Content Placeholder */}
             <div className="lg:col-span-2 space-y-6">
               <Card>
-                <CardHeader>
-                  <CardTitle>Job Description</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle>Job Description</CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="h-4 bg-gray-200 rounded w-full" />
@@ -129,11 +126,8 @@ export default async function JobDetailPage({
                   </div>
                 </CardContent>
               </Card>
-
               <Card>
-                <CardHeader>
-                  <CardTitle>Required Skills</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle>Required Skills</CardTitle></CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
                     {['Skill One', 'Skill Two', 'Skill Three', 'Skill Four'].map((s) => (
@@ -142,11 +136,8 @@ export default async function JobDetailPage({
                   </div>
                 </CardContent>
               </Card>
-
               <Card>
-                <CardHeader>
-                  <CardTitle>About the Company</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle>About the Company</CardTitle></CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="h-4 bg-gray-200 rounded w-full" />
@@ -156,8 +147,6 @@ export default async function JobDetailPage({
                 </CardContent>
               </Card>
             </div>
-
-            {/* Sidebar Placeholder */}
             <div className="space-y-6">
               <Card>
                 <CardContent className="py-8">
@@ -165,9 +154,7 @@ export default async function JobDetailPage({
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader>
-                  <CardTitle>Job Details</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle>Job Details</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <div key={i} className="flex items-center gap-3">
@@ -207,6 +194,10 @@ export default async function JobDetailPage({
   const talentScore = talentProfile.o1_score || 0;
   const meetsMinScore = talentScore >= (job.min_score || 0);
 
+  // Derive talent skills and primary location for the email
+  const talentSkills: string[] = talentProfile.skills ?? talentProfile.required_skills ?? [];
+  const jobLocation: string = job.locations?.join(', ') ?? '';
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -226,16 +217,12 @@ export default async function JobDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Job Details */}
           <Card>
-            <CardHeader>
-              <CardTitle>Job Description</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Job Description</CardTitle></CardHeader>
             <CardContent>
               <div className="prose prose-gray max-w-none">
                 <p className="whitespace-pre-wrap">{job.description}</p>
               </div>
-
               {job.why_o1_required && (
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                   <h4 className="font-medium text-blue-900 mb-2">Why O-1 Talent?</h4>
@@ -245,30 +232,22 @@ export default async function JobDetailPage({
             </CardContent>
           </Card>
 
-          {/* Requirements */}
           {job.required_skills && job.required_skills.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle>Required Skills</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle>Required Skills</CardTitle></CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {job.required_skills.map((skill: string, index: number) => (
-                    <Badge key={index} variant="default">
-                      {skill}
-                    </Badge>
+                    <Badge key={index} variant="default">{skill}</Badge>
                   ))}
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Company Info */}
           {job.employer && (
             <Card>
-              <CardHeader>
-                <CardTitle>About the Company</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle>About the Company</CardTitle></CardHeader>
               <CardContent>
                 <div className="flex items-start gap-4">
                   <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -285,13 +264,11 @@ export default async function JobDetailPage({
                       </p>
                     )}
                     {job.employer.company_description && (
-                      <p className="text-sm text-gray-600 mt-3">
-                        {job.employer.company_description}
-                      </p>
+                      <p className="text-sm text-gray-600 mt-3">{job.employer.company_description}</p>
                     )}
                     {job.employer.company_website && (
-                      
-                        <a href={job.employer.company_website}
+                      <a
+                        href={job.employer.company_website}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-blue-600 hover:underline mt-2 inline-block"
@@ -308,7 +285,6 @@ export default async function JobDetailPage({
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Apply Card */}
           <Card>
             <CardContent>
               {hasApplied ? (
@@ -340,19 +316,19 @@ export default async function JobDetailPage({
                   )}
                   <ApplyButton
                     jobId={job.id}
+                    jobTitle={job.title}
+                    jobLocation={jobLocation}
                     talentId={talentProfile.id}
                     talentScore={talentScore}
+                    talentSkills={talentSkills}
                   />
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Job Info */}
           <Card>
-            <CardHeader>
-              <CardTitle>Job Details</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Job Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
                 <DollarSign className="w-5 h-5 text-gray-400" />

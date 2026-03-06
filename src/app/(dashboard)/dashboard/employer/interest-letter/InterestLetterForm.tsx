@@ -564,6 +564,35 @@ export function InterestLetterForm({
 
             if (insertResponse.ok) {
                 console.log("Success! Redirecting...");
+
+                // ── Send employer confirmation email (non-draft only) ──────
+                if (!isDraft && fullEmployerProfile?.signatory_email) {
+                    try {
+                        await fetch('/api/send-interest-letter-confirmation', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                toEmail: fullEmployerProfile.signatory_email,
+                                companyName: fullEmployerProfile.company_name,
+                                signatoryName: fullEmployerProfile.signatory_name,
+                                jobTitle: jobTitle.trim(),
+                                commitmentLevel,
+                                engagementType,
+                                workArrangement,
+                                salaryMin: salaryMin || null,
+                                salaryMax: salaryMax || null,
+                                salaryNegotiable,
+                                locations: locations || '',
+                                startTiming: useTextStartDate ? startTiming : startDate,
+                            }),
+                        });
+                        console.log('Interest letter confirmation email sent');
+                    } catch (emailErr) {
+                        // Non-critical — letter already saved
+                        console.warn('Confirmation email failed (non-critical):', emailErr);
+                    }
+                }
+
                 router.push('/dashboard/employer/letters');
                 router.refresh();
             } else {

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid action. Must be "approve" or "reject"' }, { status: 400 });
     }
 
-    // Get letter details with talent info
+    // Get letter details with talent and employer info
     const { data: letter, error: letterError } = await supabase
       .from('interest_letters')
       .select(`
@@ -49,7 +49,9 @@ export async function POST(request: NextRequest) {
         ),
         employer:employer_profiles(
           id,
-          company_name
+          company_name,
+          signatory_name,
+          signatory_email
         )
       `)
       .eq('id', letterId)
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update letter' }, { status: 500 });
     }
 
-    // If approved, create notification for talent
+    // If approved, create in-app notification for talent
     if (action === 'approve' && letter.talent?.user_id) {
       const { error: notificationError } = await supabase
         .from('notifications')
@@ -98,12 +100,76 @@ export async function POST(request: NextRequest) {
 
       if (notificationError) {
         console.error('Error creating notification:', notificationError);
-        // Don't fail the request if notification creation fails
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+    // Shared letter details used in both emails
+    const sharedLetterPayload = {
+      jobTitle: letter.job_title,
+      companyName: letter.employer?.company_name || 'A company',
+      commitmentLevel: letter.commitment_level,
+      engagementType: letter.engagement_type,
+      workArrangement: letter.work_arrangement,
+      salaryMin: letter.salary_min ?? null,
+      salaryMax: letter.salary_max ?? null,
+      salaryNegotiable: letter.salary_negotiable ?? false,
+      locations: Array.isArray(letter.locations)
+        ? letter.locations.join(', ')
+        : (letter.locations || ''),
+      startTiming: letter.start_timing || '',
+    };
+
+    // ── Email to Talent ──────────────────────────────────────────────────────
+    if (letter.talent?.user_id) {
+      try {
+        const { data: talentProfile } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', letter.talent.user_id)
+          .single();
+
+        if (talentProfile?.email) {
+          await fetch(`${baseUrl}/api/send-letter-review-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action,
+              toEmail: talentProfile.email,
+              talentName:
+                talentProfile.full_name ||
+                `${letter.talent.first_name || ''} ${letter.talent.last_name || ''}`.trim() ||
+                'there',
+              adminNotes: action === 'reject' ? (adminNotes || null) : null,
+              ...sharedLetterPayload,
+            }),
+          });
+        }
+      } catch (emailError) {
+        console.error('[review/route] Failed to send talent email notification:', emailError);
+      }
+    }
+
+    // ── Email to Employer (approve only) ────────────────────────────────────
+    if (action === 'approve' && letter.employer?.signatory_email) {
+      try {
+        await fetch(`${baseUrl}/api/send-employer-letter-approved-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toEmail: letter.employer.signatory_email,
+            signatoryName: letter.employer.signatory_name || 'there',
+            ...sharedLetterPayload,
+          }),
+        });
+      } catch (emailError) {
+        console.error('[review/route] Failed to send employer email notification:', emailError);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
       message: `Letter ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
       letterId,
       status: newStatus,

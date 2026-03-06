@@ -28,7 +28,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { letterId, adminNotes } = body;
+    const {
+      letterId,
+      adminNotes,
+      // Employer email details passed from the client
+      employerEmail,
+      employerSignatoryName,
+      companyName,
+      jobTitle,
+      commitmentLevel,
+      engagementType,
+      workArrangement,
+      salaryMin,
+      salaryMax,
+      salaryNegotiable,
+      locations,
+      startTiming,
+    } = body;
 
     if (!letterId) {
       return NextResponse.json({ error: 'Letter ID is required' }, { status: 400 });
@@ -96,6 +112,35 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to update letter' },
         { status: 500 }
       );
+    }
+
+    // ── Email to Employer ────────────────────────────────────────────────────
+    if (employerEmail) {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+        await fetch(`${baseUrl}/api/send-employer-signature-forwarded-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toEmail: employerEmail,
+            signatoryName: employerSignatoryName || 'there',
+            companyName: companyName || 'Your Company',
+            jobTitle: jobTitle || 'the position',
+            commitmentLevel: commitmentLevel || '',
+            engagementType: engagementType || '',
+            workArrangement: workArrangement || '',
+            salaryMin: salaryMin ?? null,
+            salaryMax: salaryMax ?? null,
+            salaryNegotiable: salaryNegotiable ?? false,
+            locations: locations || '',
+            startTiming: startTiming || '',
+          }),
+        });
+      } catch (emailError) {
+        // Don't fail the forward action if email fails
+        console.error('[forward-signature] Failed to send employer email:', emailError);
+      }
     }
 
     return NextResponse.json({ success: true });

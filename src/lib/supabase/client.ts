@@ -23,29 +23,29 @@ export function resetClient() {
   client = null;
 }
 
-/*import { createBrowserClient } from '@supabase/ssr';
+// import { createBrowserClient } from '@supabase/ssr';
 
-type Client = ReturnType<typeof createBrowserClient>;
+// type Client = ReturnType<typeof createBrowserClient>;
 
-let client: Client | null = null;
+// let client: Client | null = null;
 
-export function createClient(): Client {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
+// export function createClient(): Client {
+//   return createBrowserClient(
+//     process.env.NEXT_PUBLIC_SUPABASE_URL!,
+//     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+//   );
+// }
 
-export function getClient(): Client {
-  if (typeof window === 'undefined') {
-    return createClient();
-  }
+// export function getClient(): Client {
+//   if (typeof window === 'undefined') {
+//     return createClient();
+//   }
   
-  if (!client) {
-    client = createClient();
-  }
-  return client;
-}*/
+//   if (!client) {
+//     client = createClient();
+//   }
+//   return client;
+// }
 
 
 /*  OLD CODE 

@@ -400,7 +400,21 @@ export default async function AdminLetterDetailPage({
 
       {/* Signature Review Actions */}
       {isPendingSignatureReview && (
-        <AdminSignatureActions letterId={letter.id} />
+        <AdminSignatureActions
+          letterId={letter.id}
+          employerEmail={letter.employer?.signatory_email || ''}
+          employerSignatoryName={letter.employer?.signatory_name || ''}
+          companyName={letter.employer?.company_name || ''}
+          jobTitle={letter.job_title}
+          commitmentLevel={letter.commitment_level || ''}
+          engagementType={letter.engagement_type || ''}
+          workArrangement={letter.work_arrangement || ''}
+          salaryMin={letter.salary_min ?? null}
+          salaryMax={letter.salary_max ?? null}
+          salaryNegotiable={letter.salary_negotiable ?? false}
+          locations={Array.isArray(letter.locations) ? letter.locations.join(', ') : (letter.locations || '')}
+          startTiming={letter.start_timing || ''}
+        />
       )}
 
       {/* Employer Info */}

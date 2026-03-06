@@ -66,13 +66,13 @@ export default async function EmployerDashboardPage() {
   const isFirstLogin = Math.abs(lastSignIn - createdAt) < 2 * 60 * 1000;
 
   // Redirect first-time users to the welcome page
-  if (isFirstLogin) {
+  if (isFirstLogin && employerProfile.company_name === 'My Company') {
     redirect('/dashboard/employer/welcome');
   }
 
-  if (employerProfile.company_name === 'My Company') {
-    redirect('/dashboard/employer/profile');
-  }
+  // if (employerProfile.company_name === 'My Company') {
+  //   redirect('/dashboard/employer/profile');
+  // }
 
   // Check promo code expiry and downgrade if needed
   const promoCheck = await checkPromoExpiry(supabase, user.id, 'employer');

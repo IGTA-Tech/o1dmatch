@@ -1,5 +1,7 @@
 'use client';
 
+// src/app/(dashboard)/dashboard/talent/jobs/[id]/ApplyButton.tsx
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Send, Loader2 } from 'lucide-react';
@@ -7,11 +9,21 @@ import { getSupabaseAuthData } from '@/lib/supabase/getToken';
 
 interface ApplyButtonProps {
   jobId: string;
+  jobTitle: string;
+  jobLocation?: string;
   talentId: string;
   talentScore: number;
+  talentSkills?: string[];   // ← replaces talentName + talentEmail
 }
 
-export function ApplyButton({ jobId, talentId, talentScore }: ApplyButtonProps) {
+export function ApplyButton({
+  jobId,
+  jobTitle,
+  jobLocation,
+  talentId,
+  talentScore,
+  talentSkills,
+}: ApplyButtonProps) {
   const router = useRouter();
   const [isApplying, setIsApplying] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -26,7 +38,7 @@ export function ApplyButton({ jobId, talentId, talentScore }: ApplyButtonProps) 
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
     try {
-      // Get auth data from cookie
+      // ── 1. Auth ──────────────────────────────────────────────────────────
       const authData = getSupabaseAuthData();
 
       if (!authData) {
@@ -37,7 +49,7 @@ export function ApplyButton({ jobId, talentId, talentScore }: ApplyButtonProps) 
 
       const accessToken = authData.access_token;
 
-      // Prepare application data
+      // ── 2. Insert application into Supabase ──────────────────────────────
       const applicationData = {
         job_id: jobId,
         talent_id: talentId,
@@ -46,29 +58,24 @@ export function ApplyButton({ jobId, talentId, talentScore }: ApplyButtonProps) 
         status: 'pending',
       };
 
-      console.log("Submitting application:", applicationData);
+      console.log('Submitting application:', applicationData);
 
-      // Insert application
-      const response = await fetch(
-        `${supabaseUrl}/rest/v1/job_applications`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': anonKey,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation',
-          },
-          body: JSON.stringify(applicationData),
-        }
-      );
+      const response = await fetch(`${supabaseUrl}/rest/v1/job_applications`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: anonKey,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify(applicationData),
+      });
 
-      console.log("Response status:", response.status);
+      console.log('Response status:', response.status);
       const responseText = await response.text();
-      console.log("Response body:", responseText);
+      console.log('Response body:', responseText);
 
       if (!response.ok) {
-        // Check for duplicate application error
         if (response.status === 409 || responseText.includes('23505')) {
           setError('You have already applied to this job.');
         } else {
@@ -78,10 +85,31 @@ export function ApplyButton({ jobId, talentId, talentScore }: ApplyButtonProps) 
         return;
       }
 
-      console.log("Application submitted successfully!");
+      console.log('Application submitted successfully!');
+
+      // ── 3. Email employer (non-blocking — failure won't block the user) ──
+      try {
+        await fetch('/api/send-application-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobId,
+            jobTitle,
+            jobLocation: jobLocation ?? null,
+            talentSkills: talentSkills ?? [],
+            talentScore,
+            coverMessage: coverMessage || null,
+          }),
+        });
+        console.log('Employer notification email sent');
+      } catch (emailErr) {
+        // Email failure is non-critical — application is already saved
+        console.warn('Employer email notification failed (non-critical):', emailErr);
+      }
+
       router.refresh();
     } catch (err) {
-      console.error("Error:", err);
+      console.error('Error:', err);
       setError('An unexpected error occurred');
     } finally {
       setIsApplying(false);

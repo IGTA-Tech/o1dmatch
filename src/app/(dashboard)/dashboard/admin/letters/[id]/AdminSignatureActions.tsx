@@ -9,9 +9,35 @@ import { getSupabaseAuthData } from '@/lib/supabase/getToken';
 
 interface AdminSignatureActionsProps {
   letterId: string;
+  employerEmail: string;
+  employerSignatoryName: string;
+  companyName: string;
+  jobTitle: string;
+  commitmentLevel: string;
+  engagementType: string;
+  workArrangement: string;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryNegotiable: boolean;
+  locations: string;
+  startTiming: string;
 }
 
-export function AdminSignatureActions({ letterId }: AdminSignatureActionsProps) {
+export function AdminSignatureActions({
+  letterId,
+  employerEmail,
+  employerSignatoryName,
+  companyName,
+  jobTitle,
+  commitmentLevel,
+  engagementType,
+  workArrangement,
+  salaryMin,
+  salaryMax,
+  salaryNegotiable,
+  locations,
+  startTiming,
+}: AdminSignatureActionsProps) {
   const router = useRouter();
   const [isForwarding, setIsForwarding] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
@@ -28,7 +54,7 @@ export function AdminSignatureActions({ letterId }: AdminSignatureActionsProps) 
 
     try {
       const authData = getSupabaseAuthData();
-      
+
       if (!authData) {
         setError('Session expired. Please log in again.');
         return;
@@ -42,6 +68,19 @@ export function AdminSignatureActions({ letterId }: AdminSignatureActionsProps) 
         body: JSON.stringify({
           letterId,
           adminNotes: adminNotes || null,
+          // Employer details for email notification
+          employerEmail,
+          employerSignatoryName,
+          companyName,
+          jobTitle,
+          commitmentLevel,
+          engagementType,
+          workArrangement,
+          salaryMin,
+          salaryMax,
+          salaryNegotiable,
+          locations,
+          startTiming,
         }),
       });
 
@@ -53,7 +92,6 @@ export function AdminSignatureActions({ letterId }: AdminSignatureActionsProps) 
       }
 
       setSuccess(true);
-      // Refresh the page to show updated status
       setTimeout(() => {
         router.refresh();
       }, 1500);
@@ -83,7 +121,7 @@ export function AdminSignatureActions({ letterId }: AdminSignatureActionsProps) 
         <Send className="w-5 h-5" />
         Forward Signed Letter to Employer
       </h3>
-      
+
       <div className="mt-4 p-4 bg-white border border-purple-200 rounded-lg">
         <p className="text-sm text-purple-800 font-medium mb-2">
           Review Checklist:
