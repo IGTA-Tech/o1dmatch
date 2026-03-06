@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import {
   ArrowLeft,
@@ -31,7 +30,38 @@ interface NewJobFormProps {
 export function NewJobForm({ agencyId, agencyName, clients }: NewJobFormProps) {
   if(agencyName){} console.log(agencyName);
   const router = useRouter();
-  const supabase = createClient();
+
+  // Helper to get access token from cookie (avoids getSession() hanging)
+  const getAccessToken = async (): Promise<string | null> => {
+    const projectRef = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').match(/\/\/([^.]+)\./)?.[1];
+    if (projectRef) {
+      const cookieName = `sb-${projectRef}-auth-token`;
+      const allCookies = document.cookie.split(';').map(c => c.trim());
+
+      for (const cookie of allCookies) {
+        if (cookie.startsWith(`${cookieName}=`) || cookie.startsWith(`${cookieName}.0=`)) {
+          const chunkCookies = allCookies.filter(c => c.startsWith(`${cookieName}.`));
+          let tokenStr = '';
+
+          if (chunkCookies.length > 0) {
+            const sorted = chunkCookies.sort();
+            tokenStr = sorted.map(c => c.split('=').slice(1).join('=')).join('');
+          } else {
+            tokenStr = cookie.split('=').slice(1).join('=');
+          }
+
+          try {
+            const decoded = decodeURIComponent(tokenStr);
+            const parsed = JSON.parse(decoded.startsWith('base64-') ? atob(decoded.slice(7)) : decoded);
+            return parsed.access_token || null;
+          } catch {
+            return null;
+          }
+        }
+      }
+    }
+    return null;
+  };
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,9 +113,26 @@ export function NewJobForm({ agencyId, agencyName, clients }: NewJobFormProps) {
     setError(null);
 
     try {
-      const { error: insertError } = await supabase
-        .from('job_listings')
-        .insert({
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
+        throw new Error('Session expired. Please refresh the page and try again.');
+      }
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(`${supabaseUrl}/rest/v1/job_listings`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': anonKey!,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({
           agency_id: agencyId,
           agency_client_id: selectedClientId,
           title: title.trim(),
@@ -99,13 +146,17 @@ export function NewJobForm({ agencyId, agencyName, clients }: NewJobFormProps) {
           show_salary: showSalary,
           required_skills: requiredSkills ? requiredSkills.split(',').map(s => s.trim()).filter(Boolean) : [],
           experience_level: experienceLevel || null,
-        //   education_level: educationLevel || null,
           visa_sponsorship: visaSponsorship,
           status: 'active',
-        });
+        }),
+        signal: controller.signal,
+      });
 
-      if (insertError) {
-        throw new Error(insertError.message);
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Request failed with status ${response.status}`);
       }
 
       router.push('/dashboard/agency/jobs');
@@ -113,7 +164,11 @@ export function NewJobForm({ agencyId, agencyName, clients }: NewJobFormProps) {
 
     } catch (err) {
       console.error('Error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create job');
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Request timed out. Please check your connection and try again.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to create job');
+      }
     } finally {
       setSaving(false);
     }
