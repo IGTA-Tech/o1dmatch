@@ -200,7 +200,7 @@ function buildEmployerHtml(jobTitle: string, applicationRef: string, appliedOn: 
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
           <tr>
             <td align="center">
-              <a href="https://www.o1dmatch.com/dashboard/employer/candidates"
+              <a href="https://www.o1dmatch.com/dashboard/employer/jobs"
                  style="display:inline-block;padding:14px 36px;background:#D4A84B;
                         color:#0B1D35;font-size:15px;font-weight:700;
                         text-decoration:none;border-radius:10px;">
