@@ -4,6 +4,27 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
+
+interface LetterRow {
+  id: string;
+  job_title: string;
+  employer_id: string | null;
+  agency_id: string | null;
+  agency_client_id: string | null;
+  source_type: string | null;
+  commitment_level: string | null;
+  engagement_type: string | null;
+  work_arrangement: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_negotiable: boolean | null;
+  locations: string[] | string | null;
+  start_timing: string | null;
+  employer: { id: string; company_name: string; signatory_name: string; signatory_email: string } | null;
+  talent: { id: string; first_name: string; last_name: string; user_id: string } | null;
+  [key: string]: unknown;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -76,9 +97,9 @@ export async function POST(request: NextRequest) {
     console.log('[review] letter fetch error:', letterError);
     console.log('[review] letter.id:', letter?.id);
     console.log('[review] letter.employer_id (raw FK):', letter?.employer_id);
-    console.log('[review] letter.agency_id:', (letter as any)?.agency_id);
-    console.log('[review] letter.client_id:', (letter as any)?.client_id);
-    console.log('[review] letter.source_type:', (letter as any)?.source_type);
+    console.log('[review] letter.agency_id:', (letter as LetterRow)?.agency_id);
+    console.log('[review] letter.client_id:', (letter as LetterRow)?.agency_client_id);
+    console.log('[review] letter.source_type:', (letter as LetterRow)?.source_type);
     console.log('[review] letter.employer?.id:', letter?.employer?.id);
     console.log('[review] letter.employer?.company_name:', letter?.employer?.company_name);
     console.log('[review] letter.employer?.signatory_email:', letter?.employer?.signatory_email);
@@ -223,8 +244,8 @@ export async function POST(request: NextRequest) {
     //   interest_letters.agency_id        → agency_profiles.id  (direct FK)
     //   interest_letters.agency_client_id → agency_clients.id   (direct FK)
     // Only fires when letter.agency_id is set. Does NOT touch employer block above.
-    const agencyId       = (letter as any).agency_id;
-    const agencyClientId = (letter as any).agency_client_id;
+    const agencyId       = (letter as LetterRow).agency_id;
+    const agencyClientId = (letter as LetterRow).agency_client_id;
 
     console.log('[review] STEP 6: Agency check — action:', action, '| agency_id:', agencyId, '| agency_client_id:', agencyClientId);
 

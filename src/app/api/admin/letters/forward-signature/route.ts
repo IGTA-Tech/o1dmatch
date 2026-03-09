@@ -4,6 +4,14 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
+interface ForwardLetterRow {
+  id: string;
+  signature_status: string;
+  talent_signature_data: string | null;
+  agency_id: string | null;
+  agency_client_id: string | null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -52,11 +60,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the letter to verify it exists and has a signature pending review
-    const { data: letter, error: letterError } = await supabase
+    const { data: rawLetter, error: letterError } = await supabase
       .from('interest_letters')
       .select('id, signature_status, talent_signature_data, agency_id, agency_client_id')
       .eq('id', letterId)
       .single();
+
+    const letter = rawLetter as ForwardLetterRow | null;
 
     if (letterError || !letter) {
       return NextResponse.json({ error: 'Letter not found' }, { status: 404 });
@@ -147,8 +157,8 @@ export async function POST(request: NextRequest) {
     // ── Emails to Agency + Agency Client ────────────────────────────────────
     // Uses service role client to bypass RLS on agency_profiles and agency_clients.
     // Completely separate from employer block above — does not touch any existing code.
-    const agencyId       = (letter as any).agency_id;
-    const agencyClientId = (letter as any).agency_client_id;
+    const agencyId       = letter.agency_id;
+    const agencyClientId = letter.agency_client_id;
 
     if (agencyId || agencyClientId) {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
