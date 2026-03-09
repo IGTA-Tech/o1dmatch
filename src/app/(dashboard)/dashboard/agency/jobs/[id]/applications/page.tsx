@@ -108,8 +108,9 @@ export default async function JobApplicationsPage({
     }
   };
 
-  const clientName = job.client?.show_client_identity
-    ? job.client?.company_name
+  const clientRaw = Array.isArray(job.client) ? job.client[0] : job.client;
+  const clientName = clientRaw?.show_client_identity
+    ? clientRaw?.company_name
     : 'Confidential Client';
 
   const total = applications?.length || 0;
@@ -193,7 +194,8 @@ export default async function JobApplicationsPage({
           ) : (
             <div className="divide-y divide-gray-100">
               {applications.map((app) => {
-                const talent = app.talent as {
+                const talentRaw = Array.isArray(app.talent) ? app.talent[0] : app.talent;
+                const talent = talentRaw as {
                   id: string;
                   first_name: string;
                   last_name: string;
