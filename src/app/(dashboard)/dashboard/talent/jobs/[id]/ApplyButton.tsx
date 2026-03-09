@@ -13,7 +13,8 @@ interface ApplyButtonProps {
   jobLocation?: string;
   talentId: string;
   talentScore: number;
-  talentSkills?: string[];   // ← replaces talentName + talentEmail
+  talentSkills?: string[];
+  agencyId?: string | null;
 }
 
 export function ApplyButton({
@@ -23,6 +24,7 @@ export function ApplyButton({
   talentId,
   talentScore,
   talentSkills,
+  agencyId,
 }: ApplyButtonProps) {
   const router = useRouter();
   const [isApplying, setIsApplying] = useState(false);
@@ -99,6 +101,7 @@ export function ApplyButton({
             talentSkills: talentSkills ?? [],
             talentScore,
             coverMessage: coverMessage || null,
+            agencyId: agencyId ?? null,
           }),
         });
         console.log('Employer notification email sent');

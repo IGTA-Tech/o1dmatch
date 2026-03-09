@@ -10,16 +10,18 @@ export default async function NewLetterPage({
   const params = await searchParams;
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
 
-  if (!user) {
+  if (!session?.user) {
     redirect('/login');
   }
 
-  // Get agency profile
+  const user = session.user;
+
+  // Get agency profile — include contact details for confirmation email
   const { data: agencyProfile } = await supabase
     .from('agency_profiles')
-    .select('id, agency_name')
+    .select('id, agency_name, contact_name, contact_email')
     .eq('user_id', user.id)
     .single();
 
@@ -99,15 +101,17 @@ export default async function NewLetterPage({
     full_name: t.user_id ? userInfo[t.user_id]?.full_name : null,
     email: t.user_id ? userInfo[t.user_id]?.email : null,
   })) || [];
+
   const transformedJobs = jobs?.map(job => ({
     ...job,
-    client: Array.isArray(job.client) ? job.client[0] : job.client
+    client: Array.isArray(job.client) ? job.client[0] : job.client,
   })) || [];
 
   return (
     <NewLetterForm
       agencyId={agencyProfile.id}
       agencyName={agencyProfile.agency_name}
+      agencyContactEmail={agencyProfile.contact_email || ''}
       clients={clients || []}
       jobs={transformedJobs}
       talents={talentsWithNames}

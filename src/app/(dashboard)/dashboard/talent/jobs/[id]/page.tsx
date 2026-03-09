@@ -321,6 +321,7 @@ export default async function JobDetailPage({
                     talentId={talentProfile.id}
                     talentScore={talentScore}
                     talentSkills={talentSkills}
+                    agencyId={job.agency_id ?? null}
                   />
                 </div>
               )}

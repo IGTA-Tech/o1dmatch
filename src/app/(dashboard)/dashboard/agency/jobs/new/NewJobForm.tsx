@@ -24,10 +24,12 @@ interface Client {
 interface NewJobFormProps {
   agencyId: string;
   agencyName: string;
+  agencyContactName: string;
+  agencyContactEmail: string;
   clients: Client[];
 }
 
-export function NewJobForm({ agencyId, agencyName, clients }: NewJobFormProps) {
+export function NewJobForm({ agencyId, agencyName, agencyContactName, agencyContactEmail, clients }: NewJobFormProps) {
   if(agencyName){} console.log(agencyName);
   const router = useRouter();
 
@@ -157,6 +159,32 @@ export function NewJobForm({ agencyId, agencyName, clients }: NewJobFormProps) {
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || `Request failed with status ${response.status}`);
+      }
+
+      // Send confirmation email to agency contact
+      try {
+        const selectedClient = clients.find(c => c.id === selectedClientId);
+        await fetch('/api/send-new-job-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toEmail: agencyContactEmail,
+            contactName: agencyContactName,
+            agencyName,
+            jobTitle: title.trim(),
+            clientName: selectedClient?.company_name || 'Unknown Client',
+            department: department.trim() || null,
+            engagementType,
+            workArrangement,
+            locations: locations ? locations.split(',').map(l => l.trim()).filter(Boolean).join(', ') : null,
+            salaryMin: salaryMin || null,
+            salaryMax: salaryMax || null,
+            experienceLevel: experienceLevel || null,
+            visaSponsorship,
+          }),
+        });
+      } catch (emailErr) {
+        console.error('Failed to send confirmation email:', emailErr);
       }
 
       router.push('/dashboard/agency/jobs');

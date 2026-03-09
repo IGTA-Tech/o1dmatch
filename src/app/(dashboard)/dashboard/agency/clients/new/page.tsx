@@ -5,16 +5,18 @@ import { NewClientForm } from './NewClientForm';
 export default async function NewClientPage() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
 
-  if (!user) {
+  if (!session?.user) {
     redirect('/login');
   }
+
+  const user = session.user;
 
   // Get agency profile
   const { data: agencyProfile } = await supabase
     .from('agency_profiles')
-    .select('id, agency_name')
+    .select('id, agency_name, contact_name, contact_email')
     .eq('user_id', user.id)
     .single();
 
@@ -23,6 +25,11 @@ export default async function NewClientPage() {
   }
 
   return (
-    <NewClientForm agencyId={agencyProfile.id} agencyName={agencyProfile.agency_name} />
+    <NewClientForm
+      agencyId={agencyProfile.id}
+      agencyName={agencyProfile.agency_name}
+      agencyContactName={agencyProfile.contact_name}
+      agencyContactEmail={agencyProfile.contact_email}
+    />
   );
 }

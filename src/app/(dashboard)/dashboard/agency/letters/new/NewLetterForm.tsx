@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import {
   ArrowLeft,
@@ -15,8 +14,11 @@ import {
   Loader2,
   Save,
   Send,
+  Paperclip,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getSupabaseToken } from '@/lib/supabase/getToken';
 
 interface Client {
   id: string;
@@ -45,6 +47,7 @@ interface Talent {
 interface NewLetterFormProps {
   agencyId: string;
   agencyName: string;
+  agencyContactEmail: string;
   clients: Client[];
   jobs: Job[];
   talents: Talent[];
@@ -65,6 +68,7 @@ interface NewLetterFormProps {
 export default function NewLetterForm({
   agencyId,
   agencyName,
+  agencyContactEmail,
   clients,
   jobs,
   talents,
@@ -74,12 +78,12 @@ export default function NewLetterForm({
   preselectedJobId,
   preselectedClientId,
 }: NewLetterFormProps) {
-  if(agencyName){console.log(agencyName);}
   const router = useRouter();
-  const supabase = createClient();
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   // Selection
   const [selectedClientId, setSelectedClientId] = useState(preselectedClientId || '');
@@ -123,6 +127,21 @@ export default function NewLetterForm({
       }
     }
   }, [selectedJobId, jobs]);
+
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setError("File size must be less than 10MB");
+        return;
+      }
+      setAttachment(file);
+      setError(null);
+    }
+  };
+
+  const removeAttachment = () => setAttachment(null);
 
   const validateForm = () => {
     if (!selectedClientId) {
@@ -185,6 +204,33 @@ export default function NewLetterForm({
         throw new Error(insertError.message);
       }
 
+      // Send confirmation email to agency (non-draft only, non-blocking)
+      if (!isDraft && agencyContactEmail) {
+        try {
+          await fetch('/api/send-new-letter-confirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              toEmail: agencyContactEmail,
+              agencyName,
+              jobTitle: jobTitle.trim(),
+              clientName: clients.find(c => c.id === selectedClientId)?.company_name || '',
+              commitmentLevel,
+              engagementType,
+              workArrangement,
+              salaryMin: salaryMin || null,
+              salaryMax: salaryMax || null,
+              salaryNegotiable,
+              locations,
+              startTiming,
+            }),
+          });
+        } catch (emailErr) {
+          // Non-critical — letter already saved
+          console.warn('Confirmation email failed (non-critical):', emailErr);
+        }
+      }
+
       router.push('/dashboard/agency/letters');
       router.refresh();
 
@@ -197,53 +243,132 @@ export default function NewLetterForm({
   };*/
 
   const handleSubmit = async (isDraft: boolean) => {
-    console.log("Sttart supabase communication =========> ");
     if (!validateForm()) return;
-  
+
     setSaving(true);
     setError(null);
-  
+
     try {
-      console.log("Line 206 =========> ");
-      const { error: insertError } = await supabase
-        .from('interest_letters')
-        .insert({
-          agency_id: agencyId,
-          agency_client_id: selectedClientId,
-          talent_id: selectedTalentId,
-          job_id: selectedJobId || null,
-          source_type: 'agency',
-          job_title: jobTitle.trim(),
-          department: department.trim() || null,
-          commitment_level: commitmentLevel,
-          engagement_type: engagementType,
-          work_arrangement: workArrangement,
-          locations: locations ? locations.split(',').map(l => l.trim()).filter(Boolean) : [],
-          start_timing: startTiming || null,
-          salary_min: salaryMin || null,
-          salary_max: salaryMax || null,
-          salary_negotiable: salaryNegotiable,
-          duties_description: dutiesDescription.trim(),
-          why_o1_required: whyO1Required.trim(),
-          letter_content: letterContent.trim() || null,
-          status: isDraft ? 'draft' : 'sent',
-          // REMOVED: sent_at - column doesn't exist in table
-        });
-        console.log("Line 231 =========> ");
-  
-      if (insertError) {
-        console.error('Insert error:', insertError);
-        throw new Error(insertError.message);
+      // Upload attachment if one was selected
+      let pdfUrl: string | null = null;
+
+      if (attachment) {
+        setUploading(true);
+        try {
+          const fileExt = attachment.name.split('.').pop();
+          const fileName = `agency/${agencyId}/${selectedTalentId}/${Date.now()}.${fileExt}`;
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+          const accessToken = getSupabaseToken();
+
+          const uploadRes = await fetch(
+            `${supabaseUrl}/storage/v1/object/interest-letters/${fileName}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'apikey': anonKey!,
+                'Content-Type': attachment.type,
+                'x-upsert': 'true',
+              },
+              body: attachment,
+            }
+          );
+
+          if (uploadRes.ok) {
+            pdfUrl = `${supabaseUrl}/storage/v1/object/public/interest-letters/${fileName}`;
+          } else {
+            console.error('Attachment upload failed:', await uploadRes.text());
+          }
+        } catch (uploadErr) {
+          console.error('Attachment upload error:', uploadErr);
+        }
+        setUploading(false);
       }
-  
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const accessToken = getSupabaseToken();
+
+      const insertPayload = {
+        agency_id: agencyId,
+        agency_client_id: selectedClientId,
+        talent_id: selectedTalentId,
+        job_id: selectedJobId || null,
+        source_type: 'agency',
+        job_title: jobTitle.trim(),
+        department: department.trim() || null,
+        commitment_level: commitmentLevel,
+        engagement_type: engagementType,
+        work_arrangement: workArrangement,
+        locations: locations ? locations.split(',').map(l => l.trim()).filter(Boolean) : [],
+        start_timing: startTiming || null,
+        salary_min: salaryMin || null,
+        salary_max: salaryMax || null,
+        salary_negotiable: salaryNegotiable,
+        duties_description: dutiesDescription.trim(),
+        why_o1_required: whyO1Required.trim(),
+        letter_content: letterContent.trim() || null,
+        pdf_url: pdfUrl,
+        status: isDraft ? 'draft' : 'sent',
+      };
+
+      const insertResponse = await fetch(
+        `${supabaseUrl}/rest/v1/interest_letters`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': anonKey!,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify(insertPayload),
+        }
+      );
+
+      if (!insertResponse.ok) {
+        const errText = await insertResponse.text();
+        console.error('Insert error:', insertResponse.status, errText);
+        throw new Error(`Failed to save: ${errText}`);
+      }
+
+      // Send confirmation email to agency (non-draft only, non-blocking)
+      if (!isDraft && agencyContactEmail) {
+        try {
+          await fetch('/api/send-new-letter-confirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              toEmail: agencyContactEmail,
+              agencyName,
+              jobTitle: jobTitle.trim(),
+              clientName: clients.find(c => c.id === selectedClientId)?.company_name || '',
+              commitmentLevel,
+              engagementType,
+              workArrangement,
+              salaryMin: salaryMin || null,
+              salaryMax: salaryMax || null,
+              salaryNegotiable,
+              locations,
+              startTiming,
+            }),
+          });
+        } catch (emailErr) {
+          // Non-critical — letter already saved
+          console.warn('Confirmation email failed (non-critical):', emailErr);
+        }
+      }
+
       router.push('/dashboard/agency/letters');
       router.refresh();
-  
+
     } catch (err) {
       console.error('Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to save letter');
     } finally {
       setSaving(false);
+      setUploading(false);
     }
   };
   
@@ -589,6 +714,47 @@ export default function NewLetterForm({
         </CardContent>
       </Card>
 
+      {/* Attachment */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Paperclip className="w-5 h-5" />
+            Attachment (Optional)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {attachment ? (
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{attachment.name}</p>
+                <p className="text-xs text-gray-500">{(attachment.size / 1024).toFixed(1)} KB</p>
+              </div>
+              <button
+                type="button"
+                onClick={removeAttachment}
+                className="p-1 hover:bg-gray-200 rounded transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+          ) : (
+            <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+              <Paperclip className="w-5 h-5 text-gray-400" />
+              <span className="text-sm text-gray-500">
+                Attach job description or company info (PDF, DOC, max 10MB)
+              </span>
+              <input
+                type="file"
+                onChange={handleFileChange}
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+              />
+            </label>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Error */}
       {error && (
         <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
@@ -607,7 +773,7 @@ export default function NewLetterForm({
         <button
           type="button"
           onClick={() => handleSubmit(true)}
-          disabled={saving}
+          disabled={saving || uploading}
           className="flex items-center gap-2 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -616,11 +782,20 @@ export default function NewLetterForm({
         <button
           type="button"
           onClick={() => handleSubmit(false)}
-          disabled={saving}
+          disabled={saving || uploading}
           className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          Send Letter
+          {saving || uploading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {uploading ? 'Uploading...' : 'Sending...'}
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4" />
+              Send Letter
+            </>
+          )}
         </button>
       </div>
     </div>

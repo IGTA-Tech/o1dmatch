@@ -21,9 +21,11 @@ import Link from 'next/link';
 interface NewClientFormProps {
   agencyId: string;
   agencyName: string;
+  agencyContactName: string;
+  agencyContactEmail: string;
 }
 
-export function NewClientForm({ agencyId, agencyName }: NewClientFormProps) {
+export function NewClientForm({ agencyId, agencyName, agencyContactName, agencyContactEmail }: NewClientFormProps) {
   const router = useRouter();
 
   // Helper to get access token from cookie (avoids getSession() hanging)
@@ -161,6 +163,29 @@ export function NewClientForm({ agencyId, agencyName }: NewClientFormProps) {
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || `Request failed with status ${response.status}`);
+      }
+
+      // Send confirmation email to agency contact
+      try {
+        await fetch('/api/send-new-client-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toEmail: agencyContactEmail,
+            contactName: agencyContactName,
+            agencyName,
+            companyName: companyName.trim(),
+            signatoryName: signatoryName.trim(),
+            signatoryEmail: signatoryEmail.trim(),
+            signatoryTitle: signatoryTitle.trim() || null,
+            industry: industry || null,
+            city: city.trim() || null,
+            state: state.trim() || null,
+          }),
+        });
+      } catch (emailErr) {
+        // Don't block navigation if email fails
+        console.error('Failed to send confirmation email:', emailErr);
       }
 
       router.push('/dashboard/agency/clients');

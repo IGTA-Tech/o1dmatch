@@ -9,7 +9,6 @@
 //   3. Send branded notification email via SendGrid
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +19,7 @@ export async function POST(request: NextRequest) {
       talentSkills,
       talentScore,
       coverMessage,
+      agencyId,
     } = await request.json();
 
     if (!jobId || !jobTitle) {
@@ -35,39 +35,66 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });
     }
 
-    // ── Single query: job → employer_profiles (signatory_email lives there) ──
-    const supabase = await createClient();
+    // Use service role client to bypass RLS for server-side lookups
+    const { createClient: createServiceClient } = await import('@supabase/supabase-js');
+    const serviceClient = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    const { data: job, error: jobErr } = await supabase
-      .from('job_listings')
-      .select(`
-        employer_id,
-        employer_profiles (
-          company_name,
-          signatory_name,
-          signatory_email
-        )
-      `)
-      .eq('id', jobId)
-      .single();
+    let toEmail = '';
+    let signatoryName = '';
+    let companyName = '';
 
-    if (jobErr || !job) {
-      console.error('[send-application-notification] Job lookup failed:', jobErr);
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
-    }
+    if (agencyId) {
+      // ── Agency job: send to agency contact_email ─────────────────────────
+      const { data: agency, error: agencyErr } = await serviceClient
+        .from('agency_profiles')
+        .select('agency_name, contact_name, contact_email')
+        .eq('id', agencyId)
+        .single();
 
-    // Supabase returns joined rows as object (single FK) or array — handle both
-    const employerProfile = Array.isArray(job.employer_profiles)
-      ? job.employer_profiles[0]
-      : job.employer_profiles;
+      if (agencyErr || !agency?.contact_email) {
+        console.error('[send-application-notification] Agency lookup failed:', agencyErr);
+        return NextResponse.json({ error: 'Agency not found' }, { status: 404 });
+      }
 
-    const toEmail: string = employerProfile?.signatory_email ?? '';
-    const companyName: string = employerProfile?.company_name ?? 'there';
-    const signatoryName: string = employerProfile?.signatory_name ?? companyName;
+      toEmail = agency.contact_email;
+      signatoryName = agency.contact_name || agency.agency_name || 'there';
+      companyName = agency.agency_name || 'your agency';
+    } else {
+      // ── Employer job: send to employer signatory_email (existing flow) ───
+      const { data: job, error: jobErr } = await serviceClient
+        .from('job_listings')
+        .select(`
+          employer_id,
+          employer_profiles (
+            company_name,
+            signatory_name,
+            signatory_email
+          )
+        `)
+        .eq('id', jobId)
+        .single();
 
-    if (!toEmail) {
-      console.error('[send-application-notification] signatory_email is empty for job:', jobId);
-      return NextResponse.json({ error: 'Employer email not found' }, { status: 404 });
+      if (jobErr || !job) {
+        console.error('[send-application-notification] Job lookup failed:', jobErr);
+        return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+      }
+
+      // Supabase returns joined rows as object (single FK) or array — handle both
+      const employerProfile = Array.isArray(job.employer_profiles)
+        ? job.employer_profiles[0]
+        : job.employer_profiles;
+
+      toEmail = employerProfile?.signatory_email ?? '';
+      companyName = employerProfile?.company_name ?? 'there';
+      signatoryName = employerProfile?.signatory_name ?? companyName;
+
+      if (!toEmail) {
+        console.error('[send-application-notification] signatory_email is empty for job:', jobId);
+        return NextResponse.json({ error: 'Employer email not found' }, { status: 404 });
+      }
     }
 
     // ── Build HTML email ─────────────────────────────────────────────────────
@@ -265,7 +292,7 @@ export async function POST(request: NextRequest) {
                      style="margin-bottom:28px;">
                 <tr>
                   <td align="center">
-                    <a href="https://www.o1dmatch.com/dashboard/employer/jobs"
+                    <a href="${agencyId ? 'https://www.o1dmatch.com/dashboard/agency/applications' : 'https://www.o1dmatch.com/dashboard/employer/jobs'}"
                        style="display:inline-block;padding:14px 36px;
                               background:#D4A84B;color:#0B1D35;font-size:15px;
                               font-weight:700;text-decoration:none;border-radius:10px;">
