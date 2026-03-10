@@ -30,6 +30,15 @@ export interface UploadResult {
   error?: string;
 }
 
+// Returned by the classify-only call (pre-upload, on file drop)
+export interface ClassifyResult {
+  criterion:           string;
+  confidence:          number;  // 0–100
+  reasoning:           string;
+  criterion_name:      string;
+  extraction_keywords: string[];
+}
+
 export function useDocumentUpload() {
   const [progress, setProgress] = useState<UploadProgress>({
     status: 'idle',
@@ -43,63 +52,63 @@ export function useDocumentUpload() {
     setResult(null);
   }, []);
 
+  // ── NEW: classify-only, called on file drop before the user submits ────────
+  const classify = useCallback(async (file: File): Promise<ClassifyResult | null> => {
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+
+      const res = await fetch('/api/talent/classify-document', {
+        method: 'POST',
+        body:   fd,
+      });
+
+      if (!res.ok) return null;
+
+      const data = await res.json();
+      if (!data.success) return null;
+
+      return {
+        criterion:           data.criterion,
+        confidence:          data.confidence,
+        reasoning:           data.reasoning,
+        criterion_name:      data.criterion_name,
+        extraction_keywords: data.extraction_keywords || [],
+      };
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // ── EXISTING: full upload pipeline — unchanged ─────────────────────────────
   const upload = useCallback(
     async (
-      file: File, 
-      title: string, 
+      file:        File,
+      title:       string,
       description?: string,
-      criterion?: O1Criterion // Added criterion parameter
+      criterion?:  O1Criterion,
     ): Promise<UploadResult> => {
       setResult(null);
 
       try {
-        // Start upload phase
-        setProgress({
-          status: 'uploading',
-          progress: 10,
-          message: 'Uploading document...',
-        });
+        setProgress({ status: 'uploading',   progress: 10, message: 'Uploading document...' });
 
         const formData = new FormData();
         formData.append('file', file);
         formData.append('title', title);
-        if (description) {
-          formData.append('description', description);
-        }
-        if (criterion) {
-          formData.append('criterion', criterion); // Add criterion to form data
-        }
+        if (description) formData.append('description', description);
+        if (criterion)   formData.append('criterion',   criterion);
 
-        setProgress({
-          status: 'uploading',
-          progress: 30,
-          message: 'Processing upload...',
-        });
-
-        // Extraction phase
-        setProgress({
-          status: 'extracting',
-          progress: 50,
-          message: 'Extracting text from document...',
-        });
-
-        // Classification phase
-        setProgress({
-          status: 'classifying',
-          progress: 70,
-          message: 'Classifying document with AI...',
-        });
+        setProgress({ status: 'uploading',   progress: 30, message: 'Processing upload...' });
+        setProgress({ status: 'extracting',  progress: 50, message: 'Extracting text from document...' });
+        setProgress({ status: 'classifying', progress: 70, message: 'Classifying document with AI...' });
 
         const response = await fetch('/api/process-document', {
           method: 'POST',
-          body: formData,
+          body:   formData,
         });
 
-        setProgress({
-          status: 'classifying',
-          progress: 90,
-          message: 'Finalizing...',
-        });
+        setProgress({ status: 'classifying', progress: 90, message: 'Finalizing...' });
 
         const data = await response.json();
 
@@ -107,32 +116,22 @@ export function useDocumentUpload() {
           throw new Error(data.error || 'Upload failed');
         }
 
-        const uploadResult: UploadResult = {
-          success: true,
-          ...data.data,
-        };
+        const uploadResult: UploadResult = { success: true, ...data.data };
 
         setResult(uploadResult);
         setProgress({
-          status: 'complete',
+          status:   'complete',
           progress: 100,
-          message: data.data.message || 'Upload complete!',
+          message:  data.data.message || 'Upload complete!',
         });
 
         return uploadResult;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-        const errorResult: UploadResult = {
-          success: false,
-          error: errorMessage,
-        };
+        const errorResult: UploadResult = { success: false, error: errorMessage };
 
         setResult(errorResult);
-        setProgress({
-          status: 'error',
-          progress: 0,
-          message: errorMessage,
-        });
+        setProgress({ status: 'error', progress: 0, message: errorMessage });
 
         return errorResult;
       }
@@ -141,12 +140,13 @@ export function useDocumentUpload() {
   );
 
   return {
+    classify,   // ← new
     upload,
     progress,
     result,
     reset,
     isUploading: progress.status !== 'idle' && progress.status !== 'complete' && progress.status !== 'error',
-    isComplete: progress.status === 'complete',
-    isError: progress.status === 'error',
+    isComplete:  progress.status === 'complete',
+    isError:     progress.status === 'error',
   };
 }

@@ -59,7 +59,8 @@ export default async function TalentDashboardPage() {
     ? new Date(user.last_sign_in_at).getTime()
     : createdAt;
   const isFirstLogin = Math.abs(lastSignIn - createdAt) < 2 * 60 * 1000;
-
+console.log("isFirstLogin===> ");
+console.log(isFirstLogin);
   if (isFirstLogin) {
     redirect('/dashboard/talent/welcome');
   }
