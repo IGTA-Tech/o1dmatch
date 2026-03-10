@@ -3,19 +3,17 @@ import { redirect } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
 import {
   ArrowLeft,
-  Mail,
-  Phone,
-  MapPin,
   Briefcase,
   GraduationCap,
   Award,
   FileText,
   Calendar,
   ExternalLink,
+  ShieldCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 
-export default async function TalentProfilePage({
+export default async function AgencyTalentProfilePage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -47,31 +45,21 @@ export default async function TalentProfilePage({
     .eq('id', id)
     .single();
 
-  if (!talent || error) {
+  if (error) {
+    console.log(error);
+  }
+
+  if (!talent) {
     redirect('/dashboard/agency/browse');
   }
 
-  // Get user info (email, name)
-  const { data: userProfile } = await supabase
-    .from('profiles')
-    .select('email, full_name')
-    .eq('id', talent.user_id)
-    .single();
-
-  // Get talent's documents/evidence
+  // Get talent's verified documents/evidence only — no user profile (name/email hidden)
   const { data: documents } = await supabase
     .from('talent_documents')
     .select('*')
     .eq('talent_id', id)
     .eq('status', 'verified')
     .order('created_at', { ascending: false });
-
-  // Get agency clients for interest letter dropdown
-  // const { data: clients } = await supabase
-  //   .from('agency_clients')
-  //   .select('id, company_name')
-  //   .eq('agency_id', agencyProfile.id)
-  //   .eq('is_active', true);
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -82,7 +70,7 @@ export default async function TalentProfilePage({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header — no name shown, use candidate_id */}
       <div className="flex items-center gap-4">
         <Link
           href="/dashboard/agency/browse"
@@ -92,7 +80,7 @@ export default async function TalentProfilePage({
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900">
-            {userProfile?.full_name || 'Talent Profile'}
+            {talent.candidate_id || 'Candidate Profile'}
           </h1>
           {talent.professional_headline && (
             <p className="text-gray-600">{talent.professional_headline}</p>
@@ -106,10 +94,26 @@ export default async function TalentProfilePage({
         </div>
       </div>
 
+      {/* Identity protection notice */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-amber-900">Identity Protected</p>
+            <p className="text-sm text-amber-700 mt-1">
+              This candidate&apos;s personal details (name, email, phone, location) are
+              hidden to protect their privacy. Send an interest letter to initiate contact —
+              they can choose to reveal their identity if they accept.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* About */}
+
+          {/* About / Bio */}
           {talent.bio && (
             <Card>
               <CardHeader>
@@ -160,7 +164,7 @@ export default async function TalentProfilePage({
             </Card>
           )}
 
-          {/* Evidence Documents */}
+          {/* Verified Evidence Documents */}
           {documents && documents.length > 0 && (
             <Card>
               <CardHeader>
@@ -184,8 +188,8 @@ export default async function TalentProfilePage({
                       )}
                     </div>
                     {doc.file_url && (
-                      
-                        <a href={doc.file_url}
+                      <a
+                        href={doc.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
@@ -202,59 +206,8 @@ export default async function TalentProfilePage({
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Contact Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {userProfile?.email && (
-                <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    
-                      <a href={`mailto:${userProfile.email}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {userProfile.email}
-                    </a>
-                  </div>
-                </div>
-              )}
 
-              {talent.phone && (
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Phone</p>
-                    
-                      <a href={`tel:${talent.phone}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {talent.phone}
-                    </a>
-                  </div>
-                </div>
-              )}
-
-              {(talent.city || talent.state || talent.country) && (
-                <div className="flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Location</p>
-                    <p className="font-medium">
-                      {[talent.city, talent.state, talent.country]
-                        .filter(Boolean)
-                        .join(', ')}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Professional Details */}
+          {/* Professional Details — no contact info */}
           <Card>
             <CardHeader>
               <CardTitle>Professional Details</CardTitle>
@@ -311,16 +264,9 @@ export default async function TalentProfilePage({
               >
                 Send Interest Letter
               </Link>
-              
-              
-                <a href={`mailto:${userProfile?.email}`}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <Mail className="w-4 h-4" />
-                Contact Directly
-              </a>
             </CardContent>
           </Card>
+
         </div>
       </div>
     </div>

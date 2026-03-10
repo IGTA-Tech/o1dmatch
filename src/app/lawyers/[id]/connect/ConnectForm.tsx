@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Loader2, Send, CheckCircle } from 'lucide-react';
+import { getSupabaseAuthData } from '@/lib/supabase/getToken';
+import { Loader2, Send, CheckCircle, LogIn, Lock } from 'lucide-react';
 
 interface ConnectFormProps {
   lawyerId: string;
@@ -14,6 +15,11 @@ export default function ConnectForm({ lawyerId, lawyerName }: ConnectFormProps) 
   const router = useRouter();
   const supabase = createClient();
 
+  // Auth state
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Form state
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,129 +34,160 @@ export default function ConnectForm({ lawyerId, lawyerName }: ConnectFormProps) 
   const [shareProfile, setShareProfile] = useState(false);
   const [requesterType, setRequesterType] = useState('talent');
 
-  // Load user data if logged in
+  // Check auth using the same cookie-based method as Navbar
   useEffect(() => {
-    async function loadUser() {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        setUser({ id: authUser.id, email: authUser.email || '' });
-        setEmail(authUser.email || '');
+    async function checkAuthAndLoad() {
+      try {
+        const authData = getSupabaseAuthData();
 
-        // Get profile info
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, role')
-          .eq('id', authUser.id)
-          .maybeSingle();
-
-        if (profile) {
-          setName(profile.full_name || '');
-          setRequesterType(profile.role || 'talent');
+        if (!authData?.user) {
+          setIsLoggedIn(false);
+          setAuthLoading(false);
+          return;
         }
 
-        // Get talent profile if exists
-        const { data: talentProfile } = await supabase
-          .from('talent_profiles')
-          .select('id')
-          .eq('user_id', authUser.id)
-          .maybeSingle();
+        // User is logged in — pre-fill form data
+        setIsLoggedIn(true);
+        setUser({ id: authData.user.id, email: authData.user.email || '' });
+        setEmail(authData.user.email || '');
 
-        if (talentProfile) {
-          setTalentProfileId(talentProfile.id);
+        // Fetch profile for name + role
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+        const profileRes = await fetch(
+          `${supabaseUrl}/rest/v1/profiles?id=eq.${authData.user.id}&select=full_name,role`,
+          {
+            headers: {
+              'Authorization': `Bearer ${authData.access_token}`,
+              'apikey': anonKey,
+            },
+          }
+        );
+        if (profileRes.ok) {
+          const profiles = await profileRes.json();
+          if (profiles?.[0]) {
+            setName(profiles[0].full_name || '');
+            setRequesterType(profiles[0].role || 'talent');
+          }
         }
+
+        // Fetch talent profile if exists (for share profile checkbox)
+        const talentRes = await fetch(
+          `${supabaseUrl}/rest/v1/talent_profiles?user_id=eq.${authData.user.id}&select=id`,
+          {
+            headers: {
+              'Authorization': `Bearer ${authData.access_token}`,
+              'apikey': anonKey,
+            },
+          }
+        );
+        if (talentRes.ok) {
+          const talentProfiles = await talentRes.json();
+          if (talentProfiles?.[0]) {
+            setTalentProfileId(talentProfiles[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Auth check error:', err);
+        setIsLoggedIn(false);
+      } finally {
+        setAuthLoading(false);
       }
     }
-    loadUser();
-  }, [supabase]);
+
+    checkAuthAndLoad();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Start submitting form");
     setSubmitting(true);
     setError(null);
-  
+
     try {
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  
-      console.log("Supabase URL:", supabaseUrl);
-      console.log("Anon Key exists:", !!anonKey);
-  
-      if (!anonKey || !supabaseUrl) {
-        throw new Error('Missing Supabase configuration');
-      }
-  
-      const requestData = {
-        lawyer_id: lawyerId,
-        requester_id: user?.id || null,
-        requester_type: requesterType,
-        requester_name: name.trim(),
-        requester_email: email.trim(),
-        requester_phone: phone.trim() || null,
-        message: message.trim(),
-        share_profile: shareProfile,
-        talent_profile_id: shareProfile && talentProfileId ? talentProfileId : null,
-        status: 'pending',
-      };
-      
-      console.log("Request data:", requestData);
-  
-      const response = await fetch(
-        `${supabaseUrl}/rest/v1/lawyer_connection_requests`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${anonKey}`,
-            'apikey': anonKey,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation',
-          },
-          body: JSON.stringify(requestData),
-        }
-      );
-  
-      console.log("Response status:", response.status);
-      console.log("Response ok:", response.ok);
-  
-      const responseText = await response.text();
-      console.log("Response body:", responseText);
-  
-      if (response.ok) {
-        // Increment connection request count (ignore errors)
-        fetch(
-          `${supabaseUrl}/rest/v1/rpc/increment_lawyer_connections`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${anonKey}`,
-              'apikey': anonKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ lawyer_id: lawyerId }),
-          }
-        ).catch(() => {});
-  
+      const response = await fetch('/api/lawyer-connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lawyer_id: lawyerId,
+          requester_id: user?.id || null,
+          requester_type: requesterType,
+          requester_name: name.trim(),
+          requester_email: email.trim(),
+          requester_phone: phone.trim() || null,
+          message: message.trim(),
+          share_profile: shareProfile,
+          talent_profile_id: shareProfile && talentProfileId ? talentProfileId : null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         setSubmitted(true);
       } else {
-        // Parse error message
-        let errorMessage = 'Failed to submit request';
-        try {
-          const errorData = JSON.parse(responseText);
-          errorMessage = errorData.message || errorData.error || errorData.details || responseText;
-        } catch {
-          errorMessage = responseText || `Error ${response.status}`;
-        }
-        console.error('Submit failed:', errorMessage);
-        setError(errorMessage);
+        setError(data.error || 'Failed to submit your request. Please try again.');
       }
     } catch (err) {
       console.error('Error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to submit your request. Please try again.');
+      setError('Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  // ── Loading auth ──────────────────────────────────────────────────────────
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  // ── Not logged in — login gate ────────────────────────────────────────────
+  if (!isLoggedIn) {
+    const currentPath = `/lawyers/${lawyerId}/connect`;
+    const loginUrl = `/login?redirectTo=${encodeURIComponent(currentPath)}`;
+
+    return (
+      <div className="text-center py-10 space-y-5">
+        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto">
+          <Lock className="w-8 h-8 text-blue-500" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Sign in to Request a Consultation
+          </h3>
+          <p className="text-gray-500 text-sm max-w-sm mx-auto">
+            You need to be logged in to send a connection request to{' '}
+            <span className="font-medium text-gray-700">{lawyerName}</span>.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={() => router.push(loginUrl)}
+            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <LogIn className="w-4 h-4" />
+            Log In
+          </button>
+          <button
+            onClick={() => router.push(`/signup?redirectTo=${encodeURIComponent(currentPath)}`)}
+            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Create an Account
+          </button>
+        </div>
+        <p className="text-xs text-gray-400">
+          You&apos;ll be redirected back here after signing in.
+        </p>
+      </div>
+    );
+  }
+
+  // ── Success state ─────────────────────────────────────────────────────────
   if (submitted) {
     return (
       <div className="text-center py-8">
@@ -161,7 +198,7 @@ export default function ConnectForm({ lawyerId, lawyerName }: ConnectFormProps) 
           Request Sent Successfully!
         </h3>
         <p className="text-gray-600 mb-6">
-          Your consultation request has been sent to {lawyerName}. 
+          Your consultation request has been sent to {lawyerName}.
           They will review your information and contact you soon.
         </p>
         <button
@@ -174,6 +211,7 @@ export default function ConnectForm({ lawyerId, lawyerName }: ConnectFormProps) 
     );
   }
 
+  // ── Form ──────────────────────────────────────────────────────────────────
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Requester Type */}
@@ -253,7 +291,7 @@ export default function ConnectForm({ lawyerId, lawyerName }: ConnectFormProps) 
         />
       </div>
 
-      {/* Share Profile - only show if user has a talent profile */}
+      {/* Share Profile — only if user has a talent profile */}
       {talentProfileId && (
         <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
           <input
@@ -267,7 +305,8 @@ export default function ConnectForm({ lawyerId, lawyerName }: ConnectFormProps) 
             <span className="font-medium">Share my O-1 profile</span>
             <br />
             <span className="text-gray-500">
-              Allow the attorney to view your complete talent profile including skills, experience, and O-1 eligibility score.
+              Allow the attorney to view your complete talent profile including skills,
+              experience, and O-1 eligibility score.
             </span>
           </label>
         </div>
@@ -300,7 +339,8 @@ export default function ConnectForm({ lawyerId, lawyerName }: ConnectFormProps) 
       </button>
 
       <p className="text-xs text-gray-500 text-center">
-        By submitting this form, you agree to share your information with the attorney for consultation purposes.
+        By submitting this form, you agree to share your information with the attorney
+        for consultation purposes.
       </p>
     </form>
   );
