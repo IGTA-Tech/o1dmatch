@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Card, CardContent, Badge } from '@/components/ui';
+import { Card, CardContent } from '@/components/ui';
 import { ScoreDisplay } from '@/components/talent/ScoreDisplay';
 import { CriteriaBadges } from '@/components/talent/CriteriaBreakdown';
 import {
