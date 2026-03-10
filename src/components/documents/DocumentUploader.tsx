@@ -68,7 +68,7 @@ function AIClassificationPanel({
       <div className="bg-white p-4 space-y-3">
         {/* Steps */}
         <div className="space-y-2">
-          {AI_STEPS.map((s, i) => {
+          {AI_STEPS.map((s) => {
             const stepIdx   = stepOrder.indexOf(s.key);
             const isDone    = currentIdx > stepIdx || step === 'done';
             const isRunning = stepOrder.indexOf(step) === stepIdx && step !== 'done';

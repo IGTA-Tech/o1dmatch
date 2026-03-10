@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+// import { createClient } from '@/lib/supabase/client';
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
 import { Loader2, Send, CheckCircle, LogIn, Lock } from 'lucide-react';
 
