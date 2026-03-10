@@ -14,6 +14,7 @@ interface ConnectFormProps {
 export default function ConnectForm({ lawyerId, lawyerName }: ConnectFormProps) {
   const router = useRouter();
   const supabase = createClient();
+  console.log(supabase);
 
   // Auth state
   const [authLoading, setAuthLoading] = useState(true);
