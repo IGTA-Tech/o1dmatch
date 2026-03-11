@@ -186,7 +186,10 @@ export function AgencyProfileClient({ profile: initialProfile }: AgencyProfileCl
         setMessage({ type: 'success', text: 'Profile updated successfully!' });
         setProfile({ ...profile, ...data, agency_logo_url: logoUrl });
         setLogoFile(null);
-        router.refresh();
+        // Delay refresh so the success message stays visible
+        setTimeout(() => router.refresh(), 1500);
+        // Auto-dismiss after 4s
+        setTimeout(() => setMessage(null), 4000);
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to save changes.' });
       }
@@ -239,18 +242,27 @@ export function AgencyProfileClient({ profile: initialProfile }: AgencyProfileCl
 
       {message && (
         <div
-          className={`p-4 rounded-lg flex items-center gap-3 ${
+          className={`p-4 rounded-lg flex items-center justify-between gap-3 shadow-sm ${
             message.type === 'success'
               ? 'bg-green-50 text-green-700 border border-green-200'
               : 'bg-red-50 text-red-700 border border-red-200'
           }`}
         >
-          {message.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 flex-shrink-0" />
-          ) : (
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          )}
-          {message.text}
+          <div className="flex items-center gap-3">
+            {message.type === 'success' ? (
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            )}
+            <span className="font-medium">{message.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMessage(null)}
+            className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
