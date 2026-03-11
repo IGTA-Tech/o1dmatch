@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, Badge } from '@/components/ui';
 import {
@@ -99,12 +100,25 @@ export default async function TalentProfilePage({
     .eq('id', talent.user_id)
     .single();
 
-  const { data: documents } = await supabase
+  // Use service role to bypass RLS — employers can't read other users' talent_documents via normal client
+  const serviceClient = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data: documents } = await serviceClient
     .from('talent_documents')
-    .select('id, title, description, file_url, criterion, classification_confidence, ai_notes, created_at')
+    .select('id, title, description, file_url, criterion, auto_classified_criterion, classification_confidence, ai_notes, created_at')
     .eq('talent_id', id)
     .eq('status', 'verified')
     .order('created_at', { ascending: false });
+
+  // Build uploaded criteria set from both criterion fields
+  const uploadedCriteria = new Set(
+    (documents ?? []).flatMap((d) =>
+      [d.criterion, d.auto_classified_criterion].filter(Boolean)
+    )
+  );
 
   const displayName =
     userProfile?.full_name ||
@@ -274,7 +288,7 @@ export default async function TalentProfilePage({
             </Card>
           )}
 
-          {/* Evidence Summary (jsonb) */}
+          {/* Evidence Summary — checkmark if files uploaded, else not uploaded */}
           {talent.evidence_summary && Object.keys(talent.evidence_summary).length > 0 && (
             <Card>
               <CardHeader>
@@ -283,15 +297,44 @@ export default async function TalentProfilePage({
                   Evidence Summary
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {Object.entries(talent.evidence_summary as Record<string, string>).map(([key, val]) => (
-                  <div key={key} className="border-l-2 border-teal-200 pl-3">
-                    <p className="text-xs font-semibold text-teal-700 uppercase tracking-wide mb-0.5">
-                      {key.replace(/_/g, ' ')}
-                    </p>
-                    <p className="text-sm text-gray-700">{String(val)}</p>
-                  </div>
-                ))}
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {Object.keys(talent.evidence_summary as Record<string, unknown>).map((key) => {
+                    const hasEvidence = uploadedCriteria.has(key);
+                    return (
+                      <div
+                        key={key}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border ${
+                          hasEvidence
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        {hasEvidence ? (
+                          <span className="shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        ) : (
+                          <span className="shrink-0 w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </span>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 capitalize">
+                            {key.replace(/_/g, ' ')}
+                          </p>
+                          <p className={`text-xs ${hasEvidence ? 'text-green-600' : 'text-gray-400'}`}>
+                            {hasEvidence ? 'Evidence uploaded' : 'Not uploaded'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -333,16 +376,6 @@ export default async function TalentProfilePage({
                           <p className="text-xs text-gray-500 mt-1.5 italic">{doc.ai_notes}</p>
                         )}
                       </div>
-                      {doc.file_url && (
-                        <a
-                          href={doc.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="shrink-0 flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                        >
-                          View <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -350,8 +383,8 @@ export default async function TalentProfilePage({
             </Card>
           )}
 
-          {/* Public Links */}
-          {(publicLinks.length > 0 || talent.resume_url) && (
+          {/* Public Profiles & Links — external profile links only, no document links */}
+          {publicLinks.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -373,21 +406,6 @@ export default async function TalentProfilePage({
                     <ExternalLink className="w-3 h-3 opacity-60" />
                   </a>
                 ))}
-                {talent.resume_url && (
-                  <a
-                    href={talent.resume_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-sm text-green-700 hover:underline border border-green-100 bg-green-50 px-3 py-1.5 rounded-lg"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Resume
-                    {talent.resume_filename && (
-                      <span className="text-xs opacity-60">({talent.resume_filename})</span>
-                    )}
-                    <ExternalLink className="w-3 h-3 opacity-60" />
-                  </a>
-                )}
               </CardContent>
             </Card>
           )}
