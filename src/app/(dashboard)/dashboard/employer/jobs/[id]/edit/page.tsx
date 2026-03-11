@@ -6,9 +6,14 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import {
+  ArrowLeft, Loader2, Save, FileText, PauseCircle,
+  XCircle, CheckCircle2, Trash2
+} from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
+
+type JobStatus = 'draft' | 'active' | 'paused' | 'closed' | 'filled';
 
 interface JobFormData {
   title: string;
@@ -44,6 +49,14 @@ interface JobData {
   employer_id: string;
 }
 
+const STATUS_CONFIG: Record<JobStatus, { label: string; color: string; icon: React.ReactNode }> = {
+  draft:  { label: 'Draft',  color: 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300',       icon: <FileText className="w-4 h-4" /> },
+  active: { label: 'Active', color: 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-300',    icon: <CheckCircle2 className="w-4 h-4" /> },
+  paused: { label: 'Pause',  color: 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-300', icon: <PauseCircle className="w-4 h-4" /> },
+  closed: { label: 'Closed', color: 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-300',            icon: <XCircle className="w-4 h-4" /> },
+  filled: { label: 'Filled', color: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-300',        icon: <CheckCircle2 className="w-4 h-4" /> },
+};
+
 export default function EditJobPage() {
   const router = useRouter();
   const params = useParams();
@@ -51,8 +64,13 @@ export default function EditJobPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [statusChanging, setStatusChanging] = useState<JobStatus | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [job, setJob] = useState<JobData | null>(null);
+  const [currentStatus, setCurrentStatus] = useState<string>('draft');
 
   const {
     register,
@@ -88,7 +106,6 @@ export default function EditJobPage() {
         const profileResponse = await fetch(
           `${supabaseUrl}/rest/v1/employer_profiles?user_id=eq.${userId}&select=id`,
           {
-            method: 'GET',
             headers: {
               'Authorization': `Bearer ${accessToken}`,
               'apikey': anonKey,
@@ -117,7 +134,6 @@ export default function EditJobPage() {
         const jobResponse = await fetch(
           `${supabaseUrl}/rest/v1/job_listings?id=eq.${jobId}&employer_id=eq.${employerId}&select=*`,
           {
-            method: 'GET',
             headers: {
               'Authorization': `Bearer ${accessToken}`,
               'apikey': anonKey,
@@ -142,8 +158,8 @@ export default function EditJobPage() {
 
         const jobData = jobs[0];
         setJob(jobData);
+        setCurrentStatus(jobData.status || 'draft');
 
-        // Populate form with existing data
         reset({
           title: jobData.title || '',
           description: jobData.description || '',
@@ -173,9 +189,56 @@ export default function EditJobPage() {
     }
   }, [jobId, router, reset]);
 
-  const onSubmit = async (data: JobFormData) => {
-    console.log("=== UPDATE START ===");
-    setSaving(true);
+  // ── Quick status change (no form submit needed) ──────────────────────────
+  const handleStatusChange = async (newStatus: JobStatus) => {
+    setStatusChanging(newStatus);
+    setError(null);
+    setSuccessMsg(null);
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+    try {
+      const authData = getSupabaseAuthData();
+      if (!authData) {
+        setError('Session expired. Please log in again.');
+        return;
+      }
+
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/job_listings?id=eq.${jobId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${authData.access_token}`,
+            'apikey': anonKey,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+
+      if (!res.ok) {
+        const txt = await res.text();
+        setError(`Failed to update status: ${txt}`);
+        return;
+      }
+
+      setCurrentStatus(newStatus);
+      setSuccessMsg(`Job marked as "${STATUS_CONFIG[newStatus].label}" successfully.`);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err) {
+      console.error('Status change error:', err);
+      setError('An unexpected error occurred while updating status.');
+    } finally {
+      setStatusChanging(null);
+    }
+  };
+
+  // ── Delete job ────────────────────────────────────────────────────────────
+  const handleDelete = async () => {
+    setDeleting(true);
     setError(null);
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -183,21 +246,61 @@ export default function EditJobPage() {
 
     try {
       const authData = getSupabaseAuthData();
+      if (!authData) {
+        setError('Session expired. Please log in again.');
+        return;
+      }
 
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/job_listings?id=eq.${jobId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authData.access_token}`,
+            'apikey': anonKey,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const txt = await res.text();
+        setError(`Failed to delete job: ${txt}`);
+        return;
+      }
+
+      router.push('/dashboard/employer/jobs');
+    } catch (err) {
+      console.error('Delete error:', err);
+      setError('An unexpected error occurred while deleting.');
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
+
+  // ── Full form save ────────────────────────────────────────────────────────
+  const onSubmit = async (data: JobFormData) => {
+    setSaving(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+    try {
+      const authData = getSupabaseAuthData();
       if (!authData) {
         setError('Session expired. Please log out and log in again.');
         setSaving(false);
         return;
       }
 
-      const accessToken = authData.access_token;
-
-      // Prepare updated job data
       const jobData = {
         title: data.title,
         description: data.description,
         department: data.department || null,
-        locations: data.locations 
+        locations: data.locations
           ? data.locations.split(',').map(s => s.trim()).filter(Boolean)
           : [],
         salary_min: data.salary_min || null,
@@ -215,15 +318,12 @@ export default function EditJobPage() {
         status: data.status,
       };
 
-      console.log("Updating job:", jobData);
-
-      // Update job
       const updateResponse = await fetch(
         `${supabaseUrl}/rest/v1/job_listings?id=eq.${jobId}`,
         {
           method: 'PATCH',
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${authData.access_token}`,
             'apikey': anonKey,
             'Content-Type': 'application/json',
             'Prefer': 'return=representation',
@@ -232,24 +332,20 @@ export default function EditJobPage() {
         }
       );
 
-      console.log("Update response status:", updateResponse.status);
       const responseText = await updateResponse.text();
-      console.log("Update response body:", responseText);
 
       if (!updateResponse.ok) {
-        console.error("Update error:", responseText);
         setError(`Failed to update job: ${responseText}`);
         setSaving(false);
         return;
       }
 
-      console.log("Job updated successfully!");
+      setCurrentStatus(data.status);
       router.push('/dashboard/employer/jobs');
     } catch (err) {
-      console.error("Error:", err);
+      console.error('Error:', err);
       setError('An unexpected error occurred');
     } finally {
-      console.log("=== UPDATE END ===");
       setSaving(false);
     }
   };
@@ -266,20 +362,13 @@ export default function EditJobPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/employer/jobs"
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
+          <Link href="/dashboard/employer/jobs" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Job Not Found</h1>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Job Not Found</h1>
         </div>
         {error && (
-          <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
-            {error}
-          </div>
+          <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">{error}</div>
         )}
       </div>
     );
@@ -287,11 +376,9 @@ export default function EditJobPage() {
 
   return (
     <div className="space-y-6">
+      {/* ── Header ── */}
       <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard/employer/jobs"
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
+        <Link href="/dashboard/employer/jobs" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </Link>
         <div>
@@ -300,12 +387,89 @@ export default function EditJobPage() {
         </div>
       </div>
 
+      {/* ── Alerts ── */}
       {error && (
-        <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
-          {error}
-        </div>
+        <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">{error}</div>
+      )}
+      {successMsg && (
+        <div className="p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg">{successMsg}</div>
       )}
 
+      {/* ── Quick Status Actions ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Current status badge */}
+            <span className="text-sm text-gray-500 mr-1">
+              Current status:&nbsp;
+              <span className="font-semibold capitalize text-gray-800">{currentStatus}</span>
+            </span>
+
+            {/* Status buttons — hide the one matching current status */}
+            {(Object.keys(STATUS_CONFIG) as JobStatus[])
+              .filter(s => s !== currentStatus)
+              .map(s => {
+                const cfg = STATUS_CONFIG[s];
+                const isLoading = statusChanging === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={!!statusChanging || deleting}
+                    onClick={() => handleStatusChange(s)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 ${cfg.color}`}
+                  >
+                    {isLoading
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : cfg.icon}
+                    {isLoading ? 'Updating…' : `Mark as ${cfg.label}`}
+                  </button>
+                );
+              })}
+
+            {/* Divider */}
+            <span className="ml-auto" />
+
+            {/* Delete */}
+            {!confirmDelete ? (
+              <button
+                type="button"
+                disabled={!!statusChanging || deleting}
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Job
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-red-600 font-medium">Are you sure?</span>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  {deleting ? 'Deleting…' : 'Yes, Delete'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Edit Form ── */}
       <form onSubmit={handleSubmit(onSubmit)}>
         <Card>
           <CardHeader>
@@ -314,23 +478,17 @@ export default function EditJobPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Job Title *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Job Title *</label>
                 <input
                   {...register('title', { required: 'Job title is required' })}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Senior Software Engineer"
                 />
-                {errors.title && (
-                  <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
-                )}
+                {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Department
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
                 <input
                   {...register('department')}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -340,25 +498,19 @@ export default function EditJobPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
               <textarea
                 {...register('description', { required: 'Description is required' })}
                 rows={5}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 placeholder="Describe the role, responsibilities, and what you're looking for..."
               />
-              {errors.description && (
-                <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
-              )}
+              {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Locations
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Locations</label>
                 <input
                   {...register('locations')}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -368,9 +520,7 @@ export default function EditJobPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Work Arrangement
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Work Arrangement</label>
                 <select
                   {...register('work_arrangement')}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -384,9 +534,7 @@ export default function EditJobPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Employment Type
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
                 <select
                   {...register('engagement_type')}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -398,9 +546,7 @@ export default function EditJobPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
                   {...register('status')}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -409,15 +555,14 @@ export default function EditJobPage() {
                   <option value="active">Active</option>
                   <option value="paused">Paused</option>
                   <option value="closed">Closed</option>
+                  <option value="filled">Filled</option>
                 </select>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Salary Min ($)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Salary Min ($)</label>
                 <input
                   {...register('salary_min', { valueAsNumber: true })}
                   type="number"
@@ -427,9 +572,7 @@ export default function EditJobPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Salary Max ($)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Salary Max ($)</label>
                 <input
                   {...register('salary_max', { valueAsNumber: true })}
                   type="number"
@@ -441,9 +584,7 @@ export default function EditJobPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Minimum Years of Experience
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Years of Experience</label>
                 <input
                   {...register('min_years_experience', { valueAsNumber: true })}
                   type="number"
@@ -453,9 +594,7 @@ export default function EditJobPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Minimum Education
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Education</label>
                 <select
                   {...register('min_education')}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -470,9 +609,7 @@ export default function EditJobPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Required Skills
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
               <textarea
                 {...register('required_skills')}
                 rows={3}
@@ -482,9 +619,7 @@ export default function EditJobPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Preferred Skills
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Skills</label>
               <textarea
                 {...register('preferred_skills')}
                 rows={3}
