@@ -183,6 +183,10 @@ export default async function EmployerLettersPage() {
               const isAccepted = letter.status === 'accepted';
               const isSignedAndForwarded = letter.employer_received_signed_at !== null;
               const canViewContactInfo = isAccepted && isSignedAndForwarded;
+              const isAwaitingResponse = ['sent', 'viewed'].includes(letter.status);
+              const daysSinceSent = letter.created_at
+                ? Math.floor((Date.now() - new Date(letter.created_at).getTime()) / (1000 * 60 * 60 * 24))
+                : 0;
 
               // Type assertion for talent relationship
               const talent = letter.talent as {
@@ -258,6 +262,28 @@ export default async function EmployerLettersPage() {
                               Signed letter delivered on {new Date(letter.employer_received_signed_at).toLocaleDateString()}
                             </p>
                           )}
+                        </div>
+                      )}
+
+                      {/* Awaiting Response — letter sent but talent hasn't accepted/declined yet */}
+                      {isAwaitingResponse && (
+                        <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-orange-500 shrink-0" />
+                              <p className="text-sm font-medium text-orange-800">
+                                Awaiting Talent Response
+                              </p>
+                            </div>
+                            <span className="text-xs text-orange-500 shrink-0">
+                              {daysSinceSent === 0 ? 'Sent today' : `${daysSinceSent}d ago`}
+                            </span>
+                          </div>
+                          <p className="text-sm text-orange-700 mt-1">
+                            {letter.status === 'viewed'
+                              ? 'The candidate has viewed your letter but has not responded yet.'
+                              : 'Your letter has been sent and is waiting to be opened by the candidate.'}
+                          </p>
                         </div>
                       )}
 
