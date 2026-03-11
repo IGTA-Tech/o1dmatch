@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest) {
     const allowedFields = [
       'agency_name', 'legal_name', 'agency_website', 'agency_description',
       'street_address', 'city', 'state', 'zip_code', 'country',
-      'contact_name', 'contact_email', 'contact_phone',
+      'contact_name', 'contact_email', 'contact_phone', 'agency_logo_url',
     ];
 
     const sanitized: Record<string, unknown> = {};

@@ -1,7 +1,7 @@
 // src/app/(dashboard)/dashboard/agency/profile/profile-client.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
@@ -11,8 +11,12 @@ import {
   ArrowLeft,
   AlertCircle,
   CheckCircle,
+  Upload,
+  X,
+  Image as ImageIcon,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getSupabaseToken } from '@/lib/supabase/getToken';
 
 interface AgencyProfile {
   id: string;
@@ -29,6 +33,7 @@ interface AgencyProfile {
   contact_name?: string | null;
   contact_email?: string | null;
   contact_phone?: string | null;
+  agency_logo_url?: string | null;
   [key: string]: unknown;
 }
 
@@ -57,6 +62,12 @@ export function AgencyProfileClient({ profile: initialProfile }: AgencyProfileCl
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Logo upload state
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(initialProfile?.agency_logo_url || null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const {
     register,
     handleSubmit,
@@ -78,6 +89,78 @@ export function AgencyProfileClient({ profile: initialProfile }: AgencyProfileCl
     } : undefined,
   });
 
+  // Handle logo file selection
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Please select an image file (PNG, JPG, etc.)' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Logo must be less than 5MB' });
+      return;
+    }
+    setLogoFile(file);
+    setMessage(null);
+    const reader = new FileReader();
+    reader.onloadend = () => setLogoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const removeLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(profile?.agency_logo_url || null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const uploadLogo = async (): Promise<string | null> => {
+    if (!logoFile || !profile) return profile?.agency_logo_url || null;
+
+    setUploadingLogo(true);
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const accessToken = getSupabaseToken();
+
+    if (!accessToken) {
+      setUploadingLogo(false);
+      return profile?.agency_logo_url || null;
+    }
+
+    try {
+      const fileExt = logoFile.name.split('.').pop()?.toLowerCase() || 'png';
+      const fileName = `agency-${profile.id}/logo-${Date.now()}.${fileExt}`;
+
+      const res = await fetch(
+        `${supabaseUrl}/storage/v1/object/logos/${fileName}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': anonKey,
+            'Content-Type': logoFile.type,
+            'x-upsert': 'true',
+          },
+          body: logoFile,
+        }
+      );
+
+      if (res.ok) {
+        return `${supabaseUrl}/storage/v1/object/public/logos/${fileName}`;
+      } else {
+        const errText = await res.text();
+        console.error('Logo upload failed:', res.status, errText);
+        setMessage({ type: 'error', text: 'Failed to upload logo. Please try again.' });
+        return profile?.agency_logo_url || null;
+      }
+    } catch (err) {
+      console.error('Logo upload error:', err);
+      return profile?.agency_logo_url || null;
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   const handleSave = async (data: AgencyProfileFormData) => {
     if (!profile) return;
 
@@ -85,17 +168,24 @@ export function AgencyProfileClient({ profile: initialProfile }: AgencyProfileCl
     setMessage(null);
 
     try {
+      // Upload logo first if a new file was selected
+      let logoUrl = profile.agency_logo_url || null;
+      if (logoFile) {
+        logoUrl = await uploadLogo();
+      }
+
       const response = await fetch('/api/agency/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId: profile.id, ...data }),
+        body: JSON.stringify({ profileId: profile.id, ...data, agency_logo_url: logoUrl }),
       });
 
       const result = await response.json();
 
       if (result.success) {
         setMessage({ type: 'success', text: 'Profile updated successfully!' });
-        setProfile({ ...profile, ...data });
+        setProfile({ ...profile, ...data, agency_logo_url: logoUrl });
+        setLogoFile(null);
         router.refresh();
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to save changes.' });
@@ -171,6 +261,61 @@ export function AgencyProfileClient({ profile: initialProfile }: AgencyProfileCl
             <CardTitle>Agency Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+
+            {/* Logo Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Agency Logo
+              </label>
+              <div className="flex items-start gap-4">
+                {/* Preview */}
+                <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden shrink-0">
+                  {logoPreview ? (
+                    <img
+                      src={logoPreview}
+                      alt="Agency logo"
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <ImageIcon className="w-8 h-8 text-gray-300" />
+                  )}
+                </div>
+
+                {/* Controls */}
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    className="hidden"
+                    id="agency-logo-upload"
+                  />
+                  <label
+                    htmlFor="agency-logo-upload"
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors"
+                  >
+                    {uploadingLogo
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : <Upload className="w-4 h-4" />}
+                    {logoPreview ? 'Change Logo' : 'Upload Logo'}
+                  </label>
+
+                  {logoPreview && (
+                    <button
+                      type="button"
+                      onClick={removeLogo}
+                      className="flex items-center gap-2 px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                      Remove
+                    </button>
+                  )}
+                  <p className="text-xs text-gray-400">PNG, JPG, GIF up to 5MB</p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
