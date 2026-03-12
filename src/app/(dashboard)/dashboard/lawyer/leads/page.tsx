@@ -3,8 +3,7 @@ import { redirect } from 'next/navigation';
 import { Card, CardContent, Badge } from '@/components/ui';
 import {
   Users,
-  Mail,
-  Phone,
+  Briefcase,
   Calendar,
   ArrowRight,
   ArrowLeft,
@@ -38,7 +37,7 @@ export default async function LawyerLeadsPage() {
   // Get all connection requests
   const { data: requests } = await supabase
     .from('lawyer_connection_requests')
-    .select('*, talent:talent_profiles(id)')
+    .select('*, talent:talent_profiles(id, skills, years_experience, professional_headline, current_job_title)')
     .eq('lawyer_id', lawyerProfile.id)
     .order('created_at', { ascending: false });
 
@@ -161,25 +160,38 @@ export default async function LawyerLeadsPage() {
                       </span>
                     </div>
 
-                    {/* Contact Info */}
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                      
-                        <a href={`mailto:${request.requester_email}`}
-                        className="flex items-center gap-1 hover:text-blue-600"
-                      >
-                        <Mail className="w-4 h-4" />
-                        {request.requester_email}
-                      </a>
-                      {request.requester_phone && (
-                        
-                          <a href={`tel:${request.requester_phone}`}
-                          className="flex items-center gap-1 hover:text-blue-600"
-                        >
-                          <Phone className="w-4 h-4" />
-                          {request.requester_phone}
-                        </a>
-                      )}
-                    </div>
+                    {/* Headline / Experience */}
+                    {(() => {
+                      const talentRaw = Array.isArray(request.talent) ? request.talent[0] : request.talent;
+                      const headline = talentRaw?.professional_headline || talentRaw?.current_job_title;
+                      const exp = talentRaw?.years_experience;
+                      return (headline || exp) ? (
+                        <p className="text-sm text-gray-600 mb-2 flex items-center gap-1.5">
+                          <Briefcase className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          {headline}
+                          {headline && exp ? <span className="text-gray-400">·</span> : null}
+                          {exp ? <span>{exp} yrs exp</span> : null}
+                        </p>
+                      ) : null;
+                    })()}
+
+                    {/* Skills */}
+                    {(() => {
+                      const talentRaw = Array.isArray(request.talent) ? request.talent[0] : request.talent;
+                      const skills: string[] = talentRaw?.skills ?? [];
+                      return skills.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {skills.slice(0, 6).map((skill, i) => (
+                            <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                              {skill}
+                            </span>
+                          ))}
+                          {skills.length > 6 && (
+                            <span className="text-xs text-gray-400">+{skills.length - 6} more</span>
+                          )}
+                        </div>
+                      ) : null;
+                    })()}
 
                     {/* Message Preview */}
                     {request.message && (
