@@ -224,9 +224,12 @@ export default async function JobApplicationsPage({
                       {/* Main info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 flex-wrap mb-1">
-                          <h3 className="font-semibold text-gray-900">
+                          <Link
+                            href={`/dashboard/agency/talent/${talent?.id}`}
+                            className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                          >
                             {talent?.first_name} {talent?.last_name}
-                          </h3>
+                          </Link>
                           <Badge variant={statusConfig.variant}>
                             <StatusIcon className="w-3 h-3 mr-1" />
                             {statusConfig.label}

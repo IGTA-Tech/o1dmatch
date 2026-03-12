@@ -1,14 +1,18 @@
+// src/app/(dashboard)/dashboard/agency/applicants/page.tsx
+
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { Card, CardContent, Badge } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui';
 import {
   Users,
   Briefcase,
   Building2,
   Calendar,
-  MapPin,
-  Eye,
-  Mail,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Star,
+  MessageSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -16,268 +20,285 @@ export default async function AgencyApplicantsPage() {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/login');
-  }
+  if (!user) redirect('/login');
 
   // Get agency profile
   const { data: agencyProfile } = await supabase
     .from('agency_profiles')
-    .select('id')
+    .select('id, agency_name')
     .eq('user_id', user.id)
     .single();
 
-  if (!agencyProfile) {
-    redirect('/dashboard/agency');
-  }
+  if (!agencyProfile) redirect('/dashboard/agency');
 
-  // Get all jobs for this agency
+  // Get all job IDs for this agency
   const { data: jobs } = await supabase
     .from('job_listings')
     .select('id')
     .eq('agency_id', agencyProfile.id);
 
-  const jobIds = jobs?.map(j => j.id) || [];
+  const jobIds = jobs?.map(j => j.id) ?? [];
 
-  // Get all applications for agency jobs
-  
-const { data: applications, error } = await supabase
-  .from('job_applications')
-  .select(`
-    *,
-    job:job_listings(
+  // Get all applications with talent + job info
+  const { data: applications } = await supabase
+    .from('job_applications')
+    .select(`
       id,
-      title,
-      department,
-      client:agency_clients(
-        company_name,
-        show_client_identity
+      status,
+      cover_message,
+      score_at_application,
+      applied_at,
+      job:job_listings(
+        id,
+        title,
+        client:agency_clients(company_name, show_client_identity)
+      ),
+      talent:talent_profiles(
+        id,
+        first_name,
+        last_name,
+        professional_headline,
+        current_job_title,
+        years_experience,
+        skills,
+        o1_score
       )
-    ),
-    talent:talent_profiles(
-      id,
-      user_id
-    )
-  `)
-  .in('job_id', jobIds.length > 0 ? jobIds : ['00000000-0000-0000-0000-000000000000'])
-  .order('created_at', { ascending: false });
+    `)
+    .in('job_id', jobIds.length > 0 ? jobIds : ['00000000-0000-0000-0000-000000000000'])
+    .order('applied_at', { ascending: false });
 
-console.log("jobIds=============>");
-console.log(jobIds);
-console.log("applications=============>");
-console.log(applications);
-console.log("error =================>");
-console.log(error);
-  // Get talent emails
-  const talentUserIds = applications?.map(a => a.talent?.user_id).filter(Boolean) || [];
-  const talentEmails: Record<string, string> = {};
-
-  if (talentUserIds.length > 0) {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, email, full_name')
-      .in('id', talentUserIds);
-
-    profiles?.forEach(p => {
-      talentEmails[p.id] = p.email;
-    });
-  }
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
-  };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
       case 'pending':
       case 'submitted':
-        return { label: 'New', variant: 'info' as const };
+        return { label: 'Pending', variant: 'warning' as const, icon: Clock };
       case 'under_review':
-        return { label: 'Under Review', variant: 'warning' as const };
+      case 'reviewing':
+        return { label: 'Reviewing', variant: 'info' as const, icon: Clock };
       case 'shortlisted':
-        return { label: 'Shortlisted', variant: 'success' as const };
+        return { label: 'Shortlisted', variant: 'success' as const, icon: CheckCircle };
       case 'rejected':
-        return { label: 'Rejected', variant: 'error' as const };  // Changed from 'destructive' to 'error'
+        return { label: 'Rejected', variant: 'error' as const, icon: XCircle };
       case 'hired':
-        return { label: 'Hired', variant: 'success' as const };
+        return { label: 'Hired', variant: 'success' as const, icon: CheckCircle };
       default:
-        return { label: status, variant: 'default' as const };
+        return { label: status, variant: 'default' as const, icon: Clock };
     }
   };
 
-  // Group applications by status for stats
-  const stats = {
-    total: applications?.length || 0,
-    new: applications?.filter(a => ['pending', 'submitted'].includes(a.status)).length || 0,
-    shortlisted: applications?.filter(a => a.status === 'shortlisted').length || 0,
-    rejected: applications?.filter(a => a.status === 'rejected').length || 0,
-  };
+  const total       = applications?.length ?? 0;
+  const pending     = applications?.filter(a => ['pending', 'submitted'].includes(a.status)).length ?? 0;
+  const shortlisted = applications?.filter(a => a.status === 'shortlisted').length ?? 0;
+  const rejected    = applications?.filter(a => a.status === 'rejected').length ?? 0;
+
+  // Group applications by job
+  type AppItem = NonNullable<typeof applications>[number];
+  const grouped: { jobId: string; jobTitle: string; clientName: string; apps: AppItem[] }[] = [];
+  const seenJobs = new Map<string, number>();
+
+  for (const app of applications ?? []) {
+    const jobRaw = Array.isArray(app.job) ? app.job[0] : app.job;
+    const clientRaw = Array.isArray(jobRaw?.client) ? jobRaw.client[0] : jobRaw?.client;
+    const jobId = jobRaw?.id ?? 'unknown';
+    const jobTitle = jobRaw?.title ?? 'Unknown Job';
+    const clientName = clientRaw?.show_client_identity
+      ? clientRaw?.company_name
+      : 'Confidential Client';
+
+    if (seenJobs.has(jobId)) {
+      grouped[seenJobs.get(jobId)!].apps.push(app);
+    } else {
+      seenJobs.set(jobId, grouped.length);
+      grouped.push({ jobId, jobTitle, clientName, apps: [app] });
+    }
+  }
 
   return (
     <div className="space-y-6">
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Applicants</h1>
-        <p className="text-gray-600">Manage all applications for your client jobs</p>
+        <p className="text-sm text-gray-600 mt-0.5">Manage all applications across your client jobs</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="text-center">
-            <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-            <p className="text-sm text-gray-500">Total Applicants</p>
+        <Card padding="sm">
+          <CardContent>
+            <p className="text-2xl font-bold text-gray-900">{total}</p>
+            <p className="text-sm text-gray-600">Total</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="text-center">
-            <p className="text-3xl font-bold text-blue-600">{stats.new}</p>
-            <p className="text-sm text-gray-500">New</p>
+        <Card padding="sm">
+          <CardContent>
+            <p className="text-2xl font-bold text-yellow-600">{pending}</p>
+            <p className="text-sm text-gray-600">Pending</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="text-center">
-            <p className="text-3xl font-bold text-green-600">{stats.shortlisted}</p>
-            <p className="text-sm text-gray-500">Shortlisted</p>
+        <Card padding="sm">
+          <CardContent>
+            <p className="text-2xl font-bold text-green-600">{shortlisted}</p>
+            <p className="text-sm text-gray-600">Shortlisted</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="text-center">
-            <p className="text-3xl font-bold text-red-600">{stats.rejected}</p>
-            <p className="text-sm text-gray-500">Rejected</p>
+        <Card padding="sm">
+          <CardContent>
+            <p className="text-2xl font-bold text-red-500">{rejected}</p>
+            <p className="text-sm text-gray-600">Rejected</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Applicants List */}
+      {/* Applicants grouped by job */}
       {!applications || applications.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Applicants Yet</h3>
-            <p className="text-gray-600 mb-4">
+            <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No applications yet</h3>
+            <p className="text-sm text-gray-500">
               When candidates apply to your job listings, they&apos;ll appear here.
             </p>
             <Link
               href="/dashboard/agency/jobs"
-              className="text-blue-600 hover:underline"
+              className="mt-3 inline-block text-sm text-blue-600 hover:underline"
             >
               View Job Listings
             </Link>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {applications.map((application) => {
-            const status = getStatusBadge(application.status);
-            const talentEmail = application.talent?.user_id 
-              ? talentEmails[application.talent.user_id] 
-              : null;
+        <div className="space-y-6">
+          {grouped.map(({ jobId, jobTitle, clientName, apps }) => (
+            <Card key={jobId}>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Briefcase className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span className="truncate">{jobTitle}</span>
+                    <span className="text-xs font-normal text-gray-400 flex items-center gap-1 shrink-0">
+                      <Building2 className="w-3.5 h-3.5" />
+                      {clientName}
+                    </span>
+                  </div>
+                  <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full shrink-0">
+                    {apps.length} applicant{apps.length !== 1 ? 's' : ''}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="divide-y divide-gray-100">
+                  {apps.map((app) => {
+                    const talentRaw = Array.isArray(app.talent) ? app.talent[0] : app.talent;
+                    const talent = talentRaw as {
+                      id: string;
+                      first_name: string;
+                      last_name: string;
+                      professional_headline?: string;
+                      current_job_title?: string;
+                      years_experience?: number;
+                      skills?: string[];
+                      o1_score?: number;
+                    } | null;
 
-            return (
-              <Card key={application.id} hover>
-                <CardContent className="flex items-start gap-6">
-                  {/* Talent Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Link
-                        href={`/dashboard/agency/applicants/${application.id}`}
-                        className="text-lg font-semibold text-gray-900 hover:text-blue-600"
-                      >
-                        {application.talent?.professional_headline || 'Applicant'}
-                      </Link>
-                      <Badge variant={status.variant}>{status.label}</Badge>
-                      {application.talent?.o1_score && (
-                        <span className="text-sm font-medium text-blue-600">
-                          {application.talent.o1_score}% O-1 Score
-                        </span>
-                      )}
-                    </div>
+                    const statusConfig = getStatusConfig(app.status ?? 'pending');
+                    const StatusIcon = statusConfig.icon;
+                    const score = app.score_at_application ?? talent?.o1_score ?? null;
 
-                    {/* Job Info */}
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                      <span className="flex items-center gap-1">
-                        <Briefcase className="w-4 h-4" />
-                        {application.job?.title}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Building2 className="w-4 h-4" />
-                        {application.job?.client?.show_client_identity
-                          ? application.job?.client?.company_name
-                          : 'Confidential Client'}
-                      </span>
-                    </div>
+                    return (
+                      <div key={app.id} className="py-5 first:pt-0 last:pb-0">
+                        <div className="flex items-start gap-4">
 
-                    {/* Location & Date */}
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      {application.talent?.city && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {application.talent.city}, {application.talent.state}
-                        </span>
-                      )}
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        Applied {formatDate(application.created_at)}
-                      </span>
-                    </div>
+                          {/* Avatar */}
+                          <div className="w-11 h-11 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-blue-700 font-semibold text-sm">
+                              {talent?.first_name?.[0]}{talent?.last_name?.[0]}
+                            </span>
+                          </div>
 
-                    {/* Skills */}
-                    {application.talent?.skills && application.talent.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-3">
-                        {application.talent.skills.slice(0, 5).map((skill: string, index: number) => (
-                          <span
-                            key={index}
-                            className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                        {application.talent.skills.length > 5 && (
-                          <span className="px-2 py-0.5 text-gray-500 text-xs">
-                            +{application.talent.skills.length - 5} more
-                          </span>
-                        )}
+                          {/* Main info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 flex-wrap mb-1">
+                              <Link
+                                href={`/dashboard/agency/talent/${talent?.id}`}
+                                className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                              >
+                                {talent?.first_name} {talent?.last_name}
+                              </Link>
+                              <Badge variant={statusConfig.variant}>
+                                <StatusIcon className="w-3 h-3 mr-1" />
+                                {statusConfig.label}
+                              </Badge>
+                              {score !== null && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-full text-xs font-semibold text-amber-700">
+                                  <Star className="w-3 h-3" />
+                                  O-1 Score: {score}%
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="text-sm text-gray-600 mb-1.5">
+                              {talent?.professional_headline || talent?.current_job_title || 'No headline'}
+                              {talent?.years_experience && (
+                                <span className="text-gray-400"> · {talent.years_experience} yrs exp</span>
+                              )}
+                            </p>
+
+                            {/* Skills */}
+                            {talent?.skills && talent.skills.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mb-2">
+                                {talent.skills.slice(0, 6).map((skill: string, i: number) => (
+                                  <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                                    {skill}
+                                  </span>
+                                ))}
+                                {talent.skills.length > 6 && (
+                                  <span className="text-xs text-gray-400">+{talent.skills.length - 6} more</span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Cover message */}
+                            {app.cover_message && (
+                              <div className="flex items-start gap-2 mt-2 p-3 bg-gray-50 rounded-lg">
+                                <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                                <p className="text-sm text-gray-600 line-clamp-2">{app.cover_message}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Date + CTA */}
+                          <div className="text-right flex-shrink-0 flex flex-col items-end gap-2">
+                            <div className="flex items-center gap-1 text-xs text-gray-400">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {formatDate(app.applied_at)}
+                            </div>
+                            <Link
+                              href={`/dashboard/agency/letters/new?talent=${talent?.id}`}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                            >
+                              Send Interest Letter
+                            </Link>
+                          </div>
+
+                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/dashboard/agency/browse/${application.talent?.id}`}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="View Profile"
-                    >
-                      <Eye className="w-5 h-5 text-gray-600" />
-                    </Link>
-                    {talentEmail && (
-                      
-                        <a href={`mailto:${talentEmail}`}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="Send Email"
-                      >
-                        <Mail className="w-5 h-5 text-gray-600" />
-                      </a>
-                    )}
-                    <Link
-                      href={`/dashboard/agency/applicants/${application.id}`}
-                      className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Review
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
+
     </div>
   );
 }
