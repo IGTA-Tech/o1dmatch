@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
-import { Badge } from '@/components/ui';
+// import { Badge } from '@/components/ui';
 import {
   ArrowLeft,
   MapPin,
