@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import {
   ArrowLeft,
@@ -114,18 +115,17 @@ export default function LawyerProfileForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Start saving lawyer profile");
     setSaving(true);
     setError(null);
     setSuccess(false);
 
     try {
-      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-      if (!anonKey || !supabaseUrl) {
-        throw new Error('Missing Supabase configuration');
-      }
+      // Build a browser Supabase client — it picks up the session cookie automatically
+      // so auth.uid() will match the logged-in user and RLS will pass.
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
 
       const profileData = {
         user_id: userId,
@@ -138,71 +138,41 @@ export default function LawyerProfileForm({
         contact_email: contactEmail.trim(),
         contact_phone: contactPhone.trim() || null,
         bio: bio.trim() || null,
-        specializations: specializations,
+        specializations,
         visa_types: visaTypes,
         is_active: isActive,
         updated_at: new Date().toISOString(),
       };
 
-      console.log("Profile data:", profileData);
-
-      let response: Response;
+      let dbError;
 
       if (lawyerProfile) {
         // Update existing profile
-        console.log("Updating existing profile:", lawyerProfile.id);
-        response = await fetch(
-          `${supabaseUrl}/rest/v1/lawyer_profiles?id=eq.${lawyerProfile.id}`,
-          {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${anonKey}`,
-              'apikey': anonKey,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=representation',
-            },
-            body: JSON.stringify(profileData),
-          }
-        );
+        const { error } = await supabase
+          .from('lawyer_profiles')
+          .update(profileData)
+          .eq('id', lawyerProfile.id);
+        dbError = error;
       } else {
-        // Insert new profile
-        console.log("Creating new profile");
-        response = await fetch(
-          `${supabaseUrl}/rest/v1/lawyer_profiles`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${anonKey}`,
-              'apikey': anonKey,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=representation',
-            },
-            body: JSON.stringify(profileData),
-          }
-        );
+        // Insert new profile — upsert on user_id so double-submits are safe
+        const { error } = await supabase
+          .from('lawyer_profiles')
+          .upsert(profileData, { onConflict: 'user_id' });
+        dbError = error;
       }
 
-      console.log("Response status:", response.status);
-      const responseText = await response.text();
-      console.log("Response body:", responseText);
-
-      if (response.ok) {
-        setSuccess(true);
-        router.refresh();
-        setTimeout(() => setSuccess(false), 3000);
-      } else {
-        let errorMessage = 'Failed to save profile';
-        try {
-          const errorData = JSON.parse(responseText);
-          errorMessage = errorData.message || errorData.error || errorData.details || responseText;
-        } catch {
-          errorMessage = responseText || `Error ${response.status}`;
-        }
-        throw new Error(errorMessage);
+      if (dbError) {
+        console.error('Profile save error:', dbError);
+        setError(dbError.message || 'Failed to save profile');
+        return;
       }
+
+      setSuccess(true);
+      router.refresh();
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      console.error('Error saving profile:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save profile');
+      console.error('Unexpected error saving profile:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setSaving(false);
     }
