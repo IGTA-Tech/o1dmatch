@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import {
   ArrowLeft,
@@ -120,14 +119,8 @@ export default function LawyerProfileForm({
     setSuccess(false);
 
     try {
-      // Build a browser Supabase client — it picks up the session cookie automatically
-      // so auth.uid() will match the logged-in user and RLS will pass.
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      );
-
       const profileData = {
+        profileId: lawyerProfile?.id ?? null,
         user_id: userId,
         attorney_name: attorneyName.trim(),
         attorney_title: attorneyTitle.trim() || null,
@@ -141,29 +134,18 @@ export default function LawyerProfileForm({
         specializations,
         visa_types: visaTypes,
         is_active: isActive,
-        updated_at: new Date().toISOString(),
       };
 
-      let dbError;
+      const res = await fetch('/api/lawyer/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profileData),
+      });
 
-      if (lawyerProfile) {
-        // Update existing profile
-        const { error } = await supabase
-          .from('lawyer_profiles')
-          .update(profileData)
-          .eq('id', lawyerProfile.id);
-        dbError = error;
-      } else {
-        // Insert new profile — upsert on user_id so double-submits are safe
-        const { error } = await supabase
-          .from('lawyer_profiles')
-          .upsert(profileData, { onConflict: 'user_id' });
-        dbError = error;
-      }
+      const json = await res.json();
 
-      if (dbError) {
-        console.error('Profile save error:', dbError);
-        setError(dbError.message || 'Failed to save profile');
+      if (!res.ok) {
+        setError(json.error || 'Failed to save profile');
         return;
       }
 
@@ -171,7 +153,7 @@ export default function LawyerProfileForm({
       router.refresh();
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      console.error('Unexpected error saving profile:', err);
+      console.error('[LawyerProfile] unexpected error:', err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setSaving(false);
