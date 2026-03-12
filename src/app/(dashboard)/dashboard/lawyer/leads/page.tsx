@@ -38,7 +38,7 @@ export default async function LawyerLeadsPage() {
   // Get all connection requests
   const { data: requests } = await supabase
     .from('lawyer_connection_requests')
-    .select('*')
+    .select('*, talent:talent_profiles(id)')
     .eq('lawyer_id', lawyerProfile.id)
     .order('created_at', { ascending: false });
 
@@ -195,10 +195,24 @@ export default async function LawyerLeadsPage() {
                         {formatDate(request.created_at)}
                       </span>
                       {request.share_profile && (
-                        <span className="flex items-center gap-1 text-blue-600">
-                          <FileText className="w-4 h-4" />
-                          Profile Shared
-                        </span>
+                        (() => {
+                          const talentRaw = Array.isArray(request.talent) ? request.talent[0] : request.talent;
+                          const talentId = talentRaw?.id ?? request.talent_profile_id ?? request.talent_id;
+                          return talentId ? (
+                            <Link
+                              href={`/dashboard/lawyer/talent/${talentId}`}
+                              className="flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              <FileText className="w-4 h-4" />
+                              Profile Shared
+                            </Link>
+                          ) : (
+                            <span className="flex items-center gap-1 text-blue-600">
+                              <FileText className="w-4 h-4" />
+                              Profile Shared
+                            </span>
+                          );
+                        })()
                       )}
                     </div>
                   </div>
