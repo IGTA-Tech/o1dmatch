@@ -10,6 +10,7 @@ import {
   Plus,
   TrendingUp,
   FolderOpen,
+  Search,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -159,7 +160,7 @@ export default async function AgencyDashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Link href="/dashboard/agency/clients">
           <Card hover className="h-full">
             <CardContent className="flex items-center gap-4">
@@ -204,6 +205,23 @@ export default async function AgencyDashboardPage() {
                 <h3 className="font-medium text-gray-900">Agency Profile</h3>
                 <p className="text-sm text-gray-500">
                   Update your agency information
+                </p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/agency/browse">
+          <Card hover className="h-full">
+            <CardContent className="flex items-center gap-4">
+              <div className="p-3 bg-teal-50 rounded-lg">
+                <Search className="w-6 h-6 text-teal-600" />
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900">Browse Talent</h3>
+                <p className="text-sm text-gray-500">
+                  Discover O-1 visa candidates
                 </p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
