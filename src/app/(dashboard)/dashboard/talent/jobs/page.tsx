@@ -99,13 +99,76 @@ export default async function TalentJobsPage() {
   // Sort by match score
   const sortedJobs = jobsWithMatches.sort((a, b) => b.match.overall_score - a.match.overall_score);
 
-  // Extract all unique skills from jobs for filter options
-  const allSkills = new Set<string>();
+  // Strip leading numbering ("1) ", "2. ") + trim + collapse spaces
+  const normalizeSkill = (raw: string): string =>
+    raw.replace(/^\d+[).\s]+/, '').trim().replace(/\s+/g, ' ');
+
+  // Returns true if the string looks like a sentence fragment rather than a skill tag:
+  //  - longer than 40 chars
+  //  - contains a full stop, semicolon, or parentheses
+  //  - starts with a conjunction / preposition ("or ", "and ", "a ", "an ", "the ", "with ", "in ", "is ", "for ", "to ", "of ")
+  //  - contains words like "experience", "preferred", "mandatory", "environment"
+  const isJunk = (s: string): boolean => {
+    if (s.length > 40) return true;
+    if (/[.;()]/.test(s)) return true;
+    if (/^(or|and|a|an|the|with|in|is|for|to|of|similar|related|such)/i.test(s)) return true;
+    if (/(experience|preferred|mandatory|environment|production|deploying|analytical|problem.solving|technologies|abilities|datasets)/i.test(s)) return true;
+    return false;
+  };
+
+  // Levenshtein distance — used to fuzzy-merge near-duplicate skills
+  // e.g. "Artificaial Intelligency" vs "Artificial Intelligence"
+  const levenshtein = (a: string, b: string): number => {
+    const m = a.length, n = b.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+      Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+    );
+    for (let i = 1; i <= m; i++)
+      for (let j = 1; j <= n; j++)
+        dp[i][j] = a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    return dp[m][n];
+  };
+
+  // Two skills are "same" if edit distance ≤ 20% of the longer string's length
+  const isSimilar = (a: string, b: string): boolean => {
+    const maxLen = Math.max(a.length, b.length);
+    if (maxLen === 0) return true;
+    return levenshtein(a, b) / maxLen <= 0.2;
+  };
+
+  // Build deduplicated skill list:
+  //  1. Normalise every raw skill
+  //  2. Exact-lowercase dedup first (fast path)
+  //  3. Fuzzy-merge near-duplicates — keep the shorter/cleaner label as canonical
+  const rawSkills: string[] = [];
   sortedJobs.forEach((job) => {
-    (job.required_skills || []).forEach((skill: string) => allSkills.add(skill));
-    (job.preferred_skills || []).forEach((skill: string) => allSkills.add(skill));
+    [...(job.required_skills || []), ...(job.preferred_skills || [])].forEach((skill: string) => {
+      const display = normalizeSkill(skill);
+      if (display && !isJunk(display)) rawSkills.push(display);
+    });
   });
-  const availableSkills = Array.from(allSkills).sort();
+
+  // Exact dedup (case-insensitive)
+  const exactMap = new Map<string, string>();
+  rawSkills.forEach((s) => {
+    const key = s.toLowerCase();
+    if (!exactMap.has(key)) exactMap.set(key, s);
+  });
+
+  // Fuzzy dedup — merge into the first similar canonical
+  const canonicals: string[] = [];
+  exactMap.forEach((display) => {
+    const lc = display.toLowerCase();
+    const existing = canonicals.find((c) => isSimilar(c.toLowerCase(), lc));
+    if (!existing) canonicals.push(display);
+    // else: drop this near-duplicate, the canonical already represents it
+  });
+
+  const availableSkills = canonicals.sort((a, b) =>
+    a.toLowerCase().localeCompare(b.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">

@@ -71,15 +71,40 @@ export function JobsList({ jobs, availableSkills, isFreeTier = false }: JobsList
         if (!matchesSearch) return false;
       }
 
-      // Skills filter
+      // Skills filter — normalise + fuzzy-match so DB typos still match
+      // the canonical label shown in the dropdown
       if (filters.skills.length > 0) {
-        const jobSkills = [...(job.required_skills || []), ...(job.preferred_skills || [])];
-        const hasMatchingSkill = filters.skills.some((skill) =>
-          jobSkills.some((jobSkill) => 
-            jobSkill.toLowerCase().includes(skill.toLowerCase()) ||
-            skill.toLowerCase().includes(jobSkill.toLowerCase())
-          )
-        );
+        const normalizeSkill = (s: string) =>
+          s.replace(/^\d+[).\s]+/, '').trim().replace(/\s+/g, ' ');
+        const levenshtein = (a: string, b: string): number => {
+          const m = a.length, n = b.length;
+          const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+            Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+          );
+          for (let i = 1; i <= m; i++)
+            for (let j = 1; j <= n; j++)
+              dp[i][j] = a[i - 1] === b[j - 1]
+                ? dp[i - 1][j - 1]
+                : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+          return dp[m][n];
+        };
+        const isSimilar = (a: string, b: string) => {
+          const maxLen = Math.max(a.length, b.length);
+          return maxLen === 0 || levenshtein(a, b) / maxLen <= 0.2;
+        };
+        const isJunk = (s: string) =>
+          s.length > 40 ||
+          /[.;()]/.test(s) ||
+          /^(or|and|a|an|the|with|in|is|for|to|of|similar|related|such)/i.test(s) ||
+          /(experience|preferred|mandatory|environment|production|deploying|analytical|problem.solving|technologies|abilities|datasets)/i.test(s);
+        const jobSkillNorm = [
+          ...(job.required_skills || []),
+          ...(job.preferred_skills || []),
+        ].map((s) => normalizeSkill(s)).filter((s) => !isJunk(s)).map((s) => s.toLowerCase());
+        const hasMatchingSkill = filters.skills.some((selected) => {
+          const selNorm = normalizeSkill(selected).toLowerCase();
+          return jobSkillNorm.some((js) => js === selNorm || isSimilar(js, selNorm));
+        });
         if (!hasMatchingSkill) return false;
       }
 
