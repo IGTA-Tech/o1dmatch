@@ -445,7 +445,7 @@ function PricingPageContent() {
                     {isFeatured && <div className="o1d-popular-badge"><Sparkles size={10} /> Most Popular</div>}
                     <div className="o1d-price-header" style={{ paddingTop: isFeatured ? '2.25rem' : undefined }}>
                       <p className="o1d-price-name">{tier.name}</p>
-                      <PriceDisplay tierPrice={tier.price} setupFee={(tier as any).setupFee ?? 0} />
+                      <PriceDisplay tierPrice={tier.price} setupFee={(tier as { setupFee?: number }).setupFee ?? 0} />
                       <PromoExtras tierPrice={tier.price} />
                     </div>
                     <div className="o1d-price-divider" />

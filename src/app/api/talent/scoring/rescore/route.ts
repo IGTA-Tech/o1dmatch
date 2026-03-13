@@ -68,7 +68,7 @@ async function getOrCreateCredits(admin: ReturnType<typeof getAdminClient>, user
 }
 
 // ── POST /api/talent/scoring/rescore ─────────────────────────────────────────
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -129,9 +129,9 @@ export async function POST(req: NextRequest) {
     const createJson = await createRes.json() as Record<string, unknown>;
     if (!createRes.ok || !createJson.success) {
       console.error("[rescore] Create session failed:", createJson);
-      return NextResponse.json({ error: (createJson.error as any)?.message ?? createJson.error ?? "Failed to create scoring session" }, { status: 500 });
+      return NextResponse.json({ error: (createJson.error as { message?: string })?.message ?? (createJson.error as string) ?? "Failed to create scoring session" }, { status: 500 });
     }
-    sessionId = (createJson.sessionId ?? (createJson.data as any)?.sessionId) as string;
+    sessionId = (createJson.sessionId ?? (createJson.data as Record<string, unknown>)?.sessionId) as string;
     if (!sessionId) return NextResponse.json({ error: "No sessionId returned from API" }, { status: 500 });
   } catch (err) {
     console.error("[rescore] Create session network error:", err);
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
     if (!scoreRes.ok && scoreRes.status !== 202 && !scoreJson.success) {
       console.error("[rescore] Trigger failed:", scoreJson);
       await admin.from("scoring_sessions").update({ status: "failed" }).eq("session_id", sessionId);
-      return NextResponse.json({ error: (scoreJson.error as any)?.message ?? "Failed to trigger scoring" }, { status: 500 });
+      return NextResponse.json({ error: (scoreJson.error as { message?: string })?.message ?? "Failed to trigger scoring" }, { status: 500 });
     }
   } catch (err) {
     console.error("[rescore] Trigger network error:", err);
