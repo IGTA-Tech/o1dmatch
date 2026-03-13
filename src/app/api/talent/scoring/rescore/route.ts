@@ -68,7 +68,7 @@ async function getOrCreateCredits(admin: ReturnType<typeof getAdminClient>, user
 }
 
 // ── POST /api/talent/scoring/rescore ─────────────────────────────────────────
-export async function POST(_req: NextRequest) {
+export async function POST() {
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
