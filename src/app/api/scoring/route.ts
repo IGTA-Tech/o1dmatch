@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 // Next.js App Router config
 export const maxDuration = 60;
@@ -11,6 +12,8 @@ export const fetchCache = 'force-no-store';
 const SCORING_API_BASE = (process.env.SCORING_API_BASE || "https://uscis-scoring-tool-paid-production.up.railway.app/api/v1").trim();
 const SCORING_API_KEY = (process.env.SCORING_API_KEY || "").trim();
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "").trim();
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
+const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim();
 
 // Debug: log on server startup to verify env vars are loaded
 console.log("[scoring API] ENV check — SCORING_API_BASE:", SCORING_API_BASE);
@@ -19,13 +22,78 @@ console.log("[scoring API] ENV check — SCORING_API_KEY length:", SCORING_API_K
 console.log("[scoring API] ENV check — SCORING_API_KEY full:", JSON.stringify(SCORING_API_KEY));
 console.log("[scoring API] ENV check — APP_URL:", APP_URL || "MISSING");
 
-// Helper: get authenticated user
+// Helper: extract access token from cookies (bypasses hanging SDK getUser/getSession)
+async function getAccessTokenFromCookies(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+
+    // Supabase stores the token in a cookie named sb-<project-ref>-auth-token
+    // or as a chunked cookie sb-<project-ref>-auth-token.0, .1, etc.
+    const authCookies = allCookies
+      .filter(c => c.name.includes('auth-token') && !c.name.includes('code-verifier'))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (authCookies.length === 0) return null;
+
+    // Reassemble chunked cookies if needed
+    const rawValue = authCookies.map(c => c.value).join('');
+
+    let parsed: { access_token?: string } | null = null;
+
+    // Try direct JSON parse first
+    try {
+      parsed = JSON.parse(rawValue);
+    } catch {
+      // Try base64 decode
+      try {
+        const decoded = Buffer.from(rawValue, 'base64').toString('utf-8');
+        parsed = JSON.parse(decoded);
+      } catch {
+        // Try URL decode then JSON
+        try {
+          const urlDecoded = decodeURIComponent(rawValue);
+          parsed = JSON.parse(urlDecoded);
+        } catch {
+          return null;
+        }
+      }
+    }
+
+    return parsed?.access_token ?? null;
+  } catch (err) {
+    console.error("[scoring API] Cookie extraction error:", err);
+    return null;
+  }
+}
+
+// Helper: get authenticated user via direct REST call (bypasses SDK hanging issue)
 async function getAuthUser() {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) return null;
-    return user;
+    const accessToken = await getAccessTokenFromCookies();
+    if (!accessToken) return null;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!res.ok) return null;
+      const user = await res.json();
+      return user?.id ? user : null;
+    } catch {
+      clearTimeout(timeout);
+      return null;
+    }
   } catch {
     return null;
   }
@@ -358,7 +426,19 @@ export async function POST(req: NextRequest) {
       }),
     });
 
-    const json = await res.json();
+    const sessionResponseText = await res.text();
+    console.log("[scoring API] Session raw response:", res.status, sessionResponseText.substring(0, 300));
+
+    let json;
+    try {
+      json = JSON.parse(sessionResponseText);
+    } catch {
+      console.error("[scoring API] Session response is not JSON:", sessionResponseText.substring(0, 500));
+      return NextResponse.json(
+        { success: false, error: `Session creation failed (${res.status}): ${sessionResponseText.substring(0, 200)}` },
+        { status: res.status || 500 }
+      );
+    }
     console.log("[scoring API] Session response:", json);
 
     // Extract sessionId — API returns it inside data.sessionId

@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import '../onboarding.css';
 import Navbar from '@/components/Navbar';
+import { useO1DAnimations } from '@/hooks/useO1DAnimations';
+import '@/app/theme.css';
 
 const VIDEOS = [
   {
@@ -37,51 +37,29 @@ const VIDEOS = [
 ];
 
 export default function TalentOnboardingPage() {
-  const initialized = useRef(false);
-
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) e.target.classList.add('fade-visible');
-        });
-      },
-      { threshold: 0.12 }
-    );
-
-    requestAnimationFrame(() => {
-      const wrapper = document.querySelector('.onboarding-landing');
-      document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el));
-      wrapper?.classList.add('animations-ready');
-    });
-
-    return () => observer.disconnect();
-  }, []);
+  useO1DAnimations();
 
   return (
-    <div className="onboarding-landing">
+    <div className="o1d-page" style={{ minHeight: '100vh' }}>
       <Navbar />
 
       {/* ─── HERO ─── */}
-      <section className="ob-hero">
-        <div className="ob-hero-grid-bg" />
-        <div className="ob-hero-glow" />
-        <div className="ob-hero-glow-2" />
+      <section className="o1d-hero o1d-hero-sm">
+        <div className="o1d-hero-grid" />
+        <div className="o1d-hero-glow-1" />
+        <div className="o1d-hero-glow-2" />
 
-        <div className="ob-hero-inner">
-          <div className="ob-hero-badge">
-            <div className="ob-pulse-dot" />
+        <div className="o1d-hero-inner o1d-hero-inner-center">
+          <div className="o1d-hero-badge">
+            <div className="o1d-pulse-dot" />
             <span>Talent Onboarding Series · 4 Videos</span>
           </div>
 
-          <h1 className="ob-hero-h1">
-            Master Your <em>O-1 Journey</em> in Four Steps
+          <h1 className="o1d-hero-h1">
+            Master Your <em>O-1 Journey</em><br />in Four Steps
           </h1>
 
-          <p className="ob-hero-sub">
+          <p className="o1d-hero-sub o1d-hero-sub-center">
             These short walkthrough videos will help you get the most out of O1DMatch —
             from setting up your profile to receiving sponsorship letters from top US employers.
           </p>
@@ -89,56 +67,140 @@ export default function TalentOnboardingPage() {
       </section>
 
       {/* ─── VIDEOS ─── */}
-      <section className="ob-videos-section">
-        <div className="ob-videos-header fade-up">
-          <div className="ob-section-tag">Platform Walkthroughs</div>
-          <h2 className="ob-section-title">Talent Onboarding Videos</h2>
-          <p className="ob-section-desc">
+      <section className="o1d-section o1d-section-cream">
+        {/* Section header */}
+        <div className="o1d-section-header o1d-fade-up">
+          <span className="o1d-section-tag">Platform Walkthroughs</span>
+          <h2 className="o1d-section-title">Talent Onboarding Videos</h2>
+          <p className="o1d-section-desc">
             Watch each video in order for the smoothest onboarding experience.
             Each guide covers a key section of the platform.
           </p>
         </div>
 
-        <div className="ob-videos-grid">
+        {/* Video grid */}
+        <div style={{
+          maxWidth: 1100,
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))',
+          gap: '2rem',
+        }}>
           {VIDEOS.map((v) => (
-            <div className="ob-video-card fade-up" key={v.embedId}>
-              <div className="ob-video-header">
-                <div className="ob-video-num">{v.num}</div>
-                <div className="ob-video-title-wrap">
-                  <div className="ob-video-label">{v.label}</div>
-                  <div className="ob-video-title">{v.title}</div>
+            <div
+              key={v.embedId}
+              className="o1d-fade-up"
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '16px',
+                border: '1.5px solid #E8E0D4',
+                overflow: 'hidden',
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(212,168,75,0.5)';
+                (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 32px rgba(11,29,53,0.08)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLDivElement).style.borderColor = '#E8E0D4';
+                (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+              }}
+            >
+              {/* Card header */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                padding: '1.25rem 1.5rem',
+                borderBottom: '1px solid #F1EBE0',
+              }}>
+                {/* Step number */}
+                <div style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  background: '#0B1D35',
+                  border: '2px solid #D4A84B',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  fontFamily: "'Playfair Display', serif",
+                  fontWeight: 700,
+                  fontSize: '1.1rem',
+                  color: '#D4A84B',
+                }}>
+                  {v.num}
+                </div>
+
+                <div>
+                  <p style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    color: '#D4A84B',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    marginBottom: '0.2rem',
+                  }}>
+                    {v.label}
+                  </p>
+                  <p style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    color: '#0B1D35',
+                  }}>
+                    {v.title}
+                  </p>
                 </div>
               </div>
 
-              <div className="ob-video-embed">
+              {/* Video embed */}
+              <div style={{ position: 'relative', paddingBottom: '56.25%', background: '#0B1D35' }}>
                 <iframe
                   src={`https://drive.google.com/file/d/${v.embedId}/preview`}
                   allow="autoplay"
                   allowFullScreen
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
                 />
               </div>
 
-              <p className="ob-video-desc">{v.desc}</p>
+              {/* Description */}
+              <p style={{
+                padding: '1.1rem 1.5rem 1.4rem',
+                fontSize: '0.88rem',
+                color: '#64748B',
+                lineHeight: 1.65,
+              }}>
+                {v.desc}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ─── CTA ─── */}
-      <section className="ob-cta-strip">
-        <div className="ob-cta-strip-glow" />
-        <div className="ob-cta-strip-inner fade-up">
-          <div className="ob-cta-tag">Ready to Begin?</div>
-          <h2 className="ob-cta-title">Build Your O-1 Profile Today</h2>
-          <p className="ob-cta-desc">
+      {/* ─── CTA STRIP ─── */}
+      <section className="o1d-section o1d-section-navy">
+        <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center' }} className="o1d-fade-up">
+          <span className="o1d-section-tag">Ready to Begin?</span>
+          <h2 className="o1d-section-title-white" style={{ marginTop: '0.5rem' }}>
+            Build Your O-1 Profile Today
+          </h2>
+          <p className="o1d-section-desc-white" style={{ marginBottom: '2rem' }}>
             Join 500+ extraordinary professionals already using O1DMatch to connect with
             US employers seeking exceptional international talent.
           </p>
-          <div className="ob-cta-btns">
-            <Link href="/signup?role=talent" className="ob-btn-primary">
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/signup?role=talent" className="o1d-btn-primary">
               Create My Profile →
             </Link>
-            <Link href="/how-it-works/employers" className="ob-btn-secondary">
+            <Link href="/how-it-works/employers" className="o1d-btn-secondary">
               For Employers
             </Link>
           </div>
@@ -146,36 +208,36 @@ export default function TalentOnboardingPage() {
       </section>
 
       {/* ─── FOOTER ─── */}
-      <footer className="ob-footer">
-        <div className="ob-footer-inner">
-          <div className="ob-footer-grid">
-            <div className="ob-footer-brand">
-              <span className="ob-footer-logo">O1DMatch</span>
-              <p>
+      <footer className="o1d-footer">
+        <div className="o1d-footer-inner">
+          <div className="o1d-footer-grid">
+            <div>
+              <span className="o1d-footer-logo">O1DMatch</span>
+              <p className="o1d-footer-tagline">
                 Connecting exceptional talent with opportunities for O-1 visa sponsorship.
               </p>
             </div>
-            <div className="ob-footer-col">
+            <div className="o1d-footer-col">
               <h4>Platform</h4>
-              <Link href="/how-it-works/talent">For Candidates</Link>
+              <Link href="/how-it-works/candidates">For Candidates</Link>
               <Link href="/how-it-works/employers">For Employers</Link>
               <Link href="/pricing">Pricing</Link>
               <Link href="/blog">Blog</Link>
             </div>
-            <div className="ob-footer-col">
+            <div className="o1d-footer-col">
               <h4>Company</h4>
               <Link href="/about">About</Link>
               <Link href="/contact">Contact</Link>
               <Link href="/careers">Careers</Link>
             </div>
-            <div className="ob-footer-col">
+            <div className="o1d-footer-col">
               <h4>Legal</h4>
               <Link href="/terms">Terms of Service</Link>
               <Link href="/privacy">Privacy Policy</Link>
             </div>
           </div>
-          <div className="ob-footer-bottom">
-            <span>© 2026 O1DMatch. All rights reserved.</span>
+          <div className="o1d-footer-bottom">
+            <span>© {new Date().getFullYear()} O1DMatch. All rights reserved.</span>
             <span>Built by a licensed immigration attorney.</span>
           </div>
         </div>

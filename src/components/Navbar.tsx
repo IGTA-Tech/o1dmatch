@@ -38,22 +38,22 @@ const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 export default function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
   // const [isLegalOpen, setIsLegalOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [talentTier, setTalentTier] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const waitlistRef = useRef<HTMLDivElement>(null);
+  const onboardingRef = useRef<HTMLDivElement>(null);
   const dashboardRef = useRef<HTMLDivElement>(null);
   // const legalRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (waitlistRef.current && !waitlistRef.current.contains(event.target as Node)) {
-        setIsWaitlistOpen(false);
+      if (onboardingRef.current && !onboardingRef.current.contains(event.target as Node)) {
+        setIsOnboardingOpen(false);
       }
       if (dashboardRef.current && !dashboardRef.current.contains(event.target as Node)) {
         setIsDashboardOpen(false);
@@ -186,7 +186,7 @@ export default function Navbar() {
   const loginHref = isDemoMode ? '/demo' : '/login';
   const signupHref = isDemoMode ? '/demo' : '/signup';
 
-  const isWaitlistActive = pathname.startsWith('/waitlist');
+  const isOnboardingActive = pathname.startsWith('/onboarding');
 
   // Show logged-in state if we have a user, even if role is still loading
   const isLoggedIn = !!user;
@@ -273,30 +273,30 @@ export default function Navbar() {
               )}
             </div> */}
 
-            {/* Waitlist Dropdown */}
-            <div className="relative" ref={waitlistRef}>
+            {/* Onboarding Dropdown */}
+            <div className="relative" ref={onboardingRef}>
               <button
-                onClick={() => setIsWaitlistOpen(!isWaitlistOpen)}
-                className={`flex items-center gap-1 py-2 hover:text-gray-900 ${isWaitlistActive ? "text-blue-600" : "text-gray-600"}`}
+                onClick={() => setIsOnboardingOpen(!isOnboardingOpen)}
+                className={`flex items-center gap-1 py-2 hover:text-gray-900 ${isOnboardingActive ? "text-blue-600" : "text-gray-600"}`}
               >
-                Waitlist
-                <ChevronDown className={`w-4 h-4 transition-transform ${isWaitlistOpen ? 'rotate-180' : ''}`} />
+                Onboarding
+                <ChevronDown className={`w-4 h-4 transition-transform ${isOnboardingOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {isWaitlistOpen && (
+              {isOnboardingOpen && (
                 <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                   <Link
-                    href="/waitlist/talent"
-                    onClick={() => setIsWaitlistOpen(false)}
-                    className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/waitlist/talent" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                    href="https://www.o1dmatch.com/onboarding/talent"
+                    onClick={() => setIsOnboardingOpen(false)}
+                    className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/onboarding/talent" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
                   >
                     <Users className="w-4 h-4" />
                     For Talent
                   </Link>
                   <Link
-                    href="/waitlist/employer"
-                    onClick={() => setIsWaitlistOpen(false)}
-                    className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/waitlist/employer" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                    href="https://www.o1dmatch.com/onboarding/employer"
+                    onClick={() => setIsOnboardingOpen(false)}
+                    className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/onboarding/employer" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
                   >
                     <Building2 className="w-4 h-4" />
                     For Employers
@@ -537,11 +537,11 @@ export default function Navbar() {
                 </Link>
               </div> */}
 
-              {/* Mobile Waitlist Links */}
+              {/* Mobile Onboarding Links */}
               <div className="py-2 border-t border-gray-100 mt-2">
-                <p className="text-sm font-medium text-gray-500 mb-2">Waitlist</p>
+                <p className="text-sm font-medium text-gray-500 mb-2">Onboarding</p>
                 <Link
-                  href="/waitlist/talent"
+                  href="https://www.o1dmatch.com/onboarding/talent"
                   className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -549,7 +549,7 @@ export default function Navbar() {
                   For Talent
                 </Link>
                 <Link
-                  href="/waitlist/employer"
+                  href="https://www.o1dmatch.com/onboarding/employer"
                   className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >

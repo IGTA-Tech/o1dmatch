@@ -7,10 +7,11 @@ import { EMPLOYER_TIERS, TALENT_TIERS, EmployerTier, TalentTier } from '@/lib/su
 import Navbar from "@/components/Navbar";
 import { Check, Building2, User, Sparkles, ArrowRight, X, XCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
+import { useO1DAnimations } from '@/hooks/useO1DAnimations';
+import '@/app/theme.css';
 
 type ViewType = 'employers' | 'talent';
 
-// Features with included status for each tier
 const EMPLOYER_FEATURES = {
   free: [
     { text: 'Browse talent profiles', included: true },
@@ -74,7 +75,6 @@ const TALENT_FEATURES = {
     { text: 'Receive interest letters (notification only)', included: true },
     { text: 'Express interest / Apply to jobs', included: false },
     { text: 'Immigration tools (VisaClear)', included: false },
-    // { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: false },
     { text: 'Dedicated account manager', included: false },
   ],
   starter: [
@@ -86,7 +86,6 @@ const TALENT_FEATURES = {
     { text: 'View & respond to interest letters', included: true },
     { text: 'Express interest / Apply to jobs', included: true },
     { text: 'Immigration tools (VisaClear)', included: true },
-    // { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: true },
     { text: 'Dedicated account manager', included: false },
   ],
   active_match: [
@@ -98,18 +97,36 @@ const TALENT_FEATURES = {
     { text: 'Interest letters handled by Manager', included: true },
     { text: 'Express interest / Apply + Manager assists', included: true },
     { text: 'Immigration tools (VisaClear)', included: true },
-    // { text: 'Immigration tools (AI Eval, Scoring, VisaClear)', included: true },
     { text: 'Dedicated account manager', included: true },
   ],
 };
+
+const FAQ_ITEMS = [
+  {
+    q: 'Can I change my plan later?',
+    a: "Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate your billing automatically.",
+  },
+  {
+    q: 'What are interest letters?',
+    a: "Interest letters are messages employers send to O-1 visa candidates expressing interest in sponsoring them. They're a key part of the O-1 visa application process.",
+  },
+  {
+    q: 'What does the dedicated account manager do?',
+    a: 'With the Active Match plan ($500/mo), your dedicated account manager helps review your O-1 evidence, assists with job applications, handles interest letter responses, and provides personalized guidance throughout your visa journey.',
+  },
+  {
+    q: 'Do you offer refunds?',
+    a: "Yes, we offer a 14-day money-back guarantee. If you're not satisfied with your plan, contact our support team within 14 days of purchase for a full refund.",
+  },
+];
 
 function PricingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [view, setView] = useState<ViewType>('employers');
   const [promoCode, setPromoCode] = useState('');
-  const [promoStatus, setPromoStatus] = useState<{ 
-    valid: boolean; 
+  const [promoStatus, setPromoStatus] = useState<{
+    valid: boolean;
     message: string;
     promo?: { type: string; trialDays?: number; discountPercent?: number; grantsIGTAMember?: boolean };
   } | null>(null);
@@ -118,46 +135,30 @@ function PricingPageContent() {
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Get current user ID for promo validation
   useEffect(() => {
     const authData = getSupabaseAuthData();
-    if (authData?.user?.id) {
-      setUserId(authData.user.id);
-    }
+    if (authData?.user?.id) setUserId(authData.user.id);
   }, []);
 
-  // Handle success/canceled query params
   useEffect(() => {
     const canceled = searchParams.get('canceled');
     const success = searchParams.get('success');
     const promoApplied = searchParams.get('promo_applied');
 
     if (promoApplied === 'true') {
-      setStatusMessage({
-        type: 'success',
-        message: 'Promo code applied! Your plan has been upgraded.',
-      });
+      setStatusMessage({ type: 'success', message: 'Promo code applied! Your plan has been upgraded.' });
       router.replace('/pricing', { scroll: false });
     } else if (canceled === 'true') {
-      setStatusMessage({
-        type: 'canceled',
-        message: 'Payment was canceled. You can try again when you\'re ready.',
-      });
-      // Clean up URL
+      setStatusMessage({ type: 'canceled', message: "Payment was canceled. You can try again when you're ready." });
       router.replace('/pricing', { scroll: false });
     } else if (success === 'true') {
-      setStatusMessage({
-        type: 'success',
-        message: 'Payment successful! Your subscription is now active.',
-      });
-      // Clean up URL
+      setStatusMessage({ type: 'success', message: 'Payment successful! Your subscription is now active.' });
       router.replace('/pricing', { scroll: false });
     }
   }, [searchParams, router]);
 
   const validatePromo = async () => {
     if (!promoCode.trim()) return;
-
     setValidatingPromo(true);
     try {
       const response = await fetch('/api/promo/validate', {
@@ -170,18 +171,11 @@ function PricingPageContent() {
         }),
       });
       const data = await response.json();
-
       if (data.valid) {
         let message = 'Code applied! ';
-        if (data.promo.trialDays) {
-          message += `${data.promo.trialDays}-day free trial included.`;
-        }
-        if (data.promo.discountPercent) {
-          message += `${data.promo.discountPercent}% discount applied.`;
-        }
-        if (data.promo.grantsIGTAMember) {
-          message = 'Innovative Automations member code verified! You qualify for free full access.';
-        }
+        if (data.promo.trialDays) message += `${data.promo.trialDays}-day free trial included.`;
+        if (data.promo.discountPercent) message += `${data.promo.discountPercent}% discount applied.`;
+        if (data.promo.grantsIGTAMember) message = 'Innovative Automations member code verified! You qualify for free full access.';
         setPromoStatus({ valid: true, message, promo: data.promo });
       } else {
         setPromoStatus({ valid: false, message: data.error || 'Invalid code' });
@@ -196,40 +190,21 @@ function PricingPageContent() {
   const handleSubscribe = async (tier: EmployerTier | TalentTier) => {
     setSubscribing(tier);
     const userType = view === 'employers' ? 'employer' : 'talent';
-
     try {
-      // If promo is trial or free_upgrade, apply directly (bypass Stripe)
       const promoType = promoStatus?.valid ? promoStatus.promo?.type : null;
       if (promoType === 'trial' || promoType === 'free_upgrade') {
-        if (!userId) {
-          router.push(`/login?redirect=/pricing&type=${userType}`);
-          return;
-        }
-
+        if (!userId) { router.push(`/login?redirect=/pricing&type=${userType}`); return; }
         const response = await fetch('/api/promo/apply', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code: promoCode,
-            userType,
-            tier,
-            userId,
-          }),
+          body: JSON.stringify({ code: promoCode, userType, tier, userId }),
         });
-
-        if (response.status === 401) {
-          router.push(`/login?redirect=/pricing&type=${userType}`);
-          return;
-        }
-
+        if (response.status === 401) { router.push(`/login?redirect=/pricing&type=${userType}`); return; }
         const data = await response.json();
-
         if (data.success) {
-          // Redirect to appropriate dashboard billing page
-          const dashboardPath = userType === 'employer' 
+          window.location.href = userType === 'employer'
             ? '/dashboard/employer/billing?promo_applied=true'
             : '/dashboard/talent/billing?promo_applied=true';
-          window.location.href = dashboardPath;
           return;
         } else {
           alert(data.error || 'Failed to apply promo code');
@@ -238,29 +213,22 @@ function PricingPageContent() {
         }
       }
 
-      // Standard Stripe checkout for paid plans / discount promos
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userType,
-          tier,
-          promoCode: promoStatus?.valid ? promoCode : undefined,
-        }),
+        body: JSON.stringify({ userType, tier, promoCode: promoStatus?.valid ? promoCode : undefined }),
       });
-
-      // Check for unauthorized (401) - redirect to login
-      if (response.status === 401) {
-        router.push(`/login?redirect=/pricing&type=${userType}`);
-        return;
-      }
-
+      if (response.status === 401) { router.push(`/login?redirect=/pricing&type=${userType}`); return; }
       const data = await response.json();
-
       if (data.url) {
         window.location.href = data.url;
       } else if (data.error) {
-        if (data.error === 'Unauthorized' || data.error.toLowerCase().includes('unauthorized') || data.error.toLowerCase().includes('not logged in') || data.error.toLowerCase().includes('login required')) {
+        if (
+          data.error === 'Unauthorized' ||
+          data.error.toLowerCase().includes('unauthorized') ||
+          data.error.toLowerCase().includes('not logged in') ||
+          data.error.toLowerCase().includes('login required')
+        ) {
           router.push(`/login?redirect=/pricing&type=${userType}`);
         } else {
           alert(data.error);
@@ -274,461 +242,280 @@ function PricingPageContent() {
     }
   };
 
+  useO1DAnimations();
+
+  const employerFeatured = 'growth';
+  const talentFeatured   = 'starter';
+
+  function PriceDisplay({ tierPrice, setupFee }: { tierPrice: number; setupFee: number }) {
+    if (promoStatus?.valid && promoStatus.promo?.discountPercent && tierPrice > 0) {
+      return (
+        <>
+          <div className="o1d-price-amount">
+            <span className="o1d-price-currency-green">$</span>
+            <span className="o1d-price-num o1d-price-discount-num">
+              {Math.round(tierPrice * (1 - promoStatus.promo.discountPercent / 100))}
+            </span>
+            <span className="o1d-price-per">/mo</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.25rem' }}>
+            <span className="o1d-price-strike">${tierPrice}/mo</span>
+            <span className="o1d-price-off-badge">{promoStatus.promo.discountPercent}% OFF</span>
+          </div>
+        </>
+      );
+    }
+    return (
+      <div className="o1d-price-amount">
+        <span className="o1d-price-currency">$</span>
+        <span className="o1d-price-num">{tierPrice}</span>
+        <span className="o1d-price-per">/mo</span>
+        {setupFee > 0 && <span className="o1d-price-setup" style={{ marginLeft: '0.5rem' }}>+${setupFee} setup</span>}
+      </div>
+    );
+  }
+
+  function PromoExtras({ tierPrice }: { tierPrice: number }) {
+    if (!promoStatus?.valid || tierPrice === 0) return null;
+    return (
+      <>
+        {promoStatus.promo?.trialDays && (
+          <p className="o1d-price-trial">{promoStatus.promo.trialDays}-day free trial</p>
+        )}
+        {(promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade') && (
+          <p className="o1d-price-free-note"><CheckCircle size={11} /> No payment required</p>
+        )}
+      </>
+    );
+  }
+
+  function SubscribeBtn({ tierKey, isFeatured }: { tierKey: string; isFeatured: boolean }) {
+    const label = promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade')
+      ? (promoStatus.promo?.type === 'trial' ? 'Start Free Trial' : 'Apply Promo')
+      : 'Subscribe';
+    return (
+      <button
+        onClick={() => handleSubscribe(tierKey as EmployerTier | TalentTier)}
+        disabled={subscribing !== null}
+        className={isFeatured ? 'o1d-price-btn-featured' : 'o1d-price-btn-default'}
+      >
+        {subscribing === tierKey
+          ? <><Loader2 size={14} className="animate-spin" /> Processing…</>
+          : <>{label} <ArrowRight size={14} /></>}
+      </button>
+    );
+  }
+
+  function FeatureList({ features }: { features: { text: string; included: boolean }[] }) {
+    return (
+      <ul className="o1d-feature-list">
+        {features.map((f, i) => (
+          <li key={i} className="o1d-feature-item">
+            <div className={`o1d-feature-check ${f.included ? 'o1d-feature-check-yes' : 'o1d-feature-check-no'}`}>
+              {f.included ? <Check size={10} color="#10B981" /> : <X size={10} color="#94A3B8" />}
+            </div>
+            <span className={f.included ? 'o1d-feature-text-yes' : 'o1d-feature-text-no'}>{f.text}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="o1d-page" style={{ minHeight: '100vh' }}>
       <Navbar />
 
-      {/* Spacer for fixed navbar */}
-      <div className="pt-24" />
+      {/* ── Navy hero / controls ── */}
+      <div className="o1d-pricing-hero">
+        <div className="o1d-pricing-hero-glow" />
+        <div className="o1d-pricing-hero-inner">
 
-      {/* Status Message Banner */}
-      {statusMessage && (
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-          <div
-            className={`flex items-center justify-between p-4 rounded-xl border ${
-              statusMessage.type === 'success'
-                ? 'bg-green-50 border-green-200 text-green-800'
-                : 'bg-amber-50 border-amber-200 text-amber-800'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              {statusMessage.type === 'success' ? (
-                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-              ) : (
-                <XCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-              )}
-              <span className="font-medium">{statusMessage.message}</span>
-            </div>
-            <button
-              onClick={() => setStatusMessage(null)}
-              className={`p-1 rounded-lg transition-colors ${
-                statusMessage.type === 'success'
-                  ? 'hover:bg-green-100'
-                  : 'hover:bg-amber-100'
-              }`}
-            >
-              <X className="w-4 h-4" />
-            </button>
+          <div className="o1d-hero-badge" style={{ marginBottom: '1.25rem' }}>
+            <span className="o1d-pulse-dot" />
+            <span>Transparent Pricing</span>
           </div>
-        </div>
-      )}
 
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Hero */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Simple, Transparent Pricing
+          <h1 className="o1d-hero-h1" style={{ fontSize: '2.8rem', marginBottom: '0.75rem' }}>
+            Simple, <em>Transparent</em> Pricing
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="o1d-hero-sub o1d-hero-sub-center" style={{ marginBottom: '2.5rem' }}>
             Choose the plan that fits your needs. Upgrade or downgrade anytime.
           </p>
-        </div>
 
-        {/* View Toggle */}
-        <div className="flex justify-center mb-12">
-          <div className="inline-flex rounded-xl border border-gray-200 bg-white p-1.5 shadow-sm">
-            <button
-              onClick={() => setView('employers')}
-              className={`flex items-center gap-2 px-8 py-3 rounded-lg text-sm font-semibold transition-all ${
-                view === 'employers'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <Building2 className="w-4 h-4" />
-              For Employers
-            </button>
-            <button
-              onClick={() => setView('talent')}
-              className={`flex items-center gap-2 px-8 py-3 rounded-lg text-sm font-semibold transition-all ${
-                view === 'talent'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <User className="w-4 h-4" />
-              For Talent
-            </button>
+          {/* Status banner */}
+          {statusMessage && (
+            <div style={{ maxWidth: 560, margin: '0 auto 1.5rem' }}>
+              <div className={statusMessage.type === 'success' ? 'o1d-status-success' : 'o1d-status-canceled'}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  {statusMessage.type === 'success'
+                    ? <CheckCircle size={17} color="#10B981" />
+                    : <XCircle size={17} color="#D4A84B" />}
+                  <span className={statusMessage.type === 'success' ? 'o1d-status-text-success' : 'o1d-status-text-canceled'}>
+                    {statusMessage.message}
+                  </span>
+                </div>
+                <button className="o1d-status-close" onClick={() => setStatusMessage(null)}>
+                  <X size={15} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Toggle */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+            <div className="o1d-toggle-wrap">
+              <button
+                onClick={() => setView('employers')}
+                className={`o1d-toggle-btn ${view === 'employers' ? 'o1d-toggle-btn-active' : 'o1d-toggle-btn-inactive'}`}
+              >
+                <Building2 size={15} /> For Employers
+              </button>
+              <button
+                onClick={() => setView('talent')}
+                className={`o1d-toggle-btn ${view === 'talent' ? 'o1d-toggle-btn-active' : 'o1d-toggle-btn-inactive'}`}
+              >
+                <User size={15} /> For Talent
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Promo Code Input */}
-        <div className="max-w-md mx-auto mb-12">
-          <div className="flex gap-2">
+          {/* Promo */}
+          <div className="o1d-promo-bar">
             <input
               type="text"
               placeholder="Have a promo code?"
               value={promoCode}
-              onChange={(e) => {
-                setPromoCode(e.target.value);
-                setPromoStatus(null);
-              }}
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => { setPromoCode(e.target.value); setPromoStatus(null); }}
+              className="o1d-promo-input"
             />
-            <button
-              onClick={validatePromo}
-              disabled={validatingPromo || !promoCode.trim()}
-              className="px-5 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              {validatingPromo ? 'Checking...' : 'Apply'}
+            <button onClick={validatePromo} disabled={validatingPromo || !promoCode.trim()} className="o1d-promo-apply">
+              {validatingPromo ? 'Checking…' : 'Apply'}
             </button>
           </div>
           {promoStatus && (
-            <p className={`mt-2 text-sm ${promoStatus.valid ? 'text-green-600' : 'text-red-600'}`}>
+            <p style={{ textAlign: 'center', fontSize: '0.82rem', paddingBottom: '1.25rem', color: promoStatus.valid ? '#10B981' : '#F87171' }}>
               {promoStatus.message}
             </p>
           )}
         </div>
+      </div>
 
-        {/* Pricing Cards */}
-        {view === 'employers' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 lg:gap-5">
-            {(Object.entries(EMPLOYER_TIERS) as [EmployerTier, typeof EMPLOYER_TIERS[EmployerTier]][]).map(
-              ([key, tier]) => {
+      {/* ── Cards ── */}
+      <div className="o1d-pricing-body">
+        <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+
+          {view === 'employers' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1.25rem' }}>
+              {(Object.entries(EMPLOYER_TIERS) as [EmployerTier, typeof EMPLOYER_TIERS[EmployerTier]][]).map(([key, tier]) => {
+                const isFeatured = key === employerFeatured;
+                const isFree = key === 'free';
                 const features = EMPLOYER_FEATURES[key as keyof typeof EMPLOYER_FEATURES];
                 return (
-                  <div
-                    key={key}
-                    className={`relative flex flex-col bg-white rounded-2xl border-2 transition-all duration-200 ${
-                      key === 'growth'
-                        ? 'border-blue-600 shadow-xl shadow-blue-100 scale-[1.02] z-10'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'
-                    }`}
-                  >
-                    {/* Popular Badge */}
-                    {key === 'growth' && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                        <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1 shadow-lg">
-                          <Sparkles className="w-3.5 h-3.5" /> Popular
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Card Header */}
-                    <div className={`p-6 ${key === 'growth' ? 'pt-8' : ''}`}>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{tier.name}</h3>
-
-                      {/* Price */}
-                      <div className="mb-4">
-                        {promoStatus?.valid && promoStatus.promo?.discountPercent && tier.price > 0 ? (
-                          <>
-                            <div className="flex items-baseline">
-                              <span className="text-lg text-green-500">$</span>
-                              <span className="text-4xl font-bold text-green-600">
-                                {Math.round(tier.price * (1 - promoStatus.promo.discountPercent / 100))}
-                              </span>
-                              <span className="text-gray-500 ml-1">/mo</span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-sm text-gray-400 line-through">${tier.price}/mo</span>
-                              <span className="text-xs font-medium bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
-                                {promoStatus.promo.discountPercent}% OFF
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex items-baseline">
-                            <span className="text-lg text-gray-500">$</span>
-                            <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
-                            <span className="text-gray-500 ml-1">/mo</span>
-                          </div>
-                        )}
-                        {tier.setupFee > 0 && (
-                          <p className="text-sm text-gray-500 mt-1">+ ${tier.setupFee} one-time setup</p>
-                        )}
-                        {promoStatus?.valid && promoStatus.promo?.trialDays && tier.price > 0 && (
-                          <p className="text-xs font-medium text-blue-600 mt-1">
-                            {promoStatus.promo.trialDays}-day free trial
-                          </p>
-                        )}
-                        {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade') && tier.price > 0 && (
-                          <p className="text-xs font-medium text-green-600 mt-1 flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3" />
-                            No payment required
-                          </p>
-                        )}
-                      </div>
+                  <div key={key} className={`o1d-price-card${isFeatured ? ' o1d-price-card-featured' : ''}`}>
+                    {isFeatured && <div className="o1d-popular-badge"><Sparkles size={10} /> Popular</div>}
+                    <div className="o1d-price-header" style={{ paddingTop: isFeatured ? '2.25rem' : undefined }}>
+                      <p className="o1d-price-name">{tier.name}</p>
+                      <PriceDisplay tierPrice={tier.price} setupFee={tier.setupFee} />
+                      <PromoExtras tierPrice={tier.price} />
                     </div>
-
-                    {/* Divider */}
-                    <div className="px-6">
-                      <div className="border-t border-gray-100" />
+                    <div className="o1d-price-divider" />
+                    <div className="o1d-price-features">
+                      <p className="o1d-features-label">What&apos;s included</p>
+                      <FeatureList features={features} />
                     </div>
-
-                    {/* Features List */}
-                    <div className="p-6 pt-4 flex-1">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                        What&apos;s included
-                      </p>
-                      <ul className="space-y-3">
-                        {features?.map((feature, i) => (
-                          <li key={i} className="flex items-start gap-3">
-                            {feature.included ? (
-                              <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <Check className="w-3 h-3 text-green-600" />
-                              </div>
-                            ) : (
-                              <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <X className="w-3 h-3 text-gray-400" />
-                              </div>
-                            )}
-                            <span className={`text-sm ${feature.included ? 'text-gray-700' : 'text-gray-400'}`}>
-                              {feature.text}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Button at Bottom */}
-                    <div className="p-6 pt-0">
-                      {key === 'free' ? (
-                        <Link
-                          href="/signup?type=employer"
-                          className="block w-full text-center py-3 px-4 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-semibold transition-all"
-                        >
-                          Get Started Free
-                        </Link>
-                      ) : (
-                        <button
-                          onClick={() => handleSubscribe(key)}
-                          disabled={subscribing !== null}
-                          className={`w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed ${
-                            key === 'growth'
-                              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200'
-                              : 'bg-gray-900 text-white hover:bg-gray-800'
-                          }`}
-                        >
-                          {subscribing === key ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade')
-                                ? (promoStatus.promo?.type === 'trial' ? 'Start Free Trial' : 'Apply Promo')
-                                : 'Subscribe'}{' '}
-                              <ArrowRight className="w-4 h-4" />
-                            </>
-                          )}
-                        </button>
-                      )}
+                    <div className="o1d-price-btn-wrap">
+                      {isFree
+                        ? <Link href="/signup?type=employer" className="o1d-price-btn-free">Get Started Free</Link>
+                        : <SubscribeBtn tierKey={key} isFeatured={isFeatured} />}
                     </div>
                   </div>
                 );
-              }
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 max-w-5xl mx-auto">
-            {(Object.entries(TALENT_TIERS) as [TalentTier, typeof TALENT_TIERS[TalentTier]][]).map(
-              ([key, tier]) => {
+              })}
+            </div>
+          )}
+
+          {view === 'talent' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem', maxWidth: 900, margin: '0 auto' }}>
+              {(Object.entries(TALENT_TIERS) as [TalentTier, typeof TALENT_TIERS[TalentTier]][]).map(([key, tier]) => {
+                const isFeatured = key === talentFeatured;
+                const isFree = key === 'profile_only';
                 const features = TALENT_FEATURES[key as keyof typeof TALENT_FEATURES];
                 return (
-                  <div
-                    key={key}
-                    className={`relative flex flex-col bg-white rounded-2xl border-2 transition-all duration-200 ${
-                      key === 'starter'
-                        ? 'border-blue-600 shadow-xl shadow-blue-100 scale-[1.02] z-10'
-                        : 'border-gray-200 hover:border-gray-300 hover:shadow-lg'
-                    }`}
-                  >
-                    {/* Most Popular Badge */}
-                    {key === 'starter' && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                        <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full flex items-center gap-1 shadow-lg">
-                          <Sparkles className="w-3.5 h-3.5" /> Most Popular
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Card Header */}
-                    <div className={`p-6 ${key === 'starter' ? 'pt-8' : ''}`}>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{tier.name}</h3>
-
-                      {/* Price */}
-                      <div className="mb-4">
-                        {promoStatus?.valid && promoStatus.promo?.discountPercent && tier.price > 0 ? (
-                          <>
-                            <div className="flex items-baseline">
-                              <span className="text-lg text-green-500">$</span>
-                              <span className="text-4xl font-bold text-green-600">
-                                {Math.round(tier.price * (1 - promoStatus.promo.discountPercent / 100))}
-                              </span>
-                              <span className="text-gray-500 ml-1">/mo</span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-sm text-gray-400 line-through">${tier.price}/mo</span>
-                              <span className="text-xs font-medium bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
-                                {promoStatus.promo.discountPercent}% OFF
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex items-baseline">
-                            <span className="text-lg text-gray-500">$</span>
-                            <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
-                            <span className="text-gray-500 ml-1">/mo</span>
-                          </div>
-                        )}
-                        {promoStatus?.valid && promoStatus.promo?.trialDays && tier.price > 0 && (
-                          <p className="text-xs font-medium text-blue-600 mt-1">
-                            {promoStatus.promo.trialDays}-day free trial
-                          </p>
-                        )}
-                        {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade') && tier.price > 0 && (
-                          <p className="text-xs font-medium text-green-600 mt-1 flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3" />
-                            No payment required
-                          </p>
-                        )}
-                      </div>
+                  <div key={key} className={`o1d-price-card${isFeatured ? ' o1d-price-card-featured' : ''}`}>
+                    {isFeatured && <div className="o1d-popular-badge"><Sparkles size={10} /> Most Popular</div>}
+                    <div className="o1d-price-header" style={{ paddingTop: isFeatured ? '2.25rem' : undefined }}>
+                      <p className="o1d-price-name">{tier.name}</p>
+                      <PriceDisplay tierPrice={tier.price} setupFee={(tier as any).setupFee ?? 0} />
+                      <PromoExtras tierPrice={tier.price} />
                     </div>
-
-                    {/* Divider */}
-                    <div className="px-6">
-                      <div className="border-t border-gray-100" />
+                    <div className="o1d-price-divider" />
+                    <div className="o1d-price-features">
+                      <p className="o1d-features-label">What&apos;s included</p>
+                      <FeatureList features={features} />
                     </div>
-
-                    {/* Features List */}
-                    <div className="p-6 pt-4 flex-1">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                        What&apos;s included
-                      </p>
-                      <ul className="space-y-3">
-                        {features?.map((feature, i) => (
-                          <li key={i} className="flex items-start gap-3">
-                            {feature.included ? (
-                              <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <Check className="w-3 h-3 text-green-600" />
-                              </div>
-                            ) : (
-                              <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <X className="w-3 h-3 text-gray-400" />
-                              </div>
-                            )}
-                            <span className={`text-sm ${feature.included ? 'text-gray-700' : 'text-gray-400'}`}>
-                              {feature.text}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Button at Bottom */}
-                    <div className="p-6 pt-0">
-                      {key === 'profile_only' ? (
-                        <Link
-                          href="/signup?type=talent"
-                          className="block w-full text-center py-3 px-4 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-semibold transition-all"
-                        >
-                          Create Free Profile
-                        </Link>
-                      ) : (
-                        <button
-                          onClick={() => handleSubscribe(key)}
-                          disabled={subscribing !== null}
-                          className={`w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed ${
-                            key === 'starter'
-                              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200'
-                              : 'bg-gray-900 text-white hover:bg-gray-800'
-                          }`}
-                        >
-                          {subscribing === key ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              Processing...
-                            </>
-                          ) : (
-                            <>
-                              {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade')
-                                ? (promoStatus.promo?.type === 'trial' ? 'Start Free Trial' : 'Apply Promo')
-                                : 'Subscribe'}{' '}
-                              <ArrowRight className="w-4 h-4" />
-                            </>
-                          )}
-                        </button>
-                      )}
+                    <div className="o1d-price-btn-wrap">
+                      {isFree
+                        ? <Link href="/signup?type=talent" className="o1d-price-btn-free">Create Free Profile</Link>
+                        : <SubscribeBtn tierKey={key} isFeatured={isFeatured} />}
                     </div>
                   </div>
                 );
-              }
-            )}
-          </div>
-        )}
+              })}
+            </div>
+          )}
 
-        {/* Comparison Note */}
-        <div className="mt-12 text-center">
-          <p className="text-gray-500 text-sm">
+          <p className="o1d-pricing-note" style={{ marginTop: '2.5rem' }}>
             All plans include secure data encryption, 99.9% uptime SLA, and access to our knowledge base.
           </p>
         </div>
 
-        {/* FAQ Section */}
-        <div className="mt-20 max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
-            Frequently Asked Questions
-          </h2>
-
-          <div className="space-y-4">
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-2">Can I change my plan later?</h3>
-              <p className="text-gray-600">
-                Yes! You can upgrade or downgrade your plan at any time. Changes take effect
-                immediately, and we&apos;ll prorate your billing automatically.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-2">What are interest letters?</h3>
-              <p className="text-gray-600">
-                Interest letters are messages employers send to O-1 visa candidates expressing
-                interest in sponsoring them. They&apos;re a key part of the O-1 visa application process.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-2">What does the dedicated account manager do?</h3>
-              <p className="text-gray-600">
-                With the Active Match plan ($500/mo), your dedicated account manager helps review your O-1 evidence,
-                assists with job applications, handles interest letter responses, and provides personalized guidance
-                throughout your visa journey.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-2">Do you offer refunds?</h3>
-              <p className="text-gray-600">
-                Yes, we offer a 14-day money-back guarantee. If you&apos;re not satisfied with your plan,
-                contact our support team within 14 days of purchase for a full refund.
-              </p>
-            </div>
+        {/* FAQ */}
+        <div style={{ maxWidth: 680, margin: '4.5rem auto 0' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <span className="o1d-section-tag">Got questions?</span>
+            <h2 className="o1d-section-title" style={{ color: '#0B1D35', marginTop: '0.5rem' }}>Frequently Asked Questions</h2>
           </div>
+          {FAQ_ITEMS.map(({ q, a }) => (
+            <div key={q} className="o1d-faq-card">
+              <p className="o1d-faq-q">{q}</p>
+              <p className="o1d-faq-a">{a}</p>
+            </div>
+          ))}
         </div>
-      </main>
+      </div>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            {/* Left - Logo */}
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">O1</span>
-              </div>
-              <span className="font-semibold text-white">O1DMatch</span>
+      <footer className="o1d-footer">
+        <div className="o1d-footer-inner">
+          <div className="o1d-footer-grid">
+            <div>
+              <span className="o1d-footer-logo">O1DMatch</span>
+              <p className="o1d-footer-tagline">
+                Connecting exceptional talent with opportunities for O-1 visa sponsorship.
+              </p>
             </div>
-
-            {/* Center - Tagline */}
-            <p className="text-gray-400 text-sm text-center">
-              Connecting exceptional talent with opportunities for O-1 visa sponsorship.
-            </p>
-
-            {/* Right - Copyright */}
-            <p className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} O1DMatch. All rights reserved.
-            </p>
+            <div className="o1d-footer-col">
+              <h4>Platform</h4>
+              <Link href="/how-it-works/candidates">For Candidates</Link>
+              <Link href="/how-it-works/employers">For Employers</Link>
+              <Link href="/pricing">Pricing</Link>
+              <Link href="/blog">Blog</Link>
+            </div>
+            <div className="o1d-footer-col">
+              <h4>Company</h4>
+              <Link href="/about">About</Link>
+              <Link href="/contact">Contact</Link>
+              <Link href="/careers">Careers</Link>
+            </div>
+            <div className="o1d-footer-col">
+              <h4>Legal</h4>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+            </div>
+          </div>
+          <div className="o1d-footer-bottom">
+            <span>© {new Date().getFullYear()} O1DMatch. All rights reserved.</span>
+            <span>Built by a licensed immigration attorney.</span>
           </div>
         </div>
       </footer>
@@ -736,16 +523,12 @@ function PricingPageContent() {
   );
 }
 
-// Wrap in Suspense for useSearchParams
 export default function PricingPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="o1d-page" style={{ minHeight: '100vh' }}>
         <Navbar />
-        <div className="pt-24" />
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
+        <div className="o1d-loading-wrap"><div className="o1d-spinner" /></div>
       </div>
     }>
       <PricingPageContent />

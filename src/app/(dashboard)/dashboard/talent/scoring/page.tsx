@@ -23,6 +23,7 @@ import {
   ShieldAlert,
   TrendingUp,
   Award,
+  Zap,
 } from "lucide-react";
 import PaidTierGate from '@/components/PaidTierGate';
 
@@ -357,6 +358,261 @@ const ScoreDisplay = ({ result, fromDB }: { result: ScoringResult | ScoringSessi
 };
 
 /* ================================================================== */
+/*  Re-score O-1 Modal                                                */
+/* ================================================================== */
+type RescoreO1Step = "idle" | "confirm" | "running" | "polling" | "done" | "error";
+
+const O1_STEPS = [
+  { label: "Create Session",   icon: "🗂️" },
+  { label: "Upload Documents", icon: "📄" },
+  { label: "Trigger Scoring",  icon: "⚡" },
+  { label: "AI Analysis",      icon: "🤖" },
+  { label: "Complete",         icon: "✅" },
+];
+
+const RescoreO1Modal = ({
+  open,
+  step,
+  pollProgress,
+  errorMsg,
+  newScore,
+  creditsRemaining,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  step: RescoreO1Step;
+  pollProgress: number;
+  errorMsg: string;
+  newScore: number | null;
+  creditsRemaining: number;
+  onConfirm: () => void;
+  onClose: () => void;
+}) => {
+  if (!open) return null;
+
+  const activeIdx =
+    step === "running" ? 1
+    : step === "polling" ? 3
+    : step === "done"    ? 5   // all done
+    : -1;
+
+  const isWorking = step === "running" || step === "polling";
+  const canClose  = step === "confirm" || step === "done" || step === "error";
+
+  return (
+    /* Backdrop */
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={canClose ? onClose : undefined}>
+      {/* Blur overlay */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+      {/* Modal card */}
+      <div
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── Gradient header ── */}
+        <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 px-6 pt-8 pb-10">
+          {/* Close button — only when closeable */}
+          {canClose && (
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+            >
+              <XCircle className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Central icon area */}
+          <div className="flex flex-col items-center text-center gap-3">
+            <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center">
+              {step === "done" ? (
+                <CheckCircle className="w-8 h-8 text-white" />
+              ) : step === "error" ? (
+                <XCircle className="w-8 h-8 text-white" />
+              ) : isWorking ? (
+                <Loader2 className="w-8 h-8 text-white animate-spin" />
+              ) : (
+                <Zap className="w-8 h-8 text-white" />
+              )}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                {step === "confirm" && "Re-score My O-1"}
+                {step === "running" && "Preparing Session…"}
+                {step === "polling" && "AI is Scoring…"}
+                {step === "done"    && "Score Updated!"}
+                {step === "error"   && "Scoring Failed"}
+              </h2>
+              <p className="text-blue-100 text-sm mt-1">
+                {step === "confirm" && `${creditsRemaining} credit${creditsRemaining !== 1 ? "s" : ""} remaining`}
+                {step === "running" && "Creating session & uploading your documents"}
+                {step === "polling" && "This usually takes 2–5 minutes"}
+                {step === "done"    && "Your petition has been analysed"}
+                {step === "error"   && "Please review the error and try again"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Wave divider ── */}
+        <div className="-mt-5 relative z-10">
+          <svg viewBox="0 0 400 20" className="w-full fill-white" preserveAspectRatio="none">
+            <path d="M0,20 C100,0 300,0 400,20 Z" />
+          </svg>
+        </div>
+
+        {/* ── Body ── */}
+        <div className="px-6 pb-6 -mt-1 space-y-5">
+
+          {/* ── Confirm state: what happens info + CTA ── */}
+          {step === "confirm" && (
+            <>
+              <div className="space-y-3">
+                {[
+                  { icon: "🗂️", title: "Create scoring session",    desc: "O-1A · Full Petition · your name" },
+                  { icon: "📤", title: "Upload evidence documents",  desc: "All files from your Documents tab" },
+                  { icon: "🤖", title: "Run AI petition analysis",   desc: "USCIS criteria · strengths · RFE risk" },
+                  { icon: "💾", title: "Save & update your O-1 score", desc: "Stored in Scoring History" },
+                ].map(({ icon, title, desc }) => (
+                  <div key={title} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <span className="text-xl leading-none mt-0.5">{icon}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{title}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Credit cost pill */}
+              <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm font-medium text-blue-800">Cost</span>
+                </div>
+                <span className="text-sm font-bold text-blue-700">
+                  1 credit → {Math.max(0, creditsRemaining - 1)} remaining
+                </span>
+              </div>
+
+              {creditsRemaining <= 0 ? (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  No credits remaining. Credits reset at end of month.
+                </div>
+              ) : (
+                <button
+                  onClick={onConfirm}
+                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm hover:from-blue-700 hover:to-indigo-700 flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all"
+                >
+                  <Zap className="w-4 h-4" /> Start Scoring — 1 Credit
+                </button>
+              )}
+              <button onClick={onClose} className="w-full py-2.5 text-sm text-gray-500 hover:text-gray-700">
+                Cancel
+              </button>
+            </>
+          )}
+
+          {/* ── Running / Polling state: stepper + progress ── */}
+          {(step === "running" || step === "polling") && (
+            <>
+              {/* Step progress */}
+              <div className="space-y-2">
+                {O1_STEPS.map((s, i) => {
+                  const isDone   = i < activeIdx;
+                  const isActive = i === activeIdx || (step === "polling" && i === 3);
+                  return (
+                    <div key={i} className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
+                      isActive ? "bg-blue-50 border-blue-200" :
+                      isDone   ? "bg-green-50 border-green-200" :
+                                 "bg-gray-50 border-gray-100 opacity-50"
+                    }`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                        isDone   ? "bg-green-500 text-white" :
+                        isActive ? "bg-blue-600 text-white" :
+                                   "bg-gray-200 text-gray-400"
+                      }`}>
+                        {isDone
+                          ? <CheckCircle className="w-4 h-4" />
+                          : isActive
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium truncate ${isActive ? "text-blue-800" : isDone ? "text-green-800" : "text-gray-400"}`}>
+                          {s.label}
+                        </p>
+                      </div>
+                      {isDone && <span className="text-xs text-green-600 font-medium shrink-0">Done</span>}
+                      {isActive && <span className="text-xs text-blue-600 font-medium shrink-0">In progress</span>}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Poll progress bar (only during polling) */}
+              {step === "polling" && (
+                <div>
+                  <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Analysing your petition…</span>
+                    <span>{pollProgress}%</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-1000"
+                      style={{ width: `${pollProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1.5 text-center">Checking every 5 seconds · Usually 2–5 min</p>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── Done state ── */}
+          {step === "done" && (
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center gap-2 px-5 py-3 bg-green-50 border border-green-200 rounded-full">
+                <Star className="w-5 h-5 text-yellow-500" />
+                <span className="text-2xl font-black text-green-700">{newScore}%</span>
+                <span className="text-sm font-medium text-green-600">New O-1 Score</span>
+              </div>
+              <p className="text-sm text-gray-600">
+                Your score has been saved to Scoring History and your O-1 profile has been updated.
+              </p>
+              <button
+                onClick={onClose}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm hover:from-blue-700 hover:to-indigo-700 shadow-sm transition-all"
+              >
+                View Results in History
+              </button>
+            </div>
+          )}
+
+          {/* ── Error state ── */}
+          {step === "error" && (
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{errorMsg}</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-full py-2.5 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ================================================================== */
 /*  MAIN PAGE                                                          */
 /* ================================================================== */
 export default function ScoringPage() {
@@ -382,6 +638,14 @@ export default function ScoringPage() {
   const [resultFromDB, setResultFromDB] = useState<ScoringSession | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  /* --- Re-score O-1 state --- */
+  const [rescoreO1Step, setRescoreO1Step] = useState<RescoreO1Step>("idle");
+  const [rescoreO1ModalOpen, setRescoreO1ModalOpen] = useState(false);
+  const [rescoreO1PollProgress, setRescoreO1PollProgress] = useState(0);
+  const [rescoreO1Error, setRescoreO1Error] = useState("");
+  const [rescoreO1NewScore, setRescoreO1NewScore] = useState<number | null>(null);
+  const rescoreO1PollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (activeTab === "score") {
@@ -413,6 +677,94 @@ export default function ScoringPage() {
       console.error("Failed to load history:", err);
     } finally {
       setHistoryLoading(false);
+    }
+  };
+
+  /* --- Re-score my O-1 Score: open modal → confirm → full 5-step flow --- */
+  const handleRescoreO1 = () => {
+    if (rescoreO1Step === "running" || rescoreO1Step === "polling") return;
+    setRescoreO1Step("confirm");
+    setRescoreO1Error("");
+    setRescoreO1NewScore(null);
+    setRescoreO1PollProgress(0);
+    setRescoreO1ModalOpen(true);
+  };
+
+  const handleRescoreO1Confirm = async () => {
+    const creditsLeft = credits?.remaining ?? 0;
+    if (creditsLeft <= 0) {
+      setRescoreO1Error("No scoring credits remaining. Credits reset at end of month.");
+      setRescoreO1Step("error");
+      return;
+    }
+
+    setRescoreO1Step("running");
+    setRescoreO1PollProgress(10);
+    setError("");
+
+    try {
+      // Steps 1–3 happen server-side (create session, upload docs, trigger scoring)
+      const res = await fetch("/api/talent/scoring/rescore", { method: "POST" });
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to start re-scoring");
+      }
+
+      // Optimistically update credits
+      if (json.creditsRemaining != null) {
+        setCredits((prev) => prev ? { ...prev, remaining: json.creditsRemaining } : null);
+      }
+
+      const rescoreSessionId: string = json.sessionId;
+      setRescoreO1Step("polling");
+
+      // Step 4: poll for completion
+      let attempts = 0;
+      const maxAttempts = 120;
+
+      const poll = async (): Promise<void> => {
+        attempts++;
+        setRescoreO1PollProgress(Math.min(10 + Math.round((attempts / maxAttempts) * 80), 90));
+
+        try {
+          const pollRes = await fetch(`/api/talent/scoring/rescore?sessionId=${encodeURIComponent(rescoreSessionId)}`);
+          const pollJson = await pollRes.json();
+
+          if (pollJson.completed && pollJson.session?.overall_score != null) {
+            setRescoreO1PollProgress(100);
+            setRescoreO1NewScore(pollJson.session.overall_score);
+            setRescoreO1Step("done");
+            await loadHistory();
+            await loadCredits();
+            setActiveTab("score");
+            return;
+          }
+
+          if (pollJson.status === "failed") throw new Error("Scoring failed. Please try again.");
+          if (attempts >= maxAttempts) throw new Error("Scoring is taking too long. Check back in Scoring History.");
+
+          rescoreO1PollRef.current = setTimeout(poll, 5000);
+        } catch (err: unknown) {
+          setRescoreO1Error(err instanceof Error ? err.message : "Polling error");
+          setRescoreO1Step("error");
+          await loadHistory();
+        }
+      };
+
+      await poll();
+    } catch (err: unknown) {
+      setRescoreO1Error(err instanceof Error ? err.message : "Re-scoring failed");
+      setRescoreO1Step("error");
+    }
+  };
+
+  const handleRescoreO1Close = () => {
+    // Only allow close when not actively working
+    if (rescoreO1Step === "running" || rescoreO1Step === "polling") return;
+    setRescoreO1ModalOpen(false);
+    if (rescoreO1Step === "done") {
+      setRescoreO1Step("idle");
     }
   };
 
@@ -731,11 +1083,43 @@ export default function ScoringPage() {
         <div className="max-w-4xl mx-auto px-4 py-8">
           {/* Header */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Star className="w-6 h-6 text-blue-600" /> USCIS Petition Scoring
-            </h1>
-            <p className="text-gray-500 mt-1">Score your visa petition documents with AI-powered analysis</p>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <Star className="w-6 h-6 text-blue-600" /> USCIS Petition Scoring
+                </h1>
+                <p className="text-gray-500 mt-1">Score your visa petition documents with AI-powered analysis</p>
+              </div>
+              {/* Re-score my O-1 Score button */}
+              <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
+                <button
+                  onClick={handleRescoreO1}
+                  disabled={rescoreO1Step === "running" || rescoreO1Step === "polling"}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm transition-all"
+                >
+                  {(rescoreO1Step === "running" || rescoreO1Step === "polling")
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Scoring in progress…</>
+                    : <><Zap className="w-4 h-4" /> Re-score my O-1 Score</>
+                  }
+                </button>
+                {credits != null && (
+                  <span className="text-xs text-gray-400">{credits.remaining} credit{credits.remaining !== 1 ? "s" : ""} remaining</span>
+                )}
+              </div>
+            </div>
           </div>
+
+          {/* Re-score O-1 modal */}
+          <RescoreO1Modal
+            open={rescoreO1ModalOpen}
+            step={rescoreO1Step}
+            pollProgress={rescoreO1PollProgress}
+            errorMsg={rescoreO1Error}
+            newScore={rescoreO1NewScore}
+            creditsRemaining={credits?.remaining ?? 0}
+            onConfirm={handleRescoreO1Confirm}
+            onClose={handleRescoreO1Close}
+          />
 
           {/* Tabs */}
           <div className="flex border-b border-gray-200 mb-6">

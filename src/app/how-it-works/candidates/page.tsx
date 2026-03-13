@@ -1,507 +1,510 @@
+'use client';
+
 import Link from 'next/link';
-import {
-  ArrowRight,
-  Upload,
-  Brain,
-  Mail,
-  CheckCircle,
-  FileText,
-  Shield,
-  Star,
-  Eye,
-} from 'lucide-react';
-import Navbar from "@/components/Navbar";
+import { Shield, Eye } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import { useO1DAnimations } from '@/hooks/useO1DAnimations';
+import '@/app/theme.css';
 
 export default function HowItWorksCandidatesPage() {
+  useO1DAnimations();
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
+    <div className="o1d-page">
       <Navbar />
 
-      {/* Hero */}
-      <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-6">
-            <Star className="w-4 h-4" />
-            For O-1 Visa Candidates
+      {/* ─── HERO ─── */}
+      <section className="o1d-hero o1d-hero-sm">
+        <div className="o1d-hero-grid" />
+        <div className="o1d-hero-glow-1" />
+        <div className="o1d-hero-glow-2" />
+
+        <div className="o1d-hero-inner o1d-hero-inner-center">
+          <div className="o1d-hero-badge">
+            <div className="o1d-pulse-dot" />
+            <span>For O-1 Visa Candidates</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+
+          <h1 className="o1d-hero-h1">
             How O1DMatch Works
             <br />
-            <span className="text-blue-600">For Candidates</span>
+            <em>For Candidates</em>
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-10">
-            Build your O-1 profile, get matched with employers, and receive USCIS-ready
-            interest letters to support your visa petition.
+
+          <p className="o1d-hero-sub o1d-hero-sub-center">
+            Build your O-1 profile, get matched with employers, and receive
+            USCIS-ready interest letters to support your visa petition.
           </p>
-          <Link
-            href="/signup?role=talent"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
-          >
-            Create Your Free Profile
-            <ArrowRight className="w-5 h-5" />
-          </Link>
-        </div>
-      </section>
 
-      {/* Step 1: Upload Evidence */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-4">
-                Step 1
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Upload Your Evidence
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                Start by uploading documents that prove your extraordinary abilities. Our AI
-                automatically classifies each document across the 8 O-1 visa criteria.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'Awards and recognition certificates',
-                  'Published articles and media coverage',
-                  'Patents and original contributions',
-                  'Membership certificates',
-                  'Employment contracts showing high salary',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Visual mockup */}
-            <div className="bg-gray-50 rounded-2xl p-6 shadow-lg">
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  <span className="ml-2 text-sm text-gray-600">Evidence Manager</span>
-                </div>
-                <div className="p-6">
-                  <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center bg-blue-50/50">
-                    <Upload className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-                    <p className="font-medium text-gray-900">Drop files here or click to upload</p>
-                    <p className="text-sm text-gray-500 mt-1">PDF, DOC, JPG up to 10MB</p>
-                  </div>
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <FileText className="w-8 h-8 text-blue-600" />
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-sm">award_certificate.pdf</p>
-                        <p className="text-xs text-green-600">Classified: Awards</p>
-                      </div>
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <FileText className="w-8 h-8 text-blue-600" />
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-sm">forbes_article.pdf</p>
-                        <p className="text-xs text-green-600">Classified: Published Material</p>
-                      </div>
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Step 2: AI Classification */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Visual mockup */}
-            <div className="order-2 lg:order-1 bg-white rounded-2xl p-6 shadow-lg">
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  <span className="ml-2 text-sm text-gray-600">AI Analysis</span>
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                      <Brain className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">Document Analyzed</p>
-                      <p className="text-sm text-gray-600">AI has classified your evidence</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-green-800">Awards</span>
-                        <span className="text-sm text-green-600">95% confidence</span>
-                      </div>
-                      <div className="mt-2 h-2 bg-green-200 rounded-full">
-                        <div className="h-2 bg-green-500 rounded-full" style={{ width: '95%' }}></div>
-                      </div>
-                    </div>
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-blue-800">Original Contributions</span>
-                        <span className="text-sm text-blue-600">78% confidence</span>
-                      </div>
-                      <div className="mt-2 h-2 bg-blue-200 rounded-full">
-                        <div className="h-2 bg-blue-500 rounded-full" style={{ width: '78%' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
-                Step 2
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                AI Classifies Your Evidence
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                Our AI analyzes each document and automatically classifies it against the
-                8 USCIS O-1 criteria. No more guessing which category your evidence belongs to.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'Instant classification with confidence scores',
-                  'Suggestions for additional evidence needed',
-                  'Automatic extraction of key achievements',
-                  'Multi-criteria matching for versatile documents',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Step 3: Track Your Score */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium mb-4">
-                Step 3
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Track Your O-1 Readiness Score
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                See your real-time O-1 readiness score based on how well your evidence covers
-                the required criteria. Know exactly where you stand and what you need to improve.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'Visual breakdown of all 8 criteria',
-                  "See which criteria you've met (need 3+)",
-                  'Recommendations to improve your score',
-                  'Compare your profile to successful applicants',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Visual mockup - Dashboard */}
-            <div className="bg-gray-50 rounded-2xl p-6 shadow-lg">
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  <span className="ml-2 text-sm text-gray-600">Your Dashboard</span>
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center gap-6 mb-6">
-                    {/* Score Circle */}
-                    <div className="relative w-28 h-28">
-                      <svg className="w-28 h-28 transform -rotate-90">
-                        <circle cx="56" cy="56" r="48" stroke="#E5E7EB" strokeWidth="8" fill="none" />
-                        <circle cx="56" cy="56" r="48" stroke="#22C55E" strokeWidth="8" fill="none"
-                          strokeDasharray="301.6" strokeDashoffset="75.4" strokeLinecap="round" />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                          <span className="text-3xl font-bold text-gray-900">75</span>
-                          <span className="text-sm text-gray-500 block">Score</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-green-600 text-lg">Strong Profile</p>
-                      <p className="text-sm text-gray-600">5 of 8 criteria met</p>
-                    </div>
-                  </div>
-
-                  {/* Criteria Grid */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { name: 'Awards', met: true },
-                      { name: 'Memberships', met: true },
-                      { name: 'Published Material', met: true },
-                      { name: 'Judging', met: false },
-                      { name: 'Original Contributions', met: true },
-                      { name: 'Scholarly Articles', met: false },
-                      { name: 'Critical Role', met: true },
-                      { name: 'High Salary', met: false },
-                    ].map((criterion) => (
-                      <div key={criterion.name} className={`flex items-center gap-2 p-2 rounded-lg ${criterion.met ? 'bg-green-50' : 'bg-gray-50'}`}>
-                        <CheckCircle className={`w-4 h-4 ${criterion.met ? 'text-green-500' : 'text-gray-300'}`} />
-                        <span className={`text-sm ${criterion.met ? 'text-green-800' : 'text-gray-500'}`}>{criterion.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Step 4: Get Matched */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Visual mockup */}
-            <div className="order-2 lg:order-1 bg-white rounded-2xl p-6 shadow-lg">
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  <span className="ml-2 text-sm text-gray-600">Job Matches</span>
-                </div>
-                <div className="p-6 space-y-4">
-                  {[
-                    { company: 'TechCorp', role: 'Senior AI Engineer', score: 85, match: 'Excellent Match' },
-                    { company: 'StartupXYZ', role: 'Lead Data Scientist', score: 78, match: 'Great Match' },
-                    { company: 'Innovation Inc', role: 'Research Director', score: 72, match: 'Good Match' },
-                  ].map((job) => (
-                    <div key={job.company} className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50/50 transition-colors">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="font-semibold text-gray-900">{job.role}</p>
-                          <p className="text-sm text-gray-600">{job.company}</p>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-lg font-bold text-green-600">{job.score}%</span>
-                          <p className="text-xs text-green-600">{job.match}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">O-1 Sponsor</span>
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">Remote OK</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium mb-4">
-                Step 4
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Get Matched with Jobs
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                Browse job listings from employers actively seeking O-1 candidates. See your
-                match score for each position based on your profile and their requirements.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'Jobs filtered to match your O-1 score',
-                  'Companies verified and ready to sponsor',
-                  'Apply with one click',
-                  'Track all your applications',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Step 5: Receive Letters */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
-                Step 5
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Receive Interest Letters
-              </h2>
-              <p className="text-lg text-gray-600 mb-6">
-                Employers who are interested in your profile can send you USCIS-compliant
-                interest letters. These letters are crucial evidence for your O-1 petition.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'USCIS-ready letter format',
-                  'Digital signatures from verified employers',
-                  'Download as PDF for your petition',
-                  'Your identity protected until you accept',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Visual mockup */}
-            <div className="bg-gray-50 rounded-2xl p-6 shadow-lg">
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  <span className="ml-2 text-sm text-gray-600">Interest Letters</span>
-                </div>
-                <div className="p-6">
-                  <div className="border border-green-200 bg-green-50 rounded-lg p-4 mb-4">
-                    <div className="flex items-start gap-3">
-                      <Mail className="w-6 h-6 text-green-600 flex-shrink-0" />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-semibold text-gray-900">New Interest Letter!</p>
-                          <span className="text-xs text-gray-500">2 hours ago</span>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">TechCorp wants to sponsor your O-1 visa</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white border border-gray-200 rounded-lg p-6">
-                    <div className="text-center border-b border-gray-200 pb-4 mb-4">
-                      <p className="font-bold text-gray-900">INTEREST LETTER</p>
-                      <p className="text-sm text-gray-500">For O-1 Visa Petition</p>
-                    </div>
-                    <div className="space-y-3 text-sm text-gray-600">
-                      <p>To Whom It May Concern,</p>
-                      <p className="text-gray-400">TechCorp expresses genuine interest in employing the beneficiary as a Senior AI Engineer...</p>
-                      <p className="text-gray-400">The candidate&apos;s extraordinary abilities in...</p>
-                    </div>
-                    <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900">John Smith</p>
-                        <p className="text-xs text-gray-500">CEO, TechCorp</p>
-                      </div>
-                      <button
-                        className="px-4 py-2 bg-blue-400 text-white/80 rounded-lg text-sm cursor-not-allowed opacity-75"
-                        disabled
-                        title="Demo button - not functional"
-                      >
-                        Download PDF
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Privacy Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-blue-600">
-        <div className="max-w-4xl mx-auto text-center text-white">
-          <Shield className="w-12 h-12 mx-auto mb-4 opacity-90" />
-          <h2 className="text-2xl font-bold mb-4">Your Privacy is Protected</h2>
-          <p className="text-blue-100 text-lg mb-6">
-            Your personal information (name, contact details, photo) is hidden from employers
-            until you explicitly accept their interest letter. Employers only see your
-            anonymized candidate ID, qualifications, and O-1 score.
-          </p>
-          <div className="flex justify-center gap-8">
-            <div className="flex items-center gap-2">
-              <Eye className="w-5 h-5" />
-              <span>Anonymized Profiles</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              <span>You Control Access</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            Ready to Start Your O-1 Journey?
-          </h2>
-          <p className="text-lg text-gray-600 mb-10">
-            Join thousands of extraordinary talents who are building their O-1 profiles
-            and connecting with U.S. employers.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/signup?role=talent"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
-            >
-              Create Free Account
-              <ArrowRight className="w-5 h-5" />
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/signup?role=talent" className="o1d-btn-primary">
+              Create Your Free Profile →
             </Link>
-            <Link
-              href="/how-it-works/employers"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-gray-200 text-gray-900 font-medium rounded-xl hover:border-gray-300 transition-colors"
-            >
+            <Link href="/how-it-works/employers" className="o1d-btn-secondary">
               I&apos;m an Employer
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            {/* Left - Logo */}
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">O1</span>
+      {/* ─── STEP 1: Upload Evidence ─── */}
+      <section className="o1d-section o1d-section-white">
+        <div className="o1d-step-grid o1d-fade-up">
+          {/* Text */}
+          <div>
+            <div className="o1d-step-badge">Step 1</div>
+            <h2 className="o1d-step-heading">Upload Your Evidence</h2>
+            <p className="o1d-step-desc">
+              Start by uploading documents that prove your extraordinary abilities. Our AI
+              automatically classifies each document across the 8 O-1 visa criteria.
+            </p>
+            <ul className="o1d-checklist">
+              {[
+                'Awards and recognition certificates',
+                'Published articles and media coverage',
+                'Patents and original contributions',
+                'Membership certificates',
+                'Employment contracts showing high salary',
+              ].map((item) => (
+                <li key={item}>
+                  <span className="o1d-check">✓</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Mockup */}
+          <div className="o1d-mock-wrap">
+            <div className="o1d-mock-window">
+              <div className="o1d-mock-chrome">
+                <div className="o1d-mock-dot o1d-mock-dot-r" />
+                <div className="o1d-mock-dot o1d-mock-dot-y" />
+                <div className="o1d-mock-dot o1d-mock-dot-g" />
+                <span className="o1d-mock-title">Evidence Manager</span>
               </div>
-              <span className="font-semibold text-white">O1DMatch</span>
+              <div className="o1d-mock-body">
+                <div style={{
+                  border: '2px dashed rgba(212,168,75,0.4)',
+                  borderRadius: '12px', padding: '2rem',
+                  textAlign: 'center', background: 'rgba(212,168,75,0.04)',
+                  marginBottom: '1rem',
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📤</div>
+                  <p style={{ fontWeight: 600, color: '#0B1D35', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+                    Drop files here or click to upload
+                  </p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748B' }}>PDF, DOC, JPG up to 10MB</p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {[
+                    { name: 'award_certificate.pdf', tag: 'Awards' },
+                    { name: 'forbes_article.pdf', tag: 'Published Material' },
+                  ].map((f) => (
+                    <div key={f.name} style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem',
+                      padding: '0.75rem', background: '#FBF8F1', borderRadius: '8px',
+                      border: '1px solid #E8E0D4',
+                    }}>
+                      <span style={{ fontSize: '1.3rem' }}>📄</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontWeight: 600, fontSize: '0.82rem', color: '#0B1D35' }}>{f.name}</p>
+                        <p style={{ fontSize: '0.72rem', color: '#10B981' }}>Classified: {f.tag}</p>
+                      </div>
+                      <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Center - Tagline */}
-            <p className="text-gray-400 text-sm text-center">
-              Connecting exceptional talent with opportunities for O-1 visa sponsorship.
-            </p>
+      {/* ─── STEP 2: AI Classification ─── */}
+      <section className="o1d-section o1d-section-cream">
+        <div className="o1d-step-grid o1d-fade-up">
+          {/* Mockup (left on desktop) */}
+          <div className="o1d-mock-wrap" style={{ order: 1 }}>
+            <div className="o1d-mock-window">
+              <div className="o1d-mock-chrome">
+                <div className="o1d-mock-dot o1d-mock-dot-r" />
+                <div className="o1d-mock-dot o1d-mock-dot-y" />
+                <div className="o1d-mock-dot o1d-mock-dot-g" />
+                <span className="o1d-mock-title">AI Analysis</span>
+              </div>
+              <div className="o1d-mock-body">
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem',
+                  padding: '0.75rem', background: '#FBF8F1', borderRadius: '10px',
+                }}>
+                  <div style={{
+                    width: '48px', height: '48px', borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #0B1D35, #D4A84B)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.3rem', flexShrink: 0,
+                  }}>🧠</div>
+                  <div>
+                    <p style={{ fontWeight: 600, color: '#0B1D35', fontSize: '0.85rem' }}>Document Analyzed</p>
+                    <p style={{ fontSize: '0.75rem', color: '#64748B' }}>AI has classified your evidence</p>
+                  </div>
+                </div>
+                {[
+                  { label: 'Awards', pct: 95, color: '#10B981', bg: 'rgba(16,185,129,0.08)' },
+                  { label: 'Original Contributions', pct: 78, color: '#D4A84B', bg: 'rgba(212,168,75,0.08)' },
+                  { label: 'Published Material', pct: 62, color: '#3B82F6', bg: 'rgba(59,130,246,0.08)' },
+                ].map((item) => (
+                  <div key={item.label} style={{
+                    padding: '0.75rem', borderRadius: '8px',
+                    background: item.bg, marginBottom: '0.5rem',
+                    border: `1px solid ${item.color}22`,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#0B1D35' }}>{item.label}</span>
+                      <span style={{ fontSize: '0.75rem', color: item.color, fontWeight: 600 }}>{item.pct}%</span>
+                    </div>
+                    <div style={{ height: '4px', background: '#E2D9C8', borderRadius: '100px' }}>
+                      <div style={{ height: '4px', width: `${item.pct}%`, background: item.color, borderRadius: '100px' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
-            {/* Right - Copyright */}
-            <p className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} O1DMatch. All rights reserved.
+          {/* Text (right on desktop) */}
+          <div style={{ order: 2 }}>
+            <div className="o1d-step-badge">Step 2</div>
+            <h2 className="o1d-step-heading">AI Classifies Your Evidence</h2>
+            <p className="o1d-step-desc">
+              Our AI analyzes each document and automatically classifies it against the
+              8 USCIS O-1 criteria. No more guessing which category your evidence belongs to.
             </p>
+            <ul className="o1d-checklist">
+              {[
+                'Instant classification with confidence scores',
+                'Suggestions for additional evidence needed',
+                'Automatic extraction of key achievements',
+                'Multi-criteria matching for versatile documents',
+              ].map((item) => (
+                <li key={item}><span className="o1d-check">✓</span>{item}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── STEP 3: Track Your Score ─── */}
+      <section className="o1d-section o1d-section-white">
+        <div className="o1d-step-grid o1d-fade-up">
+          {/* Text */}
+          <div>
+            <div className="o1d-step-badge">Step 3</div>
+            <h2 className="o1d-step-heading">Track Your O-1 Readiness Score</h2>
+            <p className="o1d-step-desc">
+              See your real-time O-1 readiness score based on how well your evidence covers
+              the required criteria. Know exactly where you stand and what to improve.
+            </p>
+            <ul className="o1d-checklist">
+              {[
+                'Visual breakdown of all 8 criteria',
+                "See which criteria you've met (need 3+)",
+                'Recommendations to improve your score',
+                'Compare your profile to successful applicants',
+              ].map((item) => (
+                <li key={item}><span className="o1d-check">✓</span>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Mockup — Dashboard */}
+          <div className="o1d-mock-wrap">
+            <div className="o1d-mock-window">
+              <div className="o1d-mock-chrome">
+                <div className="o1d-mock-dot o1d-mock-dot-r" />
+                <div className="o1d-mock-dot o1d-mock-dot-y" />
+                <div className="o1d-mock-dot o1d-mock-dot-g" />
+                <span className="o1d-mock-title">Your Dashboard</span>
+              </div>
+              <div className="o1d-mock-body">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.25rem' }}>
+                  {/* Score ring */}
+                  <div style={{ position: 'relative', width: 96, height: 96, flexShrink: 0 }}>
+                    <svg width="96" height="96" style={{ transform: 'rotate(-90deg)' }}>
+                      <circle cx="48" cy="48" r="40" stroke="#E8E0D4" strokeWidth="7" fill="none" />
+                      <circle cx="48" cy="48" r="40" stroke="#D4A84B" strokeWidth="7" fill="none"
+                        strokeDasharray="251.3" strokeDashoffset="62.8" strokeLinecap="round" />
+                    </svg>
+                    <div style={{
+                      position: 'absolute', inset: 0, display: 'flex',
+                      flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700, color: '#0B1D35' }}>75</span>
+                      <span style={{ fontSize: '0.65rem', color: '#64748B' }}>Score</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p style={{ fontWeight: 700, color: '#10B981', fontSize: '0.95rem' }}>Strong Profile</p>
+                    <p style={{ fontSize: '0.8rem', color: '#64748B' }}>5 of 8 criteria met</p>
+                  </div>
+                </div>
+                {/* Criteria grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
+                  {[
+                    { name: 'Awards', met: true },
+                    { name: 'Memberships', met: true },
+                    { name: 'Published Material', met: true },
+                    { name: 'Judging', met: false },
+                    { name: 'Original Contributions', met: true },
+                    { name: 'Scholarly Articles', met: false },
+                    { name: 'Critical Role', met: true },
+                    { name: 'High Salary', met: false },
+                  ].map((c) => (
+                    <div key={c.name} style={{
+                      display: 'flex', alignItems: 'center', gap: '0.4rem',
+                      padding: '0.4rem 0.6rem', borderRadius: '6px',
+                      background: c.met ? 'rgba(16,185,129,0.08)' : '#FBF8F1',
+                      border: `1px solid ${c.met ? 'rgba(16,185,129,0.2)' : '#E8E0D4'}`,
+                    }}>
+                      <span style={{ fontSize: '0.7rem', color: c.met ? '#10B981' : '#CBD5E1' }}>✓</span>
+                      <span style={{ fontSize: '0.72rem', color: c.met ? '#065F46' : '#94A3B8', fontWeight: c.met ? 600 : 400 }}>
+                        {c.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── STEP 4: Get Matched ─── */}
+      <section className="o1d-section o1d-section-cream">
+        <div className="o1d-step-grid o1d-fade-up">
+          {/* Mockup (left) */}
+          <div className="o1d-mock-wrap" style={{ order: 1 }}>
+            <div className="o1d-mock-window">
+              <div className="o1d-mock-chrome">
+                <div className="o1d-mock-dot o1d-mock-dot-r" />
+                <div className="o1d-mock-dot o1d-mock-dot-y" />
+                <div className="o1d-mock-dot o1d-mock-dot-g" />
+                <span className="o1d-mock-title">Job Matches</span>
+              </div>
+              <div className="o1d-mock-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {[
+                  { company: 'TechCorp', role: 'Senior AI Engineer', score: 85, label: 'Excellent' },
+                  { company: 'StartupXYZ', role: 'Lead Data Scientist', score: 78, label: 'Great' },
+                  { company: 'Innovation Inc', role: 'Research Director', score: 72, label: 'Good' },
+                ].map((job) => (
+                  <div key={job.company} style={{
+                    padding: '0.9rem', borderRadius: '10px',
+                    border: '1px solid #E8E0D4', background: '#FDFCFA',
+                    transition: 'border-color 0.2s',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                      <div>
+                        <p style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0B1D35' }}>{job.role}</p>
+                        <p style={{ fontSize: '0.75rem', color: '#64748B' }}>{job.company}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.1rem', fontWeight: 700, color: '#10B981' }}>{job.score}%</span>
+                        <p style={{ fontSize: '0.65rem', color: '#10B981', fontWeight: 600 }}>{job.label} Match</p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <span style={{ padding: '0.2rem 0.6rem', borderRadius: '100px', fontSize: '0.65rem', fontWeight: 600, background: 'rgba(212,168,75,0.12)', color: '#B8862D' }}>O-1 Sponsor</span>
+                      <span style={{ padding: '0.2rem 0.6rem', borderRadius: '100px', fontSize: '0.65rem', fontWeight: 600, background: 'rgba(11,29,53,0.06)', color: '#0B1D35' }}>Remote OK</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Text (right) */}
+          <div style={{ order: 2 }}>
+            <div className="o1d-step-badge">Step 4</div>
+            <h2 className="o1d-step-heading">Get Matched with Jobs</h2>
+            <p className="o1d-step-desc">
+              Browse job listings from employers actively seeking O-1 candidates. See your
+              match score for each position based on your profile and their requirements.
+            </p>
+            <ul className="o1d-checklist">
+              {[
+                'Jobs filtered to match your O-1 score',
+                'Companies verified and ready to sponsor',
+                'Apply with one click',
+                'Track all your applications',
+              ].map((item) => (
+                <li key={item}><span className="o1d-check">✓</span>{item}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── STEP 5: Interest Letters ─── */}
+      <section className="o1d-section o1d-section-white">
+        <div className="o1d-step-grid o1d-fade-up">
+          {/* Text */}
+          <div>
+            <div className="o1d-step-badge">Step 5</div>
+            <h2 className="o1d-step-heading">Receive Interest Letters</h2>
+            <p className="o1d-step-desc">
+              Employers who are interested in your profile can send you USCIS-compliant
+              interest letters. These letters are crucial evidence for your O-1 petition.
+            </p>
+            <ul className="o1d-checklist">
+              {[
+                'USCIS-ready letter format',
+                'Digital signatures from verified employers',
+                'Download as PDF for your petition',
+                'Your identity protected until you accept',
+              ].map((item) => (
+                <li key={item}><span className="o1d-check">✓</span>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Mockup — Letter */}
+          <div className="o1d-mock-wrap">
+            <div className="o1d-mock-window">
+              <div className="o1d-mock-chrome">
+                <div className="o1d-mock-dot o1d-mock-dot-r" />
+                <div className="o1d-mock-dot o1d-mock-dot-y" />
+                <div className="o1d-mock-dot o1d-mock-dot-g" />
+                <span className="o1d-mock-title">Interest Letters</span>
+              </div>
+              <div className="o1d-mock-body">
+                {/* Notification */}
+                <div style={{
+                  display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
+                  padding: '0.9rem', borderRadius: '10px', marginBottom: '1rem',
+                  background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)',
+                }}>
+                  <span style={{ fontSize: '1.1rem' }}>✉️</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <p style={{ fontWeight: 700, fontSize: '0.82rem', color: '#0B1D35' }}>New Interest Letter!</p>
+                      <span style={{ fontSize: '0.68rem', color: '#64748B' }}>2h ago</span>
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.15rem' }}>
+                      TechCorp wants to sponsor your O-1 visa
+                    </p>
+                  </div>
+                </div>
+                {/* Letter preview */}
+                <div style={{
+                  border: '1px solid #E8E0D4', borderRadius: '10px', padding: '1.25rem',
+                  background: '#FDFCFA',
+                }}>
+                  <div style={{ textAlign: 'center', borderBottom: '1px solid #E8E0D4', paddingBottom: '0.75rem', marginBottom: '0.75rem' }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.82rem', color: '#0B1D35', letterSpacing: '0.05em' }}>INTEREST LETTER</p>
+                    <p style={{ fontSize: '0.7rem', color: '#64748B' }}>For O-1 Visa Petition</p>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#64748B' }}>To Whom It May Concern,</p>
+                    <p style={{ fontSize: '0.75rem', color: '#94A3B8' }}>TechCorp expresses genuine interest in employing the beneficiary as a Senior AI Engineer…</p>
+                    <p style={{ fontSize: '0.75rem', color: '#94A3B8' }}>The candidate&apos;s extraordinary abilities in…</p>
+                  </div>
+                  <div style={{
+                    marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #E8E0D4',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: '0.8rem', color: '#0B1D35' }}>John Smith</p>
+                      <p style={{ fontSize: '0.68rem', color: '#64748B' }}>CEO, TechCorp</p>
+                    </div>
+                    <span style={{
+                      padding: '0.4rem 0.9rem', borderRadius: '8px', fontSize: '0.75rem',
+                      background: 'rgba(212,168,75,0.15)', color: '#B8862D', fontWeight: 600,
+                    }}>Download PDF</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── PRIVACY BAND ─── */}
+      <section className="o1d-section o1d-section-navy o1d-section-sm">
+        <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }} className="o1d-fade-up">
+          <div style={{ fontSize: '2.2rem', marginBottom: '1rem' }}>🔒</div>
+          <h2 className="o1d-section-title-white" style={{ marginBottom: '0.75rem' }}>
+            Your Privacy is Protected
+          </h2>
+          <p className="o1d-section-desc-white" style={{ marginBottom: '1.5rem' }}>
+            Your personal information — name, contact details, photo — is hidden from employers
+            until you explicitly accept their interest letter. Employers only see your
+            anonymized candidate ID, qualifications, and O-1 score.
+          </p>
+          <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }}>
+              <Eye size={16} />
+              <span>Anonymized Profiles</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }}>
+              <Shield size={16} />
+              <span>You Control Access</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FINAL CTA ─── */}
+      <section className="o1d-section o1d-section-cream">
+        <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center' }} className="o1d-fade-up">
+          <span className="o1d-section-tag">Get Started Today</span>
+          <h2 className="o1d-section-title">Ready to Start Your O-1 Journey?</h2>
+          <p className="o1d-section-desc" style={{ marginBottom: '2rem' }}>
+            Join thousands of extraordinary talents building their O-1 profiles and
+            connecting with U.S. employers.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/signup?role=talent" className="o1d-btn-primary">
+              Create Free Account →
+            </Link>
+            <Link href="/how-it-works/employers" className="o1d-btn-outline">
+              I&apos;m an Employer
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FOOTER ─── */}
+      <footer className="o1d-footer">
+        <div className="o1d-footer-inner">
+          <div className="o1d-footer-grid">
+            <div>
+              <span className="o1d-footer-logo">O1DMatch</span>
+              <p className="o1d-footer-tagline">
+                Connecting exceptional talent with opportunities for O-1 visa sponsorship.
+              </p>
+            </div>
+            <div className="o1d-footer-col">
+              <h4>Platform</h4>
+              <Link href="/how-it-works/candidates">For Candidates</Link>
+              <Link href="/how-it-works/employers">For Employers</Link>
+              <Link href="/pricing">Pricing</Link>
+              <Link href="/blog">Blog</Link>
+            </div>
+            <div className="o1d-footer-col">
+              <h4>Company</h4>
+              <Link href="/about">About</Link>
+              <Link href="/contact">Contact</Link>
+              <Link href="/careers">Careers</Link>
+            </div>
+            <div className="o1d-footer-col">
+              <h4>Legal</h4>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+            </div>
+          </div>
+          <div className="o1d-footer-bottom">
+            <span>© {new Date().getFullYear()} O1DMatch. All rights reserved.</span>
+            <span>Built by a licensed immigration attorney.</span>
           </div>
         </div>
       </footer>
