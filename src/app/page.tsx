@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Info } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -8,6 +9,45 @@ import '@/app/theme.css';
 import './home.css';
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
+const heroProfiles = [
+  {
+    initials: 'JR',
+    name: 'Jane Rivera',
+    role: 'ML Engineer · O-1A Candidate',
+    score: 70,
+    dashOffset: '101.788',
+    criteria: [
+      { icon: '\u{1F3C6}', name: 'Awards', ok: true },
+      { icon: '\u{1F4DA}', name: 'Scholarly', ok: true },
+      { icon: '\u2696\uFE0F', name: 'Judging', ok: true },
+      { icon: '\u{1F4A1}', name: 'Contributions', ok: false },
+    ],
+    matchCount: '14 new',
+    jobs: [
+      { co: 'Anthropic', role: 'Senior ML Researcher', loc: 'San Francisco' },
+      { co: 'OpenAI', role: 'Research Scientist', loc: 'New York' },
+    ],
+  },
+  {
+    initials: 'MC',
+    name: 'Marcus Chen',
+    role: 'Digital Creator & Brand Strategist · O-1B Candidate',
+    score: 78,
+    dashOffset: '74.644',
+    criteria: [
+      { icon: '\u{1F4F0}', name: 'Published Material', ok: true },
+      { icon: '\u{1F3AF}', name: 'Critical Role', ok: true },
+      { icon: '\u{1F4B0}', name: 'High Salary', ok: true },
+      { icon: '\u{1F3C6}', name: 'Awards', ok: false },
+    ],
+    matchCount: '9 new',
+    jobs: [
+      { co: 'Creative Agency', role: 'Head of Content', loc: 'Los Angeles' },
+      { co: 'Media Corp', role: 'Brand Director', loc: 'Miami' },
+    ],
+  },
+];
 
 const o1Criteria = [
   {
@@ -64,6 +104,13 @@ export default function Home() {
   const signupHref = isDemoMode ? '/demo' : '/signup';
   const talentSignupHref = isDemoMode ? '/demo' : '/signup?role=talent';
   const employerSignupHref = isDemoMode ? '/demo' : '/signup?role=employer';
+
+  const [profileIdx, setProfileIdx] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setProfileIdx((i) => (i + 1) % heroProfiles.length), 5000);
+    return () => clearInterval(timer);
+  }, []);
+  const hp = heroProfiles[profileIdx];
 
   useO1DAnimations();
 
@@ -155,10 +202,10 @@ export default function Home() {
 
               {/* Profile row */}
               <div className="hl-preview-profile">
-                <div className="hl-preview-avatar">JR</div>
+                <div className="hl-preview-avatar">{hp.initials}</div>
                 <div>
-                  <div className="hl-preview-name">Jane Rivera</div>
-                  <div className="hl-preview-role">ML Engineer · O-1A Candidate</div>
+                  <div className="hl-preview-name">{hp.name}</div>
+                  <div className="hl-preview-role">{hp.role}</div>
                 </div>
                 <span className="hl-preview-badge-active">Active</span>
               </div>
@@ -171,24 +218,19 @@ export default function Home() {
                     <circle cx="60" cy="60" r="54" fill="none" strokeWidth="8" stroke="rgba(255,255,255,0.08)" />
                     <circle cx="60" cy="60" r="54" fill="none" strokeWidth="8" stroke="#D4A84B"
                       strokeDasharray="339.292"
-                      strokeDashoffset="101.788"  /* ~70% filled */
+                      strokeDashoffset={hp.dashOffset}
                       strokeLinecap="round"
                     />
                   </svg>
                   <div className="hl-score-ring-inner">
-                    <span className="hl-score-num">70%</span>
+                    <span className="hl-score-num">{hp.score}%</span>
                     <span className="hl-score-label">O-1 Score</span>
                   </div>
                 </div>
 
                 {/* Criteria pills */}
                 <div className="hl-criteria-pills">
-                  {[
-                    { icon: '🏆', name: 'Awards', ok: true },
-                    { icon: '📚', name: 'Scholarly', ok: true },
-                    { icon: '⚖️', name: 'Judging', ok: true },
-                    { icon: '💡', name: 'Contributions', ok: false },
-                  ].map((c) => (
+                  {hp.criteria.map((c) => (
                     <div key={c.name} className={`hl-pill ${c.ok ? 'hl-pill-yes' : 'hl-pill-no'}`}>
                       <span>{c.icon}</span>
                       <span>{c.name}</span>
@@ -201,13 +243,10 @@ export default function Home() {
               {/* Jobs matched bar */}
               <div className="hl-preview-matches">
                 <span className="hl-matches-label">Matched Positions</span>
-                <span className="hl-matches-count">14 new</span>
+                <span className="hl-matches-count">{hp.matchCount}</span>
               </div>
               <div className="hl-preview-job-list">
-                {[
-                  { co: 'Anthropic', role: 'Senior ML Researcher', loc: 'San Francisco' },
-                  { co: 'OpenAI', role: 'Research Scientist', loc: 'New York' },
-                ].map((j) => (
+                {hp.jobs.map((j) => (
                   <div key={j.co} className="hl-job-row">
                     <div className="hl-job-logo">{j.co[0]}</div>
                     <div className="hl-job-info">
@@ -238,6 +277,49 @@ export default function Home() {
               </div>
             </div>
 
+          </div>
+        </div>
+      </section>
+
+      {/* ─── WHAT IS THE O-1 VISA? ─── */}
+      <section className="hl-section hl-section-cream">
+        <div className="hl-section-header hl-fade-up">
+          <span className="hl-section-tag">The O-1 Visa</span>
+          <h2 className="hl-section-title">What is the O-1 Visa?</h2>
+        </div>
+        <div className="hl-fade-up" style={{ maxWidth: '720px', margin: '0 auto', textAlign: 'center' }}>
+          <p style={{ fontSize: '1.05rem', color: '#475569', lineHeight: '1.8', marginBottom: '1rem' }}>
+            The O-1 visa is a U.S. work authorization for individuals with extraordinary ability or achievement — in any field. Unlike the H-1B, there is no lottery, no annual cap, and no employer sponsorship required.
+          </p>
+          <p style={{ fontSize: '1.05rem', color: '#475569', lineHeight: '1.8', marginBottom: '2rem' }}>
+            If you are among the best in what you do — whether in science, business, finance, the arts, athletics, media, or the digital economy — there is a path to working in the United States.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
+            {[
+              'Science & Research',
+              'Business & Finance',
+              'Arts & Entertainment',
+              'Athletics',
+              'Digital Creators & Influencers',
+              'Freelancers & Independents',
+              'Healthcare & Medicine',
+              'Education & Academia',
+              'Film, TV & Media',
+            ].map((field) => (
+              <span
+                key={field}
+                style={{
+                  fontSize: '0.85rem',
+                  padding: '0.4rem 1rem',
+                  borderRadius: '999px',
+                  background: '#0B1D35',
+                  color: '#E8C97A',
+                  fontWeight: 500,
+                }}
+              >
+                {field}
+              </span>
+            ))}
           </div>
         </div>
       </section>
@@ -328,6 +410,19 @@ export default function Home() {
             </p>
           </div>
         </div>
+
+        <div className="hl-criteria-note hl-fade-up" style={{ marginTop: '1.25rem' }}>
+          <div className="hl-note-icon">💡</div>
+          <div>
+            <h4>O-1A vs O-1B</h4>
+            <p>
+              O-1A covers extraordinary ability in science, education, business, or athletics.
+              O-1B covers extraordinary achievement in the arts, motion picture, or television.
+              Digital creators, influencers, streamers, and independent professionals may qualify
+              under either category depending on their body of work.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* ─── FOR BOTH ─── */}
@@ -350,6 +445,7 @@ export default function Home() {
               <li><span className="hl-check-gold">✓</span> AI-powered job matching</li>
               <li><span className="hl-check-gold">✓</span> Dedicated account manager support</li>
               <li><span className="hl-check-gold">✓</span> Secure document management</li>
+              <li><span className="hl-check-gold">✓</span> Built for creators, freelancers &amp; independent professionals</li>
             </ul>
             <Link href={talentSignupHref} className="hl-btn-gold">
               Start Your Profile →

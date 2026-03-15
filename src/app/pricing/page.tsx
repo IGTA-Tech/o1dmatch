@@ -482,6 +482,55 @@ function PricingPageContent() {
             </div>
           ))}
         </div>
+
+        {/* Payment Methods */}
+        <div style={{ maxWidth: 680, margin: '3rem auto 0', padding: '0 1rem', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#D4A84B', marginBottom: '1rem' }}>
+            Accepted Payment Methods
+          </p>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1rem',
+            padding: '2rem',
+            borderRadius: '12px',
+            border: '1px solid #E2E8F0',
+            background: '#FFFFFF',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {/* Visa */}
+              <svg width="56" height="36" viewBox="0 0 56 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Visa">
+                <rect width="56" height="36" rx="4" fill="#1A1F71"/>
+                <text x="28" y="23" textAnchor="middle" fill="#FFFFFF" fontSize="14" fontWeight="bold" fontFamily="sans-serif">VISA</text>
+              </svg>
+              {/* Mastercard */}
+              <svg width="56" height="36" viewBox="0 0 56 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Mastercard">
+                <rect width="56" height="36" rx="4" fill="#252525"/>
+                <circle cx="22" cy="18" r="9" fill="#EB001B"/>
+                <circle cx="34" cy="18" r="9" fill="#F79E1B"/>
+                <path d="M28 10.6a9 9 0 010 14.8 9 9 0 000-14.8z" fill="#FF5F00"/>
+              </svg>
+              {/* Amex */}
+              <svg width="56" height="36" viewBox="0 0 56 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="American Express">
+                <rect width="56" height="36" rx="4" fill="#006FCF"/>
+                <text x="28" y="21" textAnchor="middle" fill="#FFFFFF" fontSize="8" fontWeight="bold" fontFamily="sans-serif">AMEX</text>
+              </svg>
+              {/* Lock + Stripe */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginLeft: '0.5rem' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0110 0v4"/>
+                </svg>
+                <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: 500 }}>Secured by Stripe</span>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: '1.6', maxWidth: '480px' }}>
+              Secure payments powered by Stripe. We accept Visa, Mastercard, and American Express. All transactions are encrypted and PCI-compliant.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Footer */}

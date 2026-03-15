@@ -228,6 +228,12 @@ export default function Navbar() {
             >
               Pricing
             </Link>
+            <Link
+              href="/about"
+              className={`py-2 hover:text-gray-900 ${pathname === "/about" ? "text-blue-600" : "text-gray-600"}`}
+            >
+              About
+            </Link>
 
             {/* Blog Link */}
             {/* <Link
@@ -499,6 +505,13 @@ export default function Navbar() {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Pricing
+              </Link>
+              <Link
+                href="/about"
+                className="text-gray-600 hover:text-gray-900 py-2"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                About
               </Link>
              {/* <Link
                 href="/blog"
