@@ -694,3 +694,106 @@
   .terms-sidebar { width: 100% !important; }
   .terms-sidebar > div { position: static !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   LOGIN PAGE  (.login-*)
+═══════════════════════════════════════════════════════════ */
+
+@keyframes o1d-login-spin { to { transform: rotate(360deg); } }
+
+/* ── Navbar override (login page injects this via page-level class) ── */
+body.login-page header.fixed {
+  background: #0B1D35 !important;
+  border-bottom-color: rgba(255,255,255,0.06) !important;
+  backdrop-filter: none !important;
+}
+body.login-page header.fixed .bg-blue-600:not(a) {
+  background: #D4A84B !important;
+}
+body.login-page header.fixed .bg-blue-600:not(a) span {
+  color: #0B1D35 !important;
+}
+body.login-page header.fixed .font-semibold.text-gray-900 {
+  color: #FFFFFF !important;
+}
+body.login-page header.fixed .text-gray-600 {
+  color: rgba(255,255,255,0.75) !important;
+}
+body.login-page header.fixed .hover\:text-gray-900:hover {
+  color: #E8C97A !important;
+}
+body.login-page header.fixed .text-blue-600 {
+  color: #D4A84B !important;
+}
+body.login-page header.fixed a.bg-blue-600,
+body.login-page header.fixed button.bg-blue-600 {
+  background: #D4A84B !important;
+  color: #0B1D35 !important;
+  font-weight: 700 !important;
+}
+body.login-page header.fixed a.bg-blue-600:hover,
+body.login-page header.fixed button.bg-blue-600:hover {
+  background: #E8C97A !important;
+}
+
+/* ── Signup page navbar (same overrides as login) ── */
+body.signup-page header.fixed {
+  background: #0B1D35 !important;
+  border-bottom-color: rgba(255,255,255,0.06) !important;
+  backdrop-filter: none !important;
+}
+body.signup-page header.fixed .bg-blue-600:not(a) {
+  background: #D4A84B !important;
+}
+body.signup-page header.fixed .bg-blue-600:not(a) span {
+  color: #0B1D35 !important;
+}
+body.signup-page header.fixed .font-semibold.text-gray-900 {
+  color: #FFFFFF !important;
+}
+body.signup-page header.fixed .text-gray-600 {
+  color: rgba(255,255,255,0.75) !important;
+}
+body.signup-page header.fixed .hover\:text-gray-900:hover {
+  color: #E8C97A !important;
+}
+body.signup-page header.fixed .text-blue-600 {
+  color: #D4A84B !important;
+}
+body.signup-page header.fixed a.bg-blue-600,
+body.signup-page header.fixed button.bg-blue-600 {
+  background: #D4A84B !important;
+  color: #0B1D35 !important;
+  font-weight: 700 !important;
+}
+body.signup-page header.fixed a.bg-blue-600:hover,
+body.signup-page header.fixed button.bg-blue-600:hover {
+  background: #E8C97A !important;
+}
+
+/* ── Left brand panel ── */
+.login-left-panel {
+  width: 45%;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .login-left-panel { display: none !important; }
+}
+
+/* ── Forgot-password page navbar ── */
+body.forgot-page header.fixed {
+  background: #0B1D35 !important;
+  border-bottom-color: rgba(255,255,255,0.06) !important;
+  backdrop-filter: none !important;
+}
+body.forgot-page header.fixed .bg-blue-600:not(a) { background: #D4A84B !important; }
+body.forgot-page header.fixed .bg-blue-600:not(a) span { color: #0B1D35 !important; }
+body.forgot-page header.fixed .font-semibold.text-gray-900 { color: #FFFFFF !important; }
+body.forgot-page header.fixed .text-gray-600 { color: rgba(255,255,255,0.75) !important; }
+body.forgot-page header.fixed .hover\:text-gray-900:hover { color: #E8C97A !important; }
+body.forgot-page header.fixed .text-blue-600 { color: #D4A84B !important; }
+body.forgot-page header.fixed a.bg-blue-600,
+body.forgot-page header.fixed button.bg-blue-600 { background: #D4A84B !important; color: #0B1D35 !important; font-weight: 700 !important; }
+body.forgot-page header.fixed a.bg-blue-600:hover,
+body.forgot-page header.fixed button.bg-blue-600:hover { background: #E8C97A !important; }
