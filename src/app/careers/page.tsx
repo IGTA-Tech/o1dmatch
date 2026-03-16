@@ -20,7 +20,7 @@ import {
   Plane,
   HeartPulse,
 } from 'lucide-react';
-import '../globals.css';
+import '@/app/theme.css';
 
 export const metadata = {
   title: 'Careers at O1DMatch | Join Our Team',
@@ -364,30 +364,37 @@ export default function CareersPage() {
         </section>
 
         {/* Footer */}
-        <footer style={{ background: '#0B1D35', borderTop: '1px solid rgba(255,255,255,0.06)' }} className="py-10">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-xs"
-                  style={{ background: '#D4A84B', color: '#0B1D35' }}
-                >
-                  O1
-                </div>
-                <span className="text-white font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>
-                  O1DMatch
-                </span>
+        <footer className="o1d-footer">
+          <div className="o1d-footer-inner">
+            <div className="o1d-footer-grid">
+              <div>
+                <span className="o1d-footer-logo">O1DMatch</span>
+                <p className="o1d-footer-tagline">
+                  Connecting exceptional talent with opportunities for O-1 visa sponsorship.
+                </p>
               </div>
-              <div className="flex items-center gap-6 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                <Link href="/about" className="hover:text-white transition-colors">About</Link>
-                <Link href="/careers" className="hover:text-white transition-colors">Careers</Link>
-                <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
-                <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-                <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+              <div className="o1d-footer-col">
+                <h4>Platform</h4>
+                <Link href="/how-it-works/candidates">For Candidates</Link>
+                <Link href="/how-it-works/employers">For Employers</Link>
+                <Link href="/pricing">Pricing</Link>
+                <Link href="/blog">Blog</Link>
               </div>
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                &copy; {new Date().getFullYear()} O1DMatch. All rights reserved.
-              </p>
+              <div className="o1d-footer-col">
+                <h4>Company</h4>
+                <Link href="/about">About</Link>
+                <Link href="/contact">Contact</Link>
+                <Link href="/careers">Careers</Link>
+              </div>
+              <div className="o1d-footer-col">
+                <h4>Legal</h4>
+                <Link href="/terms">Terms of Service</Link>
+                <Link href="/privacy">Privacy Policy</Link>
+              </div>
+            </div>
+            <div className="o1d-footer-bottom">
+              <span>© 2026 O1DMatch. All rights reserved.</span>
+              <span>Built by a licensed immigration attorney.</span>
             </div>
           </div>
         </footer>
