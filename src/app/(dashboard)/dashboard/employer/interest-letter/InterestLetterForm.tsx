@@ -741,7 +741,7 @@ export function InterestLetterForm({
                                     <span className="font-medium">
                                         {letterUsage.limit === Infinity ? 'unlimited' : letterUsage.limit}
                                     </span>{' '}
-                                    interest letter{letterUsage.limit !== 1 ? 's' : ''} per month. You've sent{' '}
+                                    interest letter{letterUsage.limit !== 1 ? 's' : ''} per month. You&apos;ve sent{' '}
                                     <span className="font-medium">{letterUsage.used}</span> this month.
                                 </p>
                                 <p className="text-gray-500 text-sm mt-2">
