@@ -292,7 +292,7 @@ export default function Navbar() {
               {isOnboardingOpen && (
                 <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                   <Link
-                    href="https://www.o1dmatch.com/onboarding/talent"
+                    href="https://app.o1dmatch.com/onboarding/talent"
                     onClick={() => setIsOnboardingOpen(false)}
                     className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/onboarding/talent" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
                   >
@@ -300,7 +300,7 @@ export default function Navbar() {
                     For Talent
                   </Link>
                   <Link
-                    href="https://www.o1dmatch.com/onboarding/employer"
+                    href="https://app.o1dmatch.com/onboarding/employer"
                     onClick={() => setIsOnboardingOpen(false)}
                     className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/onboarding/employer" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
                   >
@@ -554,7 +554,7 @@ export default function Navbar() {
               <div className="py-2 border-t border-gray-100 mt-2">
                 <p className="text-sm font-medium text-gray-500 mb-2">Onboarding</p>
                 <Link
-                  href="https://www.o1dmatch.com/onboarding/talent"
+                  href="https://app.o1dmatch.com/onboarding/talent"
                   className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -562,7 +562,7 @@ export default function Navbar() {
                   For Talent
                 </Link>
                 <Link
-                  href="https://www.o1dmatch.com/onboarding/employer"
+                  href="https://app.o1dmatch.com/onboarding/employer"
                   className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >

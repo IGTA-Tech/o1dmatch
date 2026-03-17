@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
         id: data.id,
         slug: data.slug,
         status: data.status,
-        url: `https://www.o1dmatch.com/blog/${data.slug}`,
+        url: `https://app.o1dmatch.com/blog/${data.slug}`,
       },
     });
 

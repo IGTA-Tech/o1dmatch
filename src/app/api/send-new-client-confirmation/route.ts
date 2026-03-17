@@ -189,7 +189,7 @@ function buildHtml({
                                   color:#0B1D35;margin-right:12px;vertical-align:middle;">3</span>
                     <span style="font-size:14px;color:#374151;vertical-align:middle;">
                       Manage all your clients from your
-                      <a href="https://www.o1dmatch.com/dashboard/agency/clients"
+                      <a href="https://app.o1dmatch.com/dashboard/agency/clients"
                          style="color:#D4A84B;text-decoration:none;font-weight:600;">
                         Clients dashboard
                       </a>.
@@ -203,7 +203,7 @@ function buildHtml({
                      style="margin-bottom:28px;">
                 <tr>
                   <td align="center">
-                    <a href="https://www.o1dmatch.com/dashboard/agency/clients"
+                    <a href="https://app.o1dmatch.com/dashboard/agency/clients"
                        style="display:inline-block;padding:14px 36px;background:#D4A84B;
                               color:#0B1D35;font-size:15px;font-weight:700;
                               text-decoration:none;border-radius:10px;">
@@ -234,7 +234,7 @@ function buildHtml({
               </p>
               <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.28);">
                 &#169; 2026 O1DMatch. All rights reserved. &#183;
-                <a href="https://www.o1dmatch.com/privacy"
+                <a href="https://app.o1dmatch.com/privacy"
                    style="color:rgba(255,255,255,0.38);text-decoration:none;">
                   Privacy Policy
                 </a>

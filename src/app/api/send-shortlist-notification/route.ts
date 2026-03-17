@@ -65,7 +65,7 @@ function emailWrapper(innerHtml: string) {
               </p>
               <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.28);">
                 &#169; 2026 O1DMatch. All rights reserved. &#183;
-                <a href="https://www.o1dmatch.com/privacy"
+                <a href="https://app.o1dmatch.com/privacy"
                    style="color:rgba(255,255,255,0.38);text-decoration:none;">
                   Privacy Policy
                 </a>
@@ -200,7 +200,7 @@ function buildEmployerHtml(jobTitle: string, applicationRef: string, appliedOn: 
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
           <tr>
             <td align="center">
-              <a href="https://www.o1dmatch.com/dashboard/employer/jobs"
+              <a href="https://app.o1dmatch.com/dashboard/employer/jobs"
                  style="display:inline-block;padding:14px 36px;background:#D4A84B;
                         color:#0B1D35;font-size:15px;font-weight:700;
                         text-decoration:none;border-radius:10px;">
@@ -339,7 +339,7 @@ function buildTalentHtml(jobTitle: string, applicationRef: string) {
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
           <tr>
             <td align="center">
-              <a href="https://www.o1dmatch.com/dashboard/talent/applications"
+              <a href="https://app.o1dmatch.com/dashboard/talent/applications"
                  style="display:inline-block;padding:14px 36px;background:#D4A84B;
                         color:#0B1D35;font-size:15px;font-weight:700;
                         text-decoration:none;border-radius:10px;">

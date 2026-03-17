@@ -292,7 +292,7 @@ export async function POST(request: NextRequest) {
                      style="margin-bottom:28px;">
                 <tr>
                   <td align="center">
-                    <a href="${agencyId ? 'https://www.o1dmatch.com/dashboard/agency/applications' : 'https://www.o1dmatch.com/dashboard/employer/jobs'}"
+                    <a href="${agencyId ? 'https://app.o1dmatch.com/dashboard/agency/applications' : 'https://app.o1dmatch.com/dashboard/employer/jobs'}"
                        style="display:inline-block;padding:14px 36px;
                               background:#D4A84B;color:#0B1D35;font-size:15px;
                               font-weight:700;text-decoration:none;border-radius:10px;">
@@ -324,7 +324,7 @@ export async function POST(request: NextRequest) {
               </p>
               <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.28);">
                 &#169; 2026 O1DMatch. All rights reserved. &#183;
-                <a href="https://www.o1dmatch.com/privacy"
+                <a href="https://app.o1dmatch.com/privacy"
                    style="color:rgba(255,255,255,0.38);text-decoration:none;">
                   Privacy Policy
                 </a>
