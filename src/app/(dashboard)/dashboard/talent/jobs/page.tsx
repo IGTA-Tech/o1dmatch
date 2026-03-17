@@ -111,13 +111,13 @@ export default async function TalentJobsPage() {
   //   job_listings.employer_id           = employer_profiles.id       (profile UUID)
   //   employer_subscriptions.employer_id = employer_profiles.user_id  (auth user UUID)
   //
-  const employerUserIds = [
-    ...new Set(
+  const employerUserIds = Array.from(
+    new Set(
       (jobs || [])
         .map((j) => (j.employer as { user_id?: string } | null)?.user_id)
         .filter((id): id is string => Boolean(id))
-    ),
-  ];
+    )
+  );
 
   let featuredEmployerIds: string[] = [];
 
