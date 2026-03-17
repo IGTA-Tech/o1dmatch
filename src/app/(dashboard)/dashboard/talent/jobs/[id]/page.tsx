@@ -11,6 +11,7 @@ import {
   Briefcase,
   CheckCircle,
   Lock,
+  Star,
 } from 'lucide-react';
 import Link from 'next/link';
 import { ApplyButton } from './ApplyButton';
@@ -49,13 +50,15 @@ export default async function JobDetailPage({
 
   const isFreeTier = !subscription || subscription.tier === 'profile_only';
 
-  // Get job details
+  // Get job details — include employer user_id to check featured subscription
+  // (employer_subscriptions.employer_id = employer_profiles.user_id, not profile id)
   const { data: job } = await supabase
     .from('job_listings')
     .select(`
       *,
       employer:employer_profiles(
         id,
+        user_id,
         company_name,
         company_website,
         company_description,
@@ -69,6 +72,28 @@ export default async function JobDetailPage({
 
   if (!job) {
     redirect('/dashboard/talent/jobs');
+  }
+
+  // Check if this employer is on a featured plan (Growth, Business, Enterprise).
+  // Uses service role client to bypass RLS — talent users cannot read other
+  // employers' subscription rows with the regular client.
+  const employerUserId = (job.employer as { user_id?: string } | null)?.user_id;
+  let isFeaturedEmployer = false;
+
+  if (employerUserId) {
+    const { createClient: createServiceClient } = await import('@supabase/supabase-js');
+    const adminClient = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: featuredSub } = await adminClient
+      .from('employer_subscriptions')
+      .select('employer_id')
+      .eq('employer_id', employerUserId)
+      .in('tier', ['growth', 'business', 'enterprise'])
+      .maybeSingle();
+
+    isFeaturedEmployer = !!featuredSub;
   }
 
   // Free tier: show title + blurred placeholder
@@ -209,7 +234,15 @@ export default async function JobDetailPage({
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
+            {isFeaturedEmployer && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-medium">
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                Featured Employer
+              </span>
+            )}
+          </div>
           <p className="text-gray-600">{job.employer?.company_name}</p>
         </div>
       </div>
@@ -254,7 +287,15 @@ export default async function JobDetailPage({
                     <Building2 className="w-8 h-8 text-gray-400" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{job.employer.company_name}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-gray-900">{job.employer.company_name}</h3>
+                      {isFeaturedEmployer && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-medium">
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          Featured Employer
+                        </span>
+                      )}
+                    </div>
                     {job.employer.industry && (
                       <p className="text-sm text-gray-600">{job.employer.industry}</p>
                     )}
@@ -290,7 +331,7 @@ export default async function JobDetailPage({
               {hasApplied ? (
                 <div className="text-center py-4">
                   <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                  <h3 className="font-semibold text-gray-900">Already Applied</h3>
+                  <h3 className="font-semibold text-gray-900">Applied Successfully</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Applied on {new Date(existingApplication.created_at).toLocaleDateString()}
                   </p>

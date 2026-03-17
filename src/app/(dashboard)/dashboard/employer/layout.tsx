@@ -30,7 +30,7 @@ export default async function EmployerDashboardLayout({
   // Fetch employer profile for sidebar display
   const { data: employerProfile } = await supabase
     .from('employer_profiles')
-    .select('company_name')
+    .select('company_name, id')
     .eq('user_id', user.id)
     .single();
 
@@ -42,6 +42,15 @@ export default async function EmployerDashboardLayout({
     .slice(0, 2)
     .toUpperCase();
 
+  // Fetch subscription tier for conditional nav items
+  const { data: subscription } = await supabase
+    .from('employer_subscriptions')
+    .select('tier')
+    .eq('employer_id', user.id)
+    .single();
+
+  const subscriptionTier = subscription?.tier ?? 'free';
+
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
@@ -52,6 +61,7 @@ export default async function EmployerDashboardLayout({
       <EmployerSidebar
         companyName={companyName}
         companyInitials={companyInitials}
+        subscriptionTier={subscriptionTier}
       >
         {children}
       </EmployerSidebar>

@@ -2,6 +2,14 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { InterestLetterForm } from './InterestLetterForm';
 
+const LETTER_LIMITS: Record<string, number> = {
+  free:       5,
+  starter:    15,
+  growth:     40,
+  business:   100,
+  enterprise: Infinity,
+};
+
 export default async function InterestLetterPage({
   searchParams,
 }: {
@@ -60,6 +68,30 @@ export default async function InterestLetterPage({
     .eq('status', 'active')
     .order('created_at', { ascending: false });
 
+  // Get subscription tier
+  const { data: subscription } = await supabase
+    .from('employer_subscriptions')
+    .select('tier')
+    .eq('employer_id', employerProfile.id)
+    .single();
+
+  // Count sent letters this month directly from interest_letters
+  // (letters_sent_this_month on employer_subscriptions is never auto-incremented)
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const { data: sentThisMonth } = await supabase
+    .from('interest_letters')
+    .select('id')
+    .eq('employer_id', employerProfile.id)
+    .eq('status', 'sent')
+    .gte('created_at', monthStart.toISOString());
+
+  const subscriptionTier = subscription?.tier ?? 'free';
+  const letterLimit = LETTER_LIMITS[subscriptionTier] ?? 5;
+  const lettersThisMonth = sentThisMonth?.length ?? 0;
+
   return (
     <InterestLetterForm
       employerProfile={{
@@ -77,6 +109,12 @@ export default async function InterestLetterPage({
       }}
       jobs={jobs || []}
       preselectedJobId={jobId}
+      letterUsage={{
+        canSend: lettersThisMonth < letterLimit,
+        used: lettersThisMonth,
+        limit: letterLimit,
+        tier: subscriptionTier,
+      }}
     />
   );
 }

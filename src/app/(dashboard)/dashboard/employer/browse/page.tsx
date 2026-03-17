@@ -21,7 +21,16 @@ export default async function BrowseTalentPage() {
     redirect('/dashboard/employer');
   }
 
-  // Get public talent profiles with score >= 40
+  // Get subscription tier for this employer
+  const { data: subscription } = await supabase
+    .from('employer_subscriptions')
+    .select('tier')
+    .eq('employer_id', employerProfile.id)
+    .single();
+
+  const subscriptionTier = subscription?.tier ?? 'free';
+
+  // Get public talent profiles
   const { data: talents } = await supabase
     .from('talent_profiles')
     .select('*');
@@ -38,6 +47,7 @@ export default async function BrowseTalentPage() {
     <BrowseTalentClient
       talents={talents || []}
       lettersSentTo={lettersSentTo}
+      subscriptionTier={subscriptionTier}
     />
   );
 }

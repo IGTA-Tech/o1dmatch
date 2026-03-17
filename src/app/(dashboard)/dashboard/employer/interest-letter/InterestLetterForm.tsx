@@ -15,10 +15,19 @@ import {
     FileText,
     Save,
     Calendar,
+    AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseToken } from '@/lib/supabase/getToken';
 import { jsPDF } from 'jspdf';
+
+const LETTER_LIMITS: Record<string, number> = {
+    free:       5,
+    starter:    15,
+    growth:     40,
+    business:   100,
+    enterprise: Infinity,
+};
 
 // Full employer profile interface for PDF generation
 interface EmployerProfileFull {
@@ -54,6 +63,12 @@ interface InterestLetterFormProps {
     };
     jobs: { id: string; title: string }[];
     preselectedJobId?: string;
+    letterUsage: {
+        canSend: boolean;
+        used: number;
+        limit: number;
+        tier: string;
+    };
 }
 
 type CommitmentLevel = 'exploratory_interest' | 'intent_to_engage' | 'conditional_offer' | 'firm_commitment' | 'offer_extended';
@@ -70,6 +85,7 @@ export function InterestLetterForm({
     talent,
     jobs,
     preselectedJobId,
+    letterUsage,
 }: InterestLetterFormProps) {
     const router = useRouter();
     const supabase = createClient();
@@ -544,6 +560,52 @@ export function InterestLetterForm({
             const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
             const accessToken = getSupabaseToken();
 
+            // ── Re-verify letter limit at send time ──────────────────────
+            // Count directly from interest_letters for this month — the
+            // letters_sent_this_month column on employer_subscriptions is
+            // never auto-incremented and cannot be trusted.
+            if (!isDraft) {
+                const monthStart = new Date();
+                monthStart.setDate(1);
+                monthStart.setHours(0, 0, 0, 0);
+                const monthStartIso = monthStart.toISOString();
+
+                const [subRes, sentRes] = await Promise.all([
+                    fetch(
+                        `${supabaseUrl}/rest/v1/employer_subscriptions?employer_id=eq.${employerProfile.id}&select=tier`,
+                        {
+                            cache: 'no-store',
+                            headers: { Authorization: `Bearer ${accessToken}`, apikey: anonKey! },
+                        }
+                    ),
+                    fetch(
+                        `${supabaseUrl}/rest/v1/interest_letters?employer_id=eq.${employerProfile.id}&status=eq.sent&created_at=gte.${monthStartIso}&select=id`,
+                        {
+                            cache: 'no-store',
+                            headers: { Authorization: `Bearer ${accessToken}`, apikey: anonKey! },
+                        }
+                    ),
+                ]);
+
+                const subs = await subRes.json();
+                const currentTier = subs?.[0]?.tier ?? 'free';
+                const currentLimit = LETTER_LIMITS[currentTier] ?? 5;
+                const sentLetters = await sentRes.json();
+                const currentUsed = Array.isArray(sentLetters) ? sentLetters.length : 0;
+
+                console.log(`Letter plan check: ${currentTier}, sent this month: ${currentUsed}/${currentLimit}`);
+
+                if (currentUsed >= currentLimit) {
+                    setSending(false);
+                    setError(
+                        `You've reached your ${currentTier} plan limit of ` +
+                        `${currentLimit === Infinity ? 'unlimited' : currentLimit} interest letters this month ` +
+                        `(${currentUsed} sent). Please upgrade your plan to send more.`
+                    );
+                    return;
+                }
+            }
+
             const insertResponse = await fetch(
                 `${supabaseUrl}/rest/v1/interest_letters`,
                 {
@@ -643,19 +705,96 @@ export function InterestLetterForm({
             </div>
         );
     }
+
+    // ── Letter limit gate ──────────────────────────────────────────────────
+    if (!letterUsage.canSend) {
+        return (
+            <div className="max-w-3xl mx-auto space-y-6">
+                {/* Header */}
+                <div className="flex items-center gap-4">
+                    <Link
+                        href="/dashboard/employer/browse"
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-gray-600" />
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Send Interest Letter</h1>
+                        <p className="text-gray-600">Express your interest in this O-1 candidate</p>
+                    </div>
+                </div>
+
+                <Card>
+                    <CardContent className="py-12">
+                        <div className="flex flex-col items-center text-center gap-4 max-w-md mx-auto">
+                            <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
+                                <AlertCircle className="w-7 h-7 text-amber-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                                    Monthly letter limit reached
+                                </h2>
+                                <p className="text-gray-600 text-sm">
+                                    Your{' '}
+                                    <span className="font-medium capitalize">{letterUsage.tier}</span>{' '}
+                                    plan allows{' '}
+                                    <span className="font-medium">
+                                        {letterUsage.limit === Infinity ? 'unlimited' : letterUsage.limit}
+                                    </span>{' '}
+                                    interest letter{letterUsage.limit !== 1 ? 's' : ''} per month. You've sent{' '}
+                                    <span className="font-medium">{letterUsage.used}</span> this month.
+                                </p>
+                                <p className="text-gray-500 text-sm mt-2">
+                                    Your limit resets at the start of next month, or upgrade now to send more.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-3 mt-2">
+                                <Link
+                                    href="/dashboard/employer/letters"
+                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                                >
+                                    View Sent Letters
+                                </Link>
+                                <Link
+                                    href="/dashboard/employer/billing"
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                                >
+                                    Upgrade Plan
+                                </Link>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-3xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <Link
-                    href={`/dashboard/employer/browse/${talent.id}`}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5 text-gray-600" />
-                </Link>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Send Interest Letter</h1>
-                    <p className="text-gray-600">Express your interest in this O-1 candidate</p>
+            <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <Link
+                        href={`/dashboard/employer/browse/${talent.id}`}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-gray-600" />
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Send Interest Letter</h1>
+                        <p className="text-gray-600">Express your interest in this O-1 candidate</p>
+                    </div>
+                </div>
+                {/* Monthly usage badge */}
+                <div className="shrink-0 text-right">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
+                        letterUsage.used >= letterUsage.limit * 0.8
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-gray-100 text-gray-600'
+                    }`}>
+                        {letterUsage.used}&nbsp;/&nbsp;{letterUsage.limit === Infinity ? '∞' : letterUsage.limit} letters this month
+                    </span>
+                    <p className="text-xs text-gray-400 mt-1 capitalize">{letterUsage.tier} plan</p>
                 </div>
             </div>
 

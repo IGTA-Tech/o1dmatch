@@ -12,6 +12,7 @@ import {
   DollarSign,
   Calendar,
   ArrowLeft,
+  Lock,
 } from 'lucide-react';
 import Link from 'next/link';
 import { JobStatus } from '@/types/enums';
@@ -55,6 +56,27 @@ export default async function EmployerJobsPage() {
     .eq('employer_id', employerProfile.id)
     .order('created_at', { ascending: false });
 
+  // Get subscription tier
+  // employer_subscriptions.employer_id = profiles.id = user.id (auth user ID, NOT profile ID)
+  const { data: subscription } = await supabase
+    .from('employer_subscriptions')
+    .select('tier')
+    .eq('employer_id', user.id)
+    .single();
+
+  const subscriptionTier = subscription?.tier ?? 'free';
+
+  // Active job limits per plan
+  const JOB_LIMITS: Record<string, number> = {
+    free:       2,
+    starter:    5,
+    growth:     15,
+    business:   50,
+    enterprise: Infinity,
+  };
+
+  const jobLimit = JOB_LIMITS[subscriptionTier] ?? 2;
+
   const stats = {
     total: jobs?.length || 0,
     active: jobs?.filter((j) => j.status === 'active').length || 0,
@@ -63,6 +85,8 @@ export default async function EmployerJobsPage() {
       0
     ) || 0,
   };
+
+  const canPostJob = stats.active < jobLimit;
 
   const formatSalary = (min?: number | null, max?: number | null) => {
     if (!min && !max) return 'Not specified';
@@ -87,13 +111,29 @@ export default async function EmployerJobsPage() {
             <p className="text-gray-600">Manage your job listings</p>
           </div>
         </div>
-        <Link
-          href="/dashboard/employer/jobs/new"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Post New Job
-        </Link>
+        {canPostJob ? (
+          <Link
+            href="/dashboard/employer/jobs/new"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Post New Job
+          </Link>
+        ) : (
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-500">
+              {stats.active}/{jobLimit === Infinity ? '∞' : jobLimit} active jobs
+            </span>
+            <Link
+              href="/dashboard/employer/billing"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 border border-gray-200 rounded-lg cursor-not-allowed"
+              title={`You've reached your ${subscriptionTier} plan limit of ${jobLimit} active jobs. Upgrade to post more.`}
+            >
+              <Lock className="w-4 h-4" />
+              Post New Job
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Stats */}
@@ -107,7 +147,12 @@ export default async function EmployerJobsPage() {
         <Card padding="sm">
           <CardContent>
             <p className="text-2xl font-bold text-green-600">{stats.active}</p>
-            <p className="text-sm text-gray-600">Active Listings</p>
+            <p className="text-sm text-gray-600">
+              Active Listings
+              <span className="ml-1 text-gray-400">
+                / {jobLimit === Infinity ? '∞' : jobLimit}
+              </span>
+            </p>
           </CardContent>
         </Card>
         <Card padding="sm">
@@ -127,13 +172,27 @@ export default async function EmployerJobsPage() {
             <p className="text-gray-600 mb-4">
               Create your first job listing to start receiving applications.
             </p>
-            <Link
-              href="/dashboard/employer/jobs/new"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <Plus className="w-4 h-4" />
-              Post Your First Job
-            </Link>
+            {canPostJob ? (
+              <Link
+                href="/dashboard/employer/jobs/new"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4" />
+                Post Your First Job
+              </Link>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-amber-600 font-medium">
+                  Active job limit reached ({stats.active}/{jobLimit === Infinity ? '∞' : jobLimit})
+                </p>
+                <Link
+                  href="/dashboard/employer/billing"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Upgrade Plan to Post Jobs
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
       ) : (

@@ -45,7 +45,8 @@ export default async function TalentJobsPage() {
 
   const isFreeTier = !subscription || subscription.tier === 'profile_only';
 
-  // Get active jobs
+  // Get active jobs — include employer user_id so we can look up subscriptions
+  // (employer_subscriptions.employer_id = profiles.id = employer_profiles.user_id)
   const { data: jobs } = await supabase
     .from('job_listings')
     .select(`
@@ -54,7 +55,8 @@ export default async function TalentJobsPage() {
         company_name,
         company_website,
         city,
-        state
+        state,
+        user_id
       )
     `)
     .eq('status', 'active')
@@ -98,6 +100,49 @@ export default async function TalentJobsPage() {
 
   // Sort by match score
   const sortedJobs = jobsWithMatches.sort((a, b) => b.match.overall_score - a.match.overall_score);
+
+  // Determine which employers are on a featured plan (Growth, Business, Enterprise).
+  //
+  // IMPORTANT: employer_subscriptions has RLS that blocks talent users from reading
+  // other employers' rows. We must use the service-role client to bypass RLS here,
+  // since this is a read of public-facing data (featured badge visibility).
+  //
+  // Schema confirmed via SQL:
+  //   job_listings.employer_id           = employer_profiles.id       (profile UUID)
+  //   employer_subscriptions.employer_id = employer_profiles.user_id  (auth user UUID)
+  //
+  const employerUserIds = [
+    ...new Set(
+      (jobs || [])
+        .map((j) => (j.employer as { user_id?: string } | null)?.user_id)
+        .filter((id): id is string => Boolean(id))
+    ),
+  ];
+
+  let featuredEmployerIds: string[] = [];
+
+  if (employerUserIds.length > 0) {
+    // Use service role client to bypass RLS on employer_subscriptions
+    const { createClient: createServiceClient } = await import('@supabase/supabase-js');
+    const adminClient = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { data: featuredSubs } = await adminClient
+      .from('employer_subscriptions')
+      .select('employer_id')
+      .in('employer_id', employerUserIds)
+      .in('tier', ['growth', 'business', 'enterprise']);
+
+    if (featuredSubs && featuredSubs.length > 0) {
+      const featuredUserIdSet = new Set(featuredSubs.map((s) => s.employer_id));
+      featuredEmployerIds = (jobs || [])
+        .filter((j) => featuredUserIdSet.has((j.employer as { user_id?: string } | null)?.user_id ?? ''))
+        .map((j) => j.employer_id)
+        .filter((id, idx, arr) => arr.indexOf(id) === idx); // dedupe
+    }
+  }
 
   // Strip leading numbering ("1) ", "2. ") + trim + collapse spaces
   const normalizeSkill = (raw: string): string =>
@@ -265,7 +310,7 @@ export default async function TalentJobsPage() {
           </CardContent>
         </Card>
       ) : (
-        <JobsList jobs={sortedJobs} availableSkills={availableSkills} isFreeTier={isFreeTier} />
+        <JobsList jobs={sortedJobs} availableSkills={availableSkills} isFreeTier={isFreeTier} featuredEmployerIds={[...featuredEmployerIds]} />
       )}
     </div>
   );

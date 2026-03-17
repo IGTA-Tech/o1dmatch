@@ -14,11 +14,13 @@ import {
   Building2,
   Target,
   Lock,
+  Star,
 } from 'lucide-react';
 import Link from 'next/link';
 
 interface Job {
   id: string;
+  employer_id: string;
   title: string;
   description: string;
   salary_min?: number | null;
@@ -44,9 +46,12 @@ interface JobsListProps {
   jobs: Job[];
   availableSkills: string[];
   isFreeTier?: boolean;
+  featuredEmployerIds?: string[];
 }
 
-export function JobsList({ jobs, availableSkills, isFreeTier = false }: JobsListProps) {
+export function JobsList({ jobs, availableSkills, isFreeTier = false, featuredEmployerIds = [] }: JobsListProps) {
+  // Reconstruct as Set here — Sets can't be passed as Server→Client props (not JSON-serializable)
+  const featuredSet = new Set(featuredEmployerIds);
   const [filters, setFilters] = useState<FilterState>({
     skills: [],
     minExperience: null,
@@ -152,9 +157,12 @@ export function JobsList({ jobs, availableSkills, isFreeTier = false }: JobsList
     }
   };
 
-  const renderJobCard = (job: Job) => (
+  const renderJobCard = (job: Job) => {
+    const isFeatured = featuredSet.has(job.employer_id);
+
+    return (
     <Link key={job.id} href={`/dashboard/talent/jobs/${job.id}`}>
-      <Card hover className="h-full">
+      <Card hover className={`h-full ${isFeatured ? 'ring-1 ring-amber-300' : ''}`}>
         <CardContent className="flex flex-col h-full">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -162,7 +170,15 @@ export function JobsList({ jobs, availableSkills, isFreeTier = false }: JobsList
                 <Building2 className="w-6 h-6 text-gray-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">{job.title}</h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-semibold text-gray-900">{job.title}</h3>
+                  {isFeatured && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-medium">
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                      Featured Employer
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-gray-600">{job.employer?.company_name}</p>
               </div>
             </div>
@@ -228,7 +244,8 @@ export function JobsList({ jobs, availableSkills, isFreeTier = false }: JobsList
         </CardContent>
       </Card>
     </Link>
-  );
+    );
+  };
 
   const renderFreeJobCard = (job: Job) => (
     <div key={job.id} className="relative">

@@ -7,26 +7,26 @@ import {
   LayoutDashboard,
   Briefcase,
   Users,
-  // Send,
   Mail,
   FolderOpen,
   Building2,
   CreditCard,
-  // LogOut,
   Menu,
-  // X,
   Plus,
   Bell,
   HelpCircle,
   BarChart3,
   FileText,
   ClipboardCheck,
+  TrendingUp,
+  Lock,
 } from 'lucide-react';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 
 interface EmployerSidebarProps {
   companyName: string;
   companyInitials: string;
+  subscriptionTier?: string;
   children: ReactNode;
 }
 
@@ -37,7 +37,6 @@ const navSections = [
       { href: '/dashboard/employer', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/dashboard/employer/jobs', label: 'My Jobs', icon: Briefcase },
       { href: '/dashboard/employer/browse', label: 'Browse Talent', icon: Users },
-    //   { href: '/dashboard/employer/applications', label: 'Applications', icon: Send },
     ],
   },
   {
@@ -62,10 +61,13 @@ const navSections = [
 export default function EmployerSidebar({
   companyName,
   companyInitials,
+  subscriptionTier = 'free',
   children,
 }: EmployerSidebarProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const hasAnalytics = ['growth', 'business', 'enterprise'].includes(subscriptionTier);
 
   const isActive = (href: string) => {
     if (href === '/dashboard/employer') return pathname === href;
@@ -120,6 +122,39 @@ export default function EmployerSidebar({
             })}
           </div>
         ))}
+
+        {/* Insights — Analytics locked behind Growth+ */}
+        <div className="px-4 mb-2">
+          <div className="px-2 mb-2 text-[0.65rem] font-semibold uppercase tracking-widest text-white/30">
+            Insights
+          </div>
+          {hasAnalytics ? (
+            <Link
+              href="/dashboard/employer/analytics"
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] mx-1 mb-0.5 text-sm font-medium transition-all ${
+                isActive('/dashboard/employer/analytics')
+                  ? 'text-[#E8C97A]'
+                  : 'text-white/60 hover:bg-white/[0.06] hover:text-white/90'
+              }`}
+              style={isActive('/dashboard/employer/analytics') ? { background: 'rgba(212,168,75,0.12)' } : {}}
+            >
+              <TrendingUp className="w-5 h-5 flex-shrink-0" />
+              <span>Analytics Dashboard</span>
+            </Link>
+          ) : (
+            <Link
+              href="/dashboard/employer/billing"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] mx-1 mb-0.5 text-sm font-medium text-white/30 hover:bg-white/[0.04] transition-all"
+              title="Available on Growth plan and above — upgrade to unlock"
+            >
+              <TrendingUp className="w-5 h-5 flex-shrink-0" />
+              <span className="flex-1">Analytics Dashboard</span>
+              <Lock className="w-3.5 h-3.5 flex-shrink-0" />
+            </Link>
+          )}
+        </div>
       </nav>
 
       {/* Sign Out */}

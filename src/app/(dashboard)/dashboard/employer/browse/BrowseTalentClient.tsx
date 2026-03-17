@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { O1Criterion } from '@/types/enums';
+import { EmployerTier } from '@/lib/subscriptions/tiers';
 
 interface TalentProfile {
   id: string;
@@ -36,16 +37,19 @@ interface TalentProfile {
 interface BrowseTalentClientProps {
   talents: TalentProfile[];
   lettersSentTo: Set<string>;
+  subscriptionTier: EmployerTier;
 }
 
-export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTalentClientProps) {
+export default function BrowseTalentClient({ talents, lettersSentTo, subscriptionTier }: BrowseTalentClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [industryFilter, setIndustryFilter] = useState('all');
   const [minScoreFilter, setMinScoreFilter] = useState(0);
   const [experienceFilter, setExperienceFilter] = useState('all');
   const [skillFilter, setSkillFilter] = useState('all');
   const [sortOption, setSortOption] = useState('score-desc');
-  const [showMoreFilters, setShowMoreFilters] = useState(false);
+
+  // Paid plans get all filters; free plan only gets Industry filter
+  const isPaidPlan = subscriptionTier !== 'free';
 
   // Extract unique industries from data
   const industries = useMemo(() => {
@@ -193,7 +197,7 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
             </div>
 
             {/* Primary Filters */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
               <select
                 value={industryFilter}
                 onChange={(e) => setIndustryFilter(e.target.value)}
@@ -205,54 +209,53 @@ export default function BrowseTalentClient({ talents, lettersSentTo }: BrowseTal
                 ))}
               </select>
 
-              <select
-                value={experienceFilter}
-                onChange={(e) => setExperienceFilter(e.target.value)}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Experience</option>
-                <option value="0-2">0-2 years</option>
-                <option value="3-5">3-5 years</option>
-                <option value="6-10">6-10 years</option>
-                <option value="10+">10+ years</option>
-              </select>
+              {isPaidPlan ? (
+                <>
+                  <select
+                    value={experienceFilter}
+                    onChange={(e) => setExperienceFilter(e.target.value)}
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Experience</option>
+                    <option value="0-2">0-2 years</option>
+                    <option value="3-5">3-5 years</option>
+                    <option value="6-10">6-10 years</option>
+                    <option value="10+">10+ years</option>
+                  </select>
 
-              <select
-                value={minScoreFilter}
-                onChange={(e) => setMinScoreFilter(Number(e.target.value))}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value={0}>Min Score: Any</option>
-                <option value={50}>Min Score: 50%</option>
-                <option value={60}>Min Score: 60%</option>
-                <option value={70}>Min Score: 70%</option>
-                <option value={80}>Min Score: 80%</option>
-              </select>
+                  <select
+                    value={minScoreFilter}
+                    onChange={(e) => setMinScoreFilter(Number(e.target.value))}
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value={0}>Min Score: Any</option>
+                    <option value={50}>Min Score: 50%</option>
+                    <option value={60}>Min Score: 60%</option>
+                    <option value={70}>Min Score: 70%</option>
+                    <option value={80}>Min Score: 80%</option>
+                  </select>
 
-              <button
-                onClick={() => setShowMoreFilters(!showMoreFilters)}
-                className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg hover:bg-gray-50 ${showMoreFilters ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-              >
-                <Filter className="w-4 h-4" />
-                More Filters
-              </button>
-            </div>
-
-            {/* More Filters (expanded) */}
-            {showMoreFilters && (
-              <div className="flex gap-2 flex-wrap pt-2 border-t border-gray-200">
-                <select
-                  value={skillFilter}
-                  onChange={(e) => setSkillFilter(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  <select
+                    value={skillFilter}
+                    onChange={(e) => setSkillFilter(e.target.value)}
+                    className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Skills</option>
+                    {allSkills.map(skill => (
+                      <option key={skill} value={skill}>{skill}</option>
+                    ))}
+                  </select>
+                </>
+              ) : (
+                <Link
+                  href="/dashboard/employer/billing"
+                  className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-blue-300 bg-blue-50 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
                 >
-                  <option value="all">All Skills</option>
-                  {allSkills.map(skill => (
-                    <option key={skill} value={skill}>{skill}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+                  <Filter className="w-4 h-4" />
+                  Unlock Experience, Score &amp; Skill filters — Upgrade Plan
+                </Link>
+              )}
+            </div>
 
             {/* Active Filters */}
             {hasActiveFilters && (
