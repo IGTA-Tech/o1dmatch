@@ -16,7 +16,6 @@ export default async function BrowseTalentPage() {
     .select('*')
     .eq('user_id', user.id)
     .single();
-
   if (!employerProfile) {
     redirect('/dashboard/employer');
   }
@@ -25,9 +24,8 @@ export default async function BrowseTalentPage() {
   const { data: subscription } = await supabase
     .from('employer_subscriptions')
     .select('tier')
-    .eq('employer_id', employerProfile.id)
+    .eq('employer_id', employerProfile.user_id)
     .single();
-
   const subscriptionTier = subscription?.tier ?? 'free';
 
   // Get public talent profiles
