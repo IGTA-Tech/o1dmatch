@@ -32,6 +32,7 @@ export default function EvidencePage() {
   const [selectedCriterion, setSelectedCriterion] = useState<O1Criterion | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [preselectedCriterion, setPreselectedCriterion] = useState<O1Criterion | null>(null);
+  const [autoApproving, setAutoApproving] = useState(false);
 
   // Auth state
   const [authData, setAuthData] = useState<{ userId: string; accessToken: string } | null>(null);
@@ -42,17 +43,17 @@ export default function EvidencePage() {
   // Calculate document counts per criterion (for CriteriaBreakdown)
   const documentCounts = useMemo(() => {
     const counts: Record<string, { total: number; verified: number; pending: number; needsReview: number; rejected: number }> = {};
-    
+
     // Initialize all criteria with 0
     (Object.keys(O1_CRITERIA) as O1Criterion[]).forEach(criterion => {
       counts[criterion] = { total: 0, verified: 0, pending: 0, needsReview: 0, rejected: 0 };
     });
-    
+
     // Count documents per criterion by status
     documents.forEach(doc => {
       if (doc.criterion) {
         counts[doc.criterion].total += 1;
-        
+
         switch (doc.status) {
           case 'verified':
             counts[doc.criterion].verified += 1;
@@ -69,7 +70,7 @@ export default function EvidencePage() {
         }
       }
     });
-    
+
     return counts;
   }, [documents]);
 
@@ -83,7 +84,7 @@ export default function EvidencePage() {
   const loadData = useCallback(async () => {
     // Get auth data directly from cookie instead of hanging supabase.auth.getUser()
     const auth = getSupabaseAuthData();
-    
+
     if (!auth?.user) {
       router.push('/login');
       return;
@@ -91,7 +92,7 @@ export default function EvidencePage() {
 
     const userId = auth.user.id;
     const accessToken = auth.access_token;
-    
+
     setAuthData({ userId, accessToken });
 
     try {
@@ -129,6 +130,7 @@ export default function EvidencePage() {
           if (docsResponse.ok) {
             const docs = await docsResponse.json();
             setDocuments(docs || []);
+            return { talentProfileId, docs: docs || [] };
           }
         }
       }
@@ -137,17 +139,127 @@ export default function EvidencePage() {
     }
 
     setLoading(false);
+    return null;
   }, [router, supabaseUrl, supabaseAnonKey]);
 
   useEffect(() => {
-    loadData();
+    loadData().then(() => setLoading(false));
   }, [loadData]);
 
-  const handleUploadComplete = () => {
+  /**
+   * AUTO-APPROVE: After upload, find all 'pending' docs that were just created
+   * (within the last 30 seconds) and immediately set them to 'verified'.
+   * This removes the need for admin interaction while still showing docs in admin UI.
+   */
+  const autoApproveNewDocuments = useCallback(async (
+    talentProfileId: string,
+    accessToken: string
+  ) => {
+    setAutoApproving(true);
+    try {
+      // Fetch latest pending docs for this talent (uploaded in last 60 seconds)
+      const since = new Date(Date.now() - 60_000).toISOString();
+      const pendingResponse = await fetch(
+        `${supabaseUrl}/rest/v1/talent_documents?talent_id=eq.${talentProfileId}&status=eq.pending&created_at=gte.${since}&select=id,talent_id`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': supabaseAnonKey,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!pendingResponse.ok) return;
+
+      const pendingDocs: { id: string; talent_id: string }[] = await pendingResponse.json();
+
+      if (!pendingDocs || pendingDocs.length === 0) return;
+
+      // Auto-approve each pending doc
+      await Promise.all(
+        pendingDocs.map(async (doc) => {
+          const patchResponse = await fetch(
+            `${supabaseUrl}/rest/v1/talent_documents?id=eq.${doc.id}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'apikey': supabaseAnonKey,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal',
+              },
+              body: JSON.stringify({
+                status: 'verified',
+                reviewed_at: new Date().toISOString(),
+                review_notes: 'Auto-approved on upload',
+              }),
+            }
+          );
+
+          // Trigger score recalculation for each verified doc
+          if (patchResponse.ok && doc.talent_id) {
+            try {
+              await fetch('/api/calculate-score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ talent_id: doc.talent_id }),
+              });
+            } catch (e) {
+              console.error('Score recalculation error:', e);
+            }
+          }
+        })
+      );
+    } catch (error) {
+      console.error('Auto-approve error:', error);
+    } finally {
+      setAutoApproving(false);
+    }
+  }, [supabaseUrl, supabaseAnonKey]);
+
+  const handleUploadComplete = useCallback(async () => {
     setShowUploadModal(false);
     setPreselectedCriterion(null);
-    loadData();
-  };
+
+    const auth = getSupabaseAuthData();
+    if (!auth?.user) return;
+
+    const accessToken = auth.access_token;
+    const userId = auth.user.id;
+
+    // Step 1: Get talent profile id
+    try {
+      const profileResponse = await fetch(
+        `${supabaseUrl}/rest/v1/talent_profiles?user_id=eq.${userId}&select=id`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': supabaseAnonKey,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (profileResponse.ok) {
+        const profiles = await profileResponse.json();
+        if (profiles && profiles[0]) {
+          const talentProfileId = profiles[0].id;
+
+          // Step 2: Auto-approve any newly uploaded pending docs
+          await autoApproveNewDocuments(talentProfileId, accessToken);
+        }
+      }
+    } catch (error) {
+      console.error('Error during post-upload flow:', error);
+    }
+
+    // Step 3: Reload documents to reflect verified status
+    await loadData();
+    setLoading(false);
+  }, [supabaseUrl, supabaseAnonKey, autoApproveNewDocuments, loadData]);
 
   const handleDelete = async (doc: TalentDocument) => {
     if (!confirm('Are you sure you want to delete this document?')) return;
@@ -275,9 +387,20 @@ export default function EvidencePage() {
           <h3 className="font-medium text-gray-900">AI-Powered Document Analysis</h3>
           <p className="text-sm text-gray-600">
             Our AI automatically extracts text, classifies documents, and suggests the best O-1 criterion.
+            Uploaded documents are verified instantly.
           </p>
         </div>
       </div>
+
+      {/* Auto-approving indicator */}
+      {autoApproving && (
+        <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-100">
+          <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+          <p className="text-sm text-blue-700 font-medium">
+            Verifying your document automatically...
+          </p>
+        </div>
+      )}
 
       {/* Document Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -500,11 +623,10 @@ export default function EvidencePage() {
               preselectedCriterion={preselectedCriterion}
             />
 
-            <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg mt-4">
-              <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-700">
-                Documents are automatically analyzed with AI. High-confidence documents may be
-                auto-verified. All documents are subject to review.
+            <div className="flex items-start gap-2 p-3 bg-green-50 rounded-lg mt-4">
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-green-700">
+                Documents are automatically verified upon upload.
               </p>
             </div>
           </div>

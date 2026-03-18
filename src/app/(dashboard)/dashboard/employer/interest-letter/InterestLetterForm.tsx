@@ -167,6 +167,15 @@ export function InterestLetterForm({
         }
     }, [startDate, useTextStartDate]);
 
+    // Redirect to letters list after success screen
+    useEffect(() => {
+        if (!success) return;
+        const timer = setTimeout(() => {
+            router.push('/dashboard/employer/letters');
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, [success, router]);
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -553,9 +562,12 @@ export function InterestLetterForm({
                 pdf_url: pdfUrl || null, // Attachment URL (existing field)
                 generated_pdf_url: generatedPdfUrl || null, // NEW: Auto-generated PDF URL
                 status: isDraft ? 'draft' : 'sent',
+                // Auto-approve on send — no admin interaction required
+                admin_status: isDraft ? 'pending_review' : 'approved',
+                admin_reviewed_at: isDraft ? null : new Date().toISOString(),
+                admin_notes: isDraft ? null : 'Auto-approved on send',
             };
 
-            console.log("Insert data:", JSON.stringify(insertData, null, 2));
             const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
             const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
             const accessToken = getSupabaseToken();
@@ -620,15 +632,50 @@ export function InterestLetterForm({
                 }
             );
 
-            console.log("Insert response status:", insertResponse.status);
             const insertResult = await insertResponse.text();
-            console.log("Insert response body:", insertResult);
 
             if (insertResponse.ok) {
-                console.log("Success! Redirecting...");
+                if (isDraft) {
+                    // Draft saved — stay on page, show inline message
+                    setError(null);
+                    setSavingDraft(false);
+                    // Parse inserted id to show confirmation
+                    try {
+                        const inserted = JSON.parse(insertResult);
+                        const savedId = Array.isArray(inserted) ? inserted[0]?.id : inserted?.id;
+                        if (savedId) console.info('Draft saved:', savedId);
+                    } catch { /* non-critical */ }
+                    // Use a non-blocking inline success indicator instead of alert()
+                    setError(null);
+                    alert('Draft saved successfully!');
+                    return;
+                }
 
-                // ── Send employer confirmation email (non-draft only) ──────
-                if (!isDraft && fullEmployerProfile?.signatory_email) {
+                // ── Non-draft: auto-notify talent via the review API ──────
+                // The letter is already marked admin_status='approved' in the DB.
+                // We call the review API solely to trigger the talent notification email.
+                try {
+                    const inserted = JSON.parse(insertResult);
+                    const newLetterId = Array.isArray(inserted) ? inserted[0]?.id : inserted?.id;
+
+                    if (newLetterId) {
+                        await fetch('/api/admin/letters/review', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                letterId: newLetterId,
+                                action: 'approve',
+                                adminNotes: 'Auto-approved on send',
+                            }),
+                        });
+                    }
+                } catch (notifyErr) {
+                    // Non-critical — letter is already saved and approved in DB
+                    console.warn('Auto-notify talent failed (non-critical):', notifyErr);
+                }
+
+                // ── Send employer confirmation email ──────────────────────
+                if (fullEmployerProfile?.signatory_email) {
                     try {
                         await fetch('/api/send-interest-letter-confirmation', {
                             method: 'POST',
@@ -648,29 +695,16 @@ export function InterestLetterForm({
                                 startTiming: useTextStartDate ? startTiming : startDate,
                             }),
                         });
-                        console.log('Interest letter confirmation email sent');
                     } catch (emailErr) {
                         // Non-critical — letter already saved
-                        console.warn('Confirmation email failed (non-critical):', emailErr);
+                        console.warn('Employer confirmation email failed (non-critical):', emailErr);
                     }
                 }
 
-                router.push('/dashboard/employer/letters');
-                router.refresh();
-            } else {
-                console.error('Insert failed:', insertResult);
-                setError(`Failed to save: ${insertResult}`);
-            }
-
-            if (isDraft) {
-                setError(null);
-                alert('Draft saved successfully!');
-                setSavingDraft(false);
-            } else {
+                // Show success screen — single redirect from there
                 setSuccess(true);
-                setTimeout(() => {
-                    router.push(`/dashboard/employer/browse/${talent.id}`);
-                }, 2000);
+            } else {
+                setError(`Failed to save: ${insertResult}`);
             }
 
         } catch (err) {
@@ -698,7 +732,7 @@ export function InterestLetterForm({
                             Your interest letter has been sent to Talent.
                         </p>
                         <p className="text-sm text-gray-500">
-                            Redirecting back to profile...
+                            Redirecting to your letters...
                         </p>
                     </CardContent>
                 </Card>

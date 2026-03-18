@@ -192,11 +192,13 @@ export default function LetterResponseActions({
         responded_at: new Date().toISOString(),
       };
 
-      // Add signature data if accepting
+      // Add signature data if accepting — skip admin review, forward directly to employer
       if (selectedAction === 'accept' && signatureData) {
         updateData.talent_signature_data = signatureData;
         updateData.talent_signed_at = new Date().toISOString();
-        updateData.signature_status = 'admin_reviewing';
+        updateData.signature_status = 'forwarded_to_employer';
+        updateData.forwarded_to_employer_at = new Date().toISOString();
+        updateData.employer_received_signed_at = new Date().toISOString();
       }
 
       console.log('Sending update...');
@@ -223,7 +225,21 @@ export default function LetterResponseActions({
       console.log('Response status:', response.status);
       
       if (response.ok) {
-        console.log('Update successful');
+        // Notify employer directly — no admin step required
+        try {
+          await fetch('/api/letters/talent-response-notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              letterId,
+              action: selectedAction,
+            }),
+          });
+        } catch (notifyErr) {
+          // Non-critical — letter already updated in DB
+          console.warn('Employer notify failed (non-critical):', notifyErr);
+        }
+
         router.refresh();
       } else {
         const errorText = await response.text();
@@ -355,7 +371,7 @@ export default function LetterResponseActions({
         {/* Info about workflow */}
         {selectedAction === 'accept' && (
           <div className="p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
-            <strong>Note:</strong> After you sign and submit, your signed letter will be reviewed by the admin team before being forwarded to the employer.
+            <strong>Note:</strong> After you sign and submit, your signed letter will be sent directly to the employer.
           </div>
         )}
 

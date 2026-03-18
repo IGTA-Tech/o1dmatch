@@ -35,15 +35,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is admin
+    // Allow admin OR employer — employer can only approve their own letters
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    const isAdmin    = profile?.role === 'admin';
+    const isEmployer = profile?.role === 'employer';
+
+    if (!isAdmin && !isEmployer) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     // Get request body
@@ -109,6 +112,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Letter not found' }, { status: 404 });
     }
 
+    // Employer ownership check — must own the letter, and can only approve (not reject)
+    if (isEmployer) {
+      const { data: employerProfile } = await supabase
+        .from('employer_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!employerProfile || letter.employer_id !== employerProfile.id) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      }
+
+      if (action !== 'approve') {
+        return NextResponse.json({ error: 'Employers can only approve their own letters' }, { status: 403 });
+      }
+    }
+
     // Update letter status
     console.log('[review] STEP 2: Updating letter status to:', action === 'approve' ? 'sent/approved' : 'rejected/rejected');
     const newStatus = action === 'approve' ? 'sent' : 'rejected';
@@ -135,7 +155,8 @@ export async function POST(request: NextRequest) {
     // If approved, create in-app notification for talent
     if (action === 'approve' && letter.talent?.user_id) {
       console.log('[review] STEP 3: Creating in-app notification for talent user_id:', letter.talent.user_id);
-      const { error: notificationError } = await supabase
+      // Use supabaseService to bypass RLS — inserting for talent's user_id, not the caller's
+      const { error: notificationError } = await supabaseService
         .from('notifications')
         .insert({
           user_id: letter.talent.user_id,
