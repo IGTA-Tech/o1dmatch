@@ -96,7 +96,7 @@ export default function TalentSidebar({
 
     fetchTier();
   }, []);
-console.log("CurrentTier=====> ",currentTier);
+//console.log("CurrentTier=====> ",currentTier);
   // Hide "Tools" section for free-tier users (also hide when tier unknown/not yet loaded)
   const isFreePlan = !currentTier || currentTier === 'profile_only';
   const filteredSections = isFreePlan
