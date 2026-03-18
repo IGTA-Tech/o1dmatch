@@ -34,6 +34,83 @@ import { TalentProfile } from '@/types/models';
 import { Resolver } from 'react-hook-form';
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
 
+// ── Curated skills list — all O-1 relevant domains ───────────────────────────
+const SKILLS_LIST: string[] = [
+  // Technology & Engineering
+  'Python','JavaScript','TypeScript','React','Next.js','Node.js','Vue.js','Angular',
+  'Rust','Go','Java','C++','C#','Swift','Kotlin','Ruby','PHP','Scala','R','MATLAB',
+  'SQL','PostgreSQL','MySQL','MongoDB','Redis','GraphQL','REST APIs','gRPC',
+  'Docker','Kubernetes','AWS','Google Cloud','Azure','Terraform','CI/CD',
+  'Machine Learning','Deep Learning','Neural Networks','Computer Vision',
+  'Natural Language Processing','Large Language Models','Generative AI',
+  'Reinforcement Learning','Data Science','Data Engineering','MLOps',
+  'PyTorch','TensorFlow','Keras','Scikit-learn','Hugging Face','LangChain',
+  'Linux','Unix','Bash','Shell Scripting','DevOps','Site Reliability Engineering',
+  'Cybersecurity','Penetration Testing','Cryptography','Blockchain','Web3','Solidity',
+  'System Design','Distributed Systems','Microservices','Cloud Architecture',
+  'Embedded Systems','FPGA','IoT','Robotics','Computer Vision','Signal Processing',
+  'Algorithms','Data Structures','Compiler Design','Operating Systems',
+  // Research & Science
+  'Research','Academic Writing','Scientific Writing','Grant Writing','Peer Review',
+  'Bioinformatics','Computational Biology','Genomics','Proteomics','CRISPR',
+  'Molecular Biology','Cell Biology','Biochemistry','Neuroscience','Pharmacology',
+  'Clinical Research','Clinical Trials','Epidemiology','Biostatistics',
+  'Physics','Quantum Computing','Quantum Mechanics','Astrophysics','Materials Science',
+  'Chemistry','Organic Chemistry','Chemical Engineering','Nanotechnology',
+  'Environmental Science','Climate Modeling','GIS','Remote Sensing',
+  'Statistics','Econometrics','Applied Mathematics','Linear Algebra','Calculus',
+  // Business & Management
+  'Product Management','Product Strategy','Roadmap Planning','Agile','Scrum','Kanban',
+  'Project Management','Program Management','PMP','Six Sigma','Lean',
+  'Business Strategy','Strategic Planning','Business Development','Partnerships',
+  'Financial Modeling','Valuation','Investment Analysis','Venture Capital','Private Equity',
+  'Marketing','Digital Marketing','SEO','SEM','Content Marketing','Brand Strategy',
+  'Sales','Enterprise Sales','B2B Sales','CRM','Salesforce','HubSpot',
+  'Operations','Supply Chain','Logistics','Process Improvement',
+  'Human Resources','Talent Acquisition','Organizational Design',
+  'Consulting','Management Consulting','Business Analysis',
+  'Entrepreneurship','Startup Founding','Fundraising','Pitch Decks',
+  // Arts & Creative
+  'UI Design','UX Design','Product Design','Figma','Sketch','Adobe XD',
+  'Graphic Design','Illustration','Typography','Brand Identity',
+  'Motion Graphics','Video Editing','Animation','3D Modeling','Blender','Cinema 4D',
+  'Photography','Cinematography','Film Production','Documentary',
+  'Music Production','Audio Engineering','Sound Design','Mixing','Mastering',
+  'Creative Writing','Screenwriting','Copywriting','Technical Writing',
+  'Architecture','Interior Design','Industrial Design',
+  // Law & Immigration
+  'Immigration Law','O-1 Visa','EB-1','EB-2 NIW','H-1B','L-1',
+  'Intellectual Property','Patent Law','Trademark','Copyright',
+  'Corporate Law','Contract Law','Mergers & Acquisitions','Securities Law',
+  'Litigation','Arbitration','Mediation','Compliance','Regulatory Affairs',
+  // Medicine & Healthcare
+  'Clinical Medicine','Surgery','Internal Medicine','Pediatrics','Oncology',
+  'Radiology','Pathology','Cardiology','Neurology','Psychiatry',
+  'Medical Research','Drug Discovery','Biomedical Engineering','Health Informatics',
+  'Telemedicine','Public Health','Global Health','Health Policy',
+  // Finance & Economics
+  'Investment Banking','Asset Management','Portfolio Management','Risk Management',
+  'Quantitative Finance','Algorithmic Trading','Derivatives','Fixed Income',
+  'Accounting','Financial Reporting','GAAP','IFRS','Tax Planning','Audit',
+  'Economics','Macroeconomics','Microeconomics','Behavioral Economics',
+  'Cryptocurrency','DeFi','FinTech',
+  // Communication & Leadership
+  'Public Speaking','Keynote Speaking','Thought Leadership','Executive Communication',
+  'Team Leadership','Cross-functional Collaboration','Stakeholder Management',
+  'Coaching','Mentoring','Training & Development',
+  'Languages: English','Languages: Spanish','Languages: Mandarin','Languages: French',
+  'Languages: German','Languages: Arabic','Languages: Japanese','Languages: Hindi',
+].sort();
+
+// Regex: must look like a real skill — letters, spaces, dots, hyphens, plus, colon, &
+const SKILL_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9 .+\-&:/()#]{1,49}$/;
+
+function isValidSkill(value: string): boolean {
+  const trimmed = value.trim();
+  // Must match the curated list OR pass the regex (allows custom but legitimate skills)
+  return SKILLS_LIST.includes(trimmed) || SKILL_REGEX.test(trimmed);
+}
+
 type TabKey = 'basic' | 'location' | 'professional' | 'education' | 'online';
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
@@ -88,6 +165,9 @@ export default function TalentProfilePage() {
   // Skills input state
   const [skillInput, setSkillInput] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
+  const [skillError, setSkillError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Bio state
   const [bio, setBio] = useState('');
@@ -256,12 +336,48 @@ export default function TalentProfilePage() {
     setSaving(false);
   };
 
-  const addSkill = () => {
-    const skill = skillInput.trim();
-    if (skill && !skills.includes(skill)) {
-      setSkills([...skills, skill]);
-      setSkillInput('');
+  const handleSkillInput = (value: string) => {
+    setSkillInput(value);
+    setSkillError(null);
+    if (value.trim().length >= 1) {
+      const lower = value.toLowerCase();
+      const matched = SKILLS_LIST
+        .filter(s => s.toLowerCase().includes(lower) && !skills.includes(s))
+        .slice(0, 8);
+      setSuggestions(matched);
+      setShowSuggestions(matched.length > 0);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
     }
+  };
+
+  const addSkill = (override?: string) => {
+    const skill = (override || skillInput).trim();
+    if (!skill) return;
+
+    if (skills.includes(skill)) {
+      setSkillError('This skill is already added.');
+      setSkillInput('');
+      setShowSuggestions(false);
+      return;
+    }
+
+    if (skills.length >= 20) {
+      setSkillError('Maximum 20 skills allowed.');
+      return;
+    }
+
+    if (!isValidSkill(skill)) {
+      setSkillError('Please enter a valid skill name (letters, spaces, hyphens only — no sentences or special characters).');
+      return;
+    }
+
+    setSkills([...skills, skill]);
+    setSkillInput('');
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSkillError(null);
   };
 
   const removeSkill = (skillToRemove: string) => {
@@ -629,29 +745,91 @@ export default function TalentProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Skills</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={skillInput}
-                    onChange={(e) => setSkillInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addSkill();
-                      }
-                    }}
-                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500"
-                    placeholder="Add a skill and press Enter"
-                  />
-                  <button
-                    type="button"
-                    onClick={addSkill}
-                    className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                  >
-                    Add
-                  </button>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Skills
+                  </label>
+                  <span className="text-xs text-gray-400">{skills.length}/20</span>
                 </div>
+                <p className="text-xs text-gray-500 mb-2">
+                  Type to search from our curated list, or enter a custom skill name. Press Enter or click Add.
+                </p>
+
+                {/* Autocomplete input */}
+                <div className="relative">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={skillInput}
+                      onChange={(e) => handleSkillInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); addSkill(); }
+                        if (e.key === 'Escape') { setShowSuggestions(false); }
+                        if (e.key === 'ArrowDown' && suggestions.length > 0) {
+                          e.preventDefault();
+                          const first = document.getElementById('skill-suggestion-0');
+                          first?.focus();
+                        }
+                      }}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                      onFocus={() => skillInput.length >= 1 && suggestions.length > 0 && setShowSuggestions(true)}
+                      className={`flex-1 px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-500 ${
+                        skillError ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                      }`}
+                      placeholder="e.g. Machine Learning, Python, UX Design…"
+                      autoComplete="off"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => addSkill()}
+                      disabled={skills.length >= 20}
+                      className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {/* Dropdown suggestions */}
+                  {showSuggestions && suggestions.length > 0 && (
+                    <ul className="absolute z-20 left-0 right-12 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto">
+                      {suggestions.map((s, i) => (
+                        <li key={s}>
+                          <button
+                            id={`skill-suggestion-${i}`}
+                            type="button"
+                            onMouseDown={() => addSkill(s)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') addSkill(s);
+                              if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                document.getElementById(`skill-suggestion-${i + 1}`)?.focus();
+                              }
+                              if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                i === 0
+                                  ? (document.querySelector('input[placeholder*="Machine Learning"]') as HTMLInputElement)?.focus()
+                                  : document.getElementById(`skill-suggestion-${i - 1}`)?.focus();
+                              }
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 focus:outline-none transition-colors"
+                          >
+                            {s}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Validation error */}
+                {skillError && (
+                  <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                    {skillError}
+                  </p>
+                )}
+
+                {/* Added skills */}
                 {skills.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {skills.map((skill, index) => (
@@ -670,6 +848,10 @@ export default function TalentProfilePage() {
                       </span>
                     ))}
                   </div>
+                )}
+
+                {skills.length === 0 && (
+                  <p className="mt-2 text-xs text-gray-400 italic">No skills added yet.</p>
                 )}
               </div>
 
