@@ -9,6 +9,7 @@ const SERVICE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 // Paths to skip for page-view tracking
 const TRACKING_SKIP = ['/_next', '/api/', '/favicon', '/robots', '/sitemap', '/static', '/__'];
+const PRODUCTION_HOST = 'app.o1dmatch.com';
 
 function getIp(request: NextRequest): string {
   return (
@@ -121,8 +122,11 @@ export async function middleware(request: NextRequest) {
   // Next.js will show 404 for pages that don't exist
 
   // ── Fire-and-forget page view tracking ───────────────────────────────────
-  // Runs on every non-asset request. Never blocks or delays the response.
-  const shouldTrack = !TRACKING_SKIP.some(prefix => pathname.startsWith(prefix));
+  // Only tracks requests from the production domain (app.o1dmatch.com).
+  // Local dev (localhost:3000) is excluded so reports show real usage only.
+  const host = request.headers.get('host') || '';
+  const isProduction = host === PRODUCTION_HOST;
+  const shouldTrack = isProduction && !TRACKING_SKIP.some(prefix => pathname.startsWith(prefix));
   if (shouldTrack) {
     fetch(`${SUPABASE_URL}/rest/v1/page_views`, {
       method: 'POST',
