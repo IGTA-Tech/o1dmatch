@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
     // Yesterday vs day before for trend arrows in KPI section
     const yesterday    = dailyRows[dailyRows.length - 1];
     const dayBefore    = dailyRows[dailyRows.length - 2];
-
+    console.log("yesterday => ",yesterday);
     // 30-day totals
     const totals30d = dailyRows.reduce((acc, r) => ({
       signups: acc.signups + r.signups,
