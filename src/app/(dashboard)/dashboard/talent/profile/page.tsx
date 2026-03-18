@@ -806,9 +806,11 @@ export default function TalentProfilePage() {
                               }
                               if (e.key === 'ArrowUp') {
                                 e.preventDefault();
-                                i === 0
-                                  ? (document.querySelector('input[placeholder*="Machine Learning"]') as HTMLInputElement)?.focus()
-                                  : document.getElementById(`skill-suggestion-${i - 1}`)?.focus();
+                                if (i === 0) {
+                                  (document.querySelector('input[placeholder*="Machine Learning"]') as HTMLInputElement)?.focus();
+                                } else {
+                                  document.getElementById(`skill-suggestion-${i - 1}`)?.focus();
+                                }
                               }
                             }}
                             className="w-full text-left px-4 py-2.5 text-sm text-gray-800 hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 focus:outline-none transition-colors"
