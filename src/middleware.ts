@@ -3,6 +3,21 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// ── Visitor tracking config ───────────────────────────────────────────────
+const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SERVICE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+// Paths to skip for page-view tracking
+const TRACKING_SKIP = ['/_next', '/api/', '/favicon', '/robots', '/sitemap', '/static', '/__'];
+
+function getIp(request: NextRequest): string {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -104,6 +119,30 @@ export async function middleware(request: NextRequest) {
 
   // All other routes (public pages, unknown URLs) - let them through
   // Next.js will show 404 for pages that don't exist
+
+  // ── Fire-and-forget page view tracking ───────────────────────────────────
+  // Runs on every non-asset request. Never blocks or delays the response.
+  const shouldTrack = !TRACKING_SKIP.some(prefix => pathname.startsWith(prefix));
+  if (shouldTrack) {
+    fetch(`${SUPABASE_URL}/rest/v1/page_views`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey':        SERVICE_KEY,
+        'Authorization': `Bearer ${SERVICE_KEY}`,
+        'Prefer':        'return=minimal',
+      },
+      body: JSON.stringify({
+        path:       pathname,
+        ip_address: getIp(request),
+        user_agent: request.headers.get('user-agent') || null,
+        referrer:   request.headers.get('referer')    || null,
+      }),
+    }).catch(() => {
+      // Swallow silently — never crash the page over analytics
+    });
+  }
+
   return supabaseResponse;
 }
 
