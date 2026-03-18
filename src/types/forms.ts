@@ -11,6 +11,7 @@ export const signUpSchema = z.object({
   role: z.enum(['talent', 'employer', 'agency', 'lawyer']),
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
   agree_terms: z.boolean().refine(val => val === true, 'You must agree to the terms'),
+  agree_accuracy: z.boolean().refine(val => val === true, 'You must certify that your information is accurate'),
 }).refine(data => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],

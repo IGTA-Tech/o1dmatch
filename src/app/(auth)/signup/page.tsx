@@ -33,7 +33,7 @@ export default function SignupPage() {
   const { register, handleSubmit, watch, formState: { errors } } =
     useForm<SignUpFormData>({
       resolver: zodResolver(signUpSchema),
-      defaultValues: { role: 'talent', agree_terms: false },
+      defaultValues: { role: 'talent', agree_terms: false, agree_accuracy: false },
     });
 
   const selectedRole = watch('role');
@@ -395,6 +395,58 @@ export default function SignupPage() {
                   />
                 </div>
                 {errors.confirmPassword && <p style={{ marginTop: '0.3rem', fontSize: '0.78rem', color: '#EF4444' }}>{errors.confirmPassword.message}</p>}
+              </div>
+
+              {/* ── Accuracy Certification Box ── */}
+              <div style={{
+                background: 'rgba(212,168,75,0.04)',
+                border: '1.5px solid rgba(212,168,75,0.25)',
+                borderRadius: 10,
+                padding: '1rem 1.1rem',
+              }}>
+                <p style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0B1D35', marginBottom: '0.6rem', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+                  Accuracy Certification
+                </p>
+                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.85rem' }}>
+                  {[
+                    'All information I provide on this platform is true, accurate, and complete to the best of my knowledge.',
+                    'I understand that providing false or misleading information may result in account suspension and could have legal consequences under U.S. immigration law.',
+                    'I will promptly update my information if any details change.',
+                    selectedRole === 'talent'
+                      ? 'My credentials, achievements, and qualifications are accurately represented.'
+                      : selectedRole === 'employer'
+                      ? 'My company information, job details, and sponsorship intentions are genuine and accurate.'
+                      : selectedRole === 'agency'
+                      ? 'My agency credentials and client representations are accurate and authorized.'
+                      : 'My bar admission status and legal credentials are current and accurately represented.',
+                  ].map((point, i) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                      <div style={{
+                        width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+                        background: 'rgba(212,168,75,0.15)', border: '1px solid rgba(212,168,75,0.3)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Check size={9} style={{ color: '#D4A84B' }} />
+                      </div>
+                      <span style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.55 }}>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Accuracy checkbox */}
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer' }}>
+                  <input
+                    {...register('agree_accuracy')}
+                    type="checkbox"
+                    style={{ width: 16, height: 16, marginTop: 2, accentColor: '#D4A84B', cursor: 'pointer', flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: '0.82rem', color: '#0B1D35', fontWeight: 600, lineHeight: 1.5 }}>
+                    I certify that all information I submit is true, accurate, and complete.
+                  </span>
+                </label>
+                {errors.agree_accuracy && (
+                  <p style={{ marginTop: '0.4rem', fontSize: '0.78rem', color: '#EF4444' }}>{errors.agree_accuracy.message}</p>
+                )}
               </div>
 
               {/* Terms */}
