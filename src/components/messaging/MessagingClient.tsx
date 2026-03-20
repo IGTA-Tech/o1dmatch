@@ -60,6 +60,10 @@ interface MessagingClientProps {
   viewerRole: 'talent' | 'employer' | 'agency';
   /** For employer/agency: pre-selected talent to message */
   preselectedTalentId?: string;
+  /** Externally controlled — set true to open the New Message modal */
+  openNewConv?: boolean;
+  /** Called when the modal closes so the parent can reset its state */
+  onNewConvClose?: () => void;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -100,7 +104,7 @@ function getUnreadCount(conv: Conversation, viewerRole: string): number {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function MessagingClient({ viewerRole, preselectedTalentId }: MessagingClientProps) {
+export default function MessagingClient({ viewerRole, preselectedTalentId, openNewConv, onNewConvClose }: MessagingClientProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages]         = useState<Message[]>([]);
@@ -133,6 +137,14 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
   const [lookupError, setLookupError]           = useState<string | null>(null);
   const lookupDebounceRef                        = useRef<NodeJS.Timeout | null>(null);
 
+  // Open modal when driven externally (e.g. page-level button)
+  useEffect(() => {
+    if (openNewConv) {
+      setShowNewConvModal(true);
+      setNewConvTalentId(preselectedTalentId || '');
+    }
+  }, [openNewConv, preselectedTalentId]);
+
   const messagesEndRef   = useRef<HTMLDivElement>(null);
   const pollingRef       = useRef<NodeJS.Timeout | null>(null);
   const activeConvIdRef  = useRef<string | null>(null);
@@ -142,11 +154,10 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
     activeConvIdRef.current = activeConvId;
   }, [activeConvId]);
 
-  // ── Lookup talent by Candidate ID (debounced) ───────────────────────────
+  // ── Lookup talent by email (debounced) ──────────────────────────────────
 
-  const lookupTalentByEmail = useCallback(async (candidateId: string) => {
-    const trimmed = candidateId.trim();
-    if (!trimmed) {
+  const lookupTalentByEmail = useCallback(async (email: string) => {
+    if (!email || !email.includes('@')) {
       setLookupResult(null);
       setLookupError(null);
       return;
@@ -155,7 +166,7 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
     setLookupError(null);
     setLookupResult(null);
     try {
-      const res  = await fetch(`/api/messaging/lookup-talent?candidate_id=${encodeURIComponent(trimmed)}`);
+      const res  = await fetch(`/api/messaging/lookup-talent?email=${encodeURIComponent(email)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setLookupResult(data);
@@ -168,12 +179,12 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
     }
   }, []);
 
-  const handleEmailChange = (candidateId: string) => {
-    setLookupEmail(candidateId);
+  const handleEmailChange = (email: string) => {
+    setLookupEmail(email);
     setLookupResult(null);
     setLookupError(null);
     if (lookupDebounceRef.current) clearTimeout(lookupDebounceRef.current);
-    lookupDebounceRef.current = setTimeout(() => lookupTalentByEmail(candidateId), 600);
+    lookupDebounceRef.current = setTimeout(() => lookupTalentByEmail(email), 600);
   };
 
 
@@ -219,8 +230,13 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [fetchConversations]);
 
-  // Open pre-selected conversation if talent was passed — declared AFTER openConversation
-  // (moved below to avoid "used before declaration" error)
+  // Open pre-selected conversation if talent was passed
+  useEffect(() => {
+    if (preselectedTalentId && conversations.length > 0) {
+      const existing = conversations.find(c => c.talent?.id === preselectedTalentId);
+      if (existing) openConversation(existing.id);
+    }
+  }, [preselectedTalentId, conversations]);
 
   // ── Open a conversation (initial load — shows spinner) ──────────────────
 
@@ -252,14 +268,6 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
       setLoadingMsgs(false);
     }
   }, []);
-
-  // Now safe to reference openConversation — it is declared above
-  useEffect(() => {
-    if (preselectedTalentId && conversations.length > 0) {
-      const existing = conversations.find(c => c.talent?.id === preselectedTalentId);
-      if (existing) openConversation(existing.id);
-    }
-  }, [preselectedTalentId, conversations, openConversation]);
 
   // ── Silent background refresh — NEVER sets loadingMsgs, never blurs input ─
 
@@ -388,7 +396,7 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
                 <p className="text-xs text-blue-600 font-medium">{totalUnread} unread</p>
               )}
             </div>
-            {viewerRole !== 'talent' && (
+            {/* {viewerRole !== 'talent' && (
               <button
                 onClick={() => { setShowNewConvModal(true); setNewConvTalentId(preselectedTalentId || ''); }}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg transition-all hover:-translate-y-0.5 hover:shadow-md"
@@ -397,7 +405,7 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
                 <MessageSquare className="w-4 h-4" />
                 New Message
               </button>
-            )}
+            )} */}
           </div>
         </div>
 
@@ -572,16 +580,16 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">New Message to Talent</h3>
-              <p className="text-sm text-gray-500 mt-0.5">Enter the talent&apos;s ID to start a conversation</p>
+              <p className="text-sm text-gray-500 mt-0.5">Enter the talent's email to start a conversation</p>
             </div>
 
             <div className="p-6 space-y-4">
 
-              {/* Candidate ID lookup */}
+              {/* Email lookup */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-sm font-medium text-gray-700">
-                    Talent ID <span className="text-red-500">*</span>
+                    Talent Email <span className="text-red-500">*</span>
                   </label>
                   <button
                     type="button"
@@ -601,11 +609,11 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
                 </div>
                 <div className="relative">
                   <input
-                    type="text"
+                    type="email"
                     value={lookupEmail}
                     onChange={e => handleEmailChange(e.target.value)}
-                    placeholder="e.g. CAND-618279"
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono tracking-wide ${
+                    placeholder="talent@example.com"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       lookupError   ? 'border-red-400 bg-red-50' :
                       lookupResult  ? 'border-green-400 bg-green-50' :
                       'border-gray-300'
@@ -695,6 +703,7 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
                   setLookupError(null);
                   setNewConvSubject('');
                   setNewConvMessage('');
+                  onNewConvClose?.();
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
               >
