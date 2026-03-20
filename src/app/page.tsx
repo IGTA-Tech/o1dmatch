@@ -371,6 +371,50 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── VIDEO ─── */}
+      <section className="hl-section hl-section-navy">
+        <div className="hl-section-header hl-fade-up">
+          <span className="hl-section-tag">See It In Action</span>
+          <h2 className="hl-section-title" style={{ color: '#FFFFFF' }}>Watch How O1DMatch Works</h2>
+          <p className="hl-section-desc" style={{ color: 'rgba(255,255,255,0.7)' }}>
+            See how our platform connects extraordinary talent with U.S. employers
+            ready to support your O-1 visa journey.
+          </p>
+        </div>
+
+        <div
+          className="hl-fade-up"
+          style={{
+            maxWidth: '1025px',
+            margin: '0 auto',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            boxShadow: '0 8px 40px rgba(11,29,53,0.15)',
+            border: '1.5px solid #E2D9CC',
+            position: 'relative',
+            paddingBottom: '36%',
+            height: 0,
+          }}
+        >
+          <iframe
+            src="https://www.youtube.com/embed/cXjAexer_To?si=LQmBuQNWEeLrZxfd&controls=0&rel=0"
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '100%',
+              height: '100%',
+            }}
+          />
+        </div>
+      </section>
+
       {/* ─── O-1 CRITERIA ─── */}
       <section className="hl-section hl-section-cream">
         <div className="hl-section-header hl-fade-up">
