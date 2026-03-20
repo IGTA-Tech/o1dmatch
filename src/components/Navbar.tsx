@@ -17,7 +17,7 @@ import {
   Star,
   FolderOpen,
   Shield,
-  // BarChart3,
+  MessageSquare,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
@@ -201,11 +201,19 @@ export default function Navbar() {
     <header className={`fixed ${isDemoMode ? 'top-10' : 'top-0'} left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">O1</span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <div
+              className="w-9 h-9 rounded-[9px] flex items-center justify-center font-extrabold text-sm"
+              style={{ background: '#D4A84B', color: '#0B1D35' }}
+            >
+              O1
             </div>
-            <span className="font-semibold text-gray-900">O1DMatch</span>
+            <span
+              className="font-bold text-lg text-gray-900"
+              style={{ fontFamily: "'Playfair Display', serif" }}
+            >
+              O1DMatch
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -399,6 +407,16 @@ export default function Navbar() {
                         >
                           <FolderOpen className="w-4 h-4" />
                           Exhibits
+                        </Link>
+                      )}
+                      {userRole === 'agency' && (
+                        <Link
+                          href="/dashboard/agency/messages"
+                          onClick={() => setIsDashboardOpen(false)}
+                          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray-50 ${pathname === "/dashboard/agency/messages" ? "text-blue-600 bg-blue-50" : "text-gray-700"}`}
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          Messages
                         </Link>
                       )}
                       {userRole === 'talent' && (
@@ -644,6 +662,16 @@ export default function Navbar() {
                     >
                       <FolderOpen className="w-4 h-4" />
                       Exhibits
+                    </Link>
+                  )}
+                  {userRole === 'agency' && (
+                    <Link
+                      href="/dashboard/agency/messages"
+                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Messages
                     </Link>
                   )}
                   {userRole === 'talent' && (
