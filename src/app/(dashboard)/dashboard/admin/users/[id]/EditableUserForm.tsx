@@ -21,7 +21,7 @@ import {
   Plus,
   CreditCard,
   CalendarDays,
-  AlertCircle,
+  // AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
