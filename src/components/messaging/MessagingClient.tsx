@@ -154,10 +154,11 @@ export default function MessagingClient({ viewerRole, preselectedTalentId, openN
     activeConvIdRef.current = activeConvId;
   }, [activeConvId]);
 
-  // ── Lookup talent by email (debounced) ──────────────────────────────────
+  // ── Lookup talent by Candidate ID (debounced) ───────────────────────────
 
-  const lookupTalentByEmail = useCallback(async (email: string) => {
-    if (!email || !email.includes('@')) {
+  const lookupTalentByEmail = useCallback(async (candidateId: string) => {
+    const trimmed = candidateId.trim().toUpperCase();
+    if (!trimmed) {
       setLookupResult(null);
       setLookupError(null);
       return;
@@ -166,7 +167,7 @@ export default function MessagingClient({ viewerRole, preselectedTalentId, openN
     setLookupError(null);
     setLookupResult(null);
     try {
-      const res  = await fetch(`/api/messaging/lookup-talent?email=${encodeURIComponent(email)}`);
+      const res  = await fetch(`/api/messaging/lookup-talent?candidate_id=${encodeURIComponent(trimmed)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setLookupResult(data);
@@ -179,12 +180,12 @@ export default function MessagingClient({ viewerRole, preselectedTalentId, openN
     }
   }, []);
 
-  const handleEmailChange = (email: string) => {
-    setLookupEmail(email);
+  const handleEmailChange = (candidateId: string) => {
+    setLookupEmail(candidateId);
     setLookupResult(null);
     setLookupError(null);
     if (lookupDebounceRef.current) clearTimeout(lookupDebounceRef.current);
-    lookupDebounceRef.current = setTimeout(() => lookupTalentByEmail(email), 600);
+    lookupDebounceRef.current = setTimeout(() => lookupTalentByEmail(candidateId), 600);
   };
 
 
@@ -230,15 +231,8 @@ export default function MessagingClient({ viewerRole, preselectedTalentId, openN
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [fetchConversations]);
 
-  // Open pre-selected conversation if talent was passed
-  useEffect(() => {
-    if (preselectedTalentId && conversations.length > 0) {
-      const existing = conversations.find(c => c.talent?.id === preselectedTalentId);
-      if (existing) openConversation(existing.id);
-    }
-  }, [preselectedTalentId, conversations]);
-
   // ── Open a conversation (initial load — shows spinner) ──────────────────
+  // Declared BEFORE the useEffect below that references it
 
   const openConversation = useCallback(async (convId: string) => {
     setActiveConvId(convId);
@@ -268,6 +262,14 @@ export default function MessagingClient({ viewerRole, preselectedTalentId, openN
       setLoadingMsgs(false);
     }
   }, []);
+
+  // Open pre-selected conversation if talent was passed
+  useEffect(() => {
+    if (preselectedTalentId && conversations.length > 0) {
+      const existing = conversations.find(c => c.talent?.id === preselectedTalentId);
+      if (existing) openConversation(existing.id);
+    }
+  }, [preselectedTalentId, conversations, openConversation]);
 
   // ── Silent background refresh — NEVER sets loadingMsgs, never blurs input ─
 
@@ -580,16 +582,16 @@ export default function MessagingClient({ viewerRole, preselectedTalentId, openN
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">New Message to Talent</h3>
-              <p className="text-sm text-gray-500 mt-0.5">Enter the talent's email to start a conversation</p>
+              <p className="text-sm text-gray-500 mt-0.5">Enter the talent&apos;s ID to start a conversation</p>
             </div>
 
             <div className="p-6 space-y-4">
 
-              {/* Email lookup */}
+              {/* Candidate ID lookup */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-sm font-medium text-gray-700">
-                    Talent Email <span className="text-red-500">*</span>
+                    Talent ID <span className="text-red-500">*</span>
                   </label>
                   <button
                     type="button"
@@ -609,11 +611,11 @@ export default function MessagingClient({ viewerRole, preselectedTalentId, openN
                 </div>
                 <div className="relative">
                   <input
-                    type="email"
+                    type="text"
                     value={lookupEmail}
                     onChange={e => handleEmailChange(e.target.value)}
-                    placeholder="talent@example.com"
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    placeholder="e.g. CAND-618279"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm font-mono tracking-wide focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       lookupError   ? 'border-red-400 bg-red-50' :
                       lookupResult  ? 'border-green-400 bg-green-50' :
                       'border-gray-300'
