@@ -1,7 +1,7 @@
 // src/app/(dashboard)/dashboard/agency/messages/page.tsx
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import MessagingClient from '@/components/messaging/MessagingClient';
+import AgencyMessagesWrapper from './AgencyMessagesWrapper';
 
 export default async function AgencyMessagesPage() {
   const supabase = await createClient();
@@ -19,13 +19,7 @@ export default async function AgencyMessagesPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
-        <p className="text-gray-600 text-sm mt-1">
-          Send and receive messages with talent you are working with.
-        </p>
-      </div>
-      <MessagingClient viewerRole="agency" />
+      <AgencyMessagesWrapper />
     </div>
   );
 }
