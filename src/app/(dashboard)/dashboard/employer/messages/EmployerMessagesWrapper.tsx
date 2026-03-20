@@ -31,8 +31,8 @@ export default function EmployerMessagesWrapper() {
       {/* MessagingClient — also has its own internal New Message button */}
       <MessagingClient
         viewerRole="employer"
-        openNewConv={openNewConv}
-        onNewConvClose={() => setOpenNewConv(false)}
+        // openNewConv={openNewConv}
+        // onNewConvClose={() => setOpenNewConv(false)}
       />
     </>
   );
