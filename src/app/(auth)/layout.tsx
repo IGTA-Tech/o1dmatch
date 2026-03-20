@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   const isAdminLogin = pathname === '/admin/login';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex flex-col">
+    <div className="o1d-page o1d-ready min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex flex-col">
       <Navbar />
       
       {/* Spacer for fixed navbar */}
