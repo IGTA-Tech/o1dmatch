@@ -219,13 +219,8 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [fetchConversations]);
 
-  // Open pre-selected conversation if talent was passed
-  useEffect(() => {
-    if (preselectedTalentId && conversations.length > 0) {
-      const existing = conversations.find(c => c.talent?.id === preselectedTalentId);
-      if (existing) openConversation(existing.id);
-    }
-  }, [preselectedTalentId, conversations]);
+  // Open pre-selected conversation if talent was passed — declared AFTER openConversation
+  // (moved below to avoid "used before declaration" error)
 
   // ── Open a conversation (initial load — shows spinner) ──────────────────
 
@@ -257,6 +252,14 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
       setLoadingMsgs(false);
     }
   }, []);
+
+  // Now safe to reference openConversation — it is declared above
+  useEffect(() => {
+    if (preselectedTalentId && conversations.length > 0) {
+      const existing = conversations.find(c => c.talent?.id === preselectedTalentId);
+      if (existing) openConversation(existing.id);
+    }
+  }, [preselectedTalentId, conversations, openConversation]);
 
   // ── Silent background refresh — NEVER sets loadingMsgs, never blurs input ─
 
@@ -569,7 +572,7 @@ export default function MessagingClient({ viewerRole, preselectedTalentId }: Mes
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">New Message to Talent</h3>
-              <p className="text-sm text-gray-500 mt-0.5">Enter the talent's email to start a conversation</p>
+              <p className="text-sm text-gray-500 mt-0.5">Enter the talent&apos;s ID to start a conversation</p>
             </div>
 
             <div className="p-6 space-y-4">

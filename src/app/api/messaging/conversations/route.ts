@@ -26,6 +26,8 @@ function getTokenFromCookies(): string | null {
   return null;
 }
 
+console.log(getTokenFromCookies);
+
 // GET /api/messaging/conversations
 // Returns all conversations for the authenticated user (any role)
 export async function GET() {
