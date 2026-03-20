@@ -19,6 +19,9 @@ import {
   Pencil,
   X,
   Plus,
+  CreditCard,
+  CalendarDays,
+  AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { getSupabaseAuthData } from '@/lib/supabase/getToken';
@@ -41,9 +44,31 @@ interface Profile {
   [key: string]: unknown;
 }
 
+interface SubscriptionData {
+  id: string;
+  tier: string;
+  status: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  trial_ends_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // talent-only
+  igta_member_verified?: boolean;
+  igta_verified_at?: string | null;
+  // employer-only
+  setup_fee_paid?: boolean;
+  letters_sent_this_month?: number;
+  letters_reset_at?: string | null;
+  [key: string]: unknown;
+}
+
 interface EditableUserFormProps {
   profile: Profile;
   additionalData: Record<string, unknown> | null;
+  subscriptionData: SubscriptionData | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────
@@ -234,8 +259,159 @@ function TagsEditor({
   );
 }
 
+// ── Subscription Plan Card ────────────────────────────────
+const TIER_STYLES: Record<string, { bg: string; text: string; border: string }> = {
+  // talent tiers
+  profile_only:  { bg: 'bg-gray-100',   text: 'text-gray-700',   border: 'border-gray-300'  },
+  starter:       { bg: 'bg-blue-50',    text: 'text-blue-700',   border: 'border-blue-300'  },
+  active_match:  { bg: 'bg-indigo-50',  text: 'text-indigo-700', border: 'border-indigo-300'},
+  igta_member:   { bg: 'bg-purple-50',  text: 'text-purple-700', border: 'border-purple-300'},
+  // employer tiers
+  free:          { bg: 'bg-gray-100',   text: 'text-gray-700',   border: 'border-gray-300'  },
+  growth:        { bg: 'bg-emerald-50', text: 'text-emerald-700',border: 'border-emerald-300'},
+  business:      { bg: 'bg-orange-50',  text: 'text-orange-700', border: 'border-orange-300'},
+  enterprise:    { bg: 'bg-rose-50',    text: 'text-rose-700',   border: 'border-rose-300'  },
+};
+
+const STATUS_STYLES: Record<string, string> = {
+  active:   'text-green-600',
+  trialing: 'text-blue-600',
+  past_due: 'text-amber-600',
+  paused:   'text-gray-500',
+  canceled: 'text-red-600',
+};
+
+function SubscriptionCard({
+  subscriptionData,
+  role,
+}: {
+  subscriptionData: SubscriptionData | null;
+  role: string;
+}) {
+  if (role !== 'talent' && role !== 'employer') return null;
+
+  const tierStyle = subscriptionData
+    ? (TIER_STYLES[subscriptionData.tier] ?? TIER_STYLES['free'])
+    : TIER_STYLES['free'];
+
+  const tierLabel = subscriptionData?.tier
+    ? subscriptionData.tier.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    : 'No Subscription';
+
+  const statusColor = subscriptionData?.status
+    ? (STATUS_STYLES[subscriptionData.status] ?? 'text-gray-500')
+    : 'text-gray-400';
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CreditCard className="w-5 h-5" /> Subscription Plan
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {!subscriptionData ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <span
+              className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold border ${TIER_STYLES['free'].bg} ${TIER_STYLES['free'].text} ${TIER_STYLES['free'].border}`}
+            >
+              Free
+            </span>
+            <span className="text-green-600 text-sm font-medium">● active</span>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Tier badge + status */}
+            <div className="flex flex-wrap items-center gap-3">
+              <span
+                className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold border ${tierStyle.bg} ${tierStyle.text} ${tierStyle.border}`}
+              >
+                {tierLabel}
+              </span>
+              <span className={`text-sm font-medium capitalize ${statusColor}`}>
+                ● {subscriptionData.status}
+              </span>
+            </div>
+
+            {/* Key details grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+              {subscriptionData.current_period_start && (
+                <div className="flex items-center gap-2 text-gray-600">
+                  <CalendarDays className="w-4 h-4 text-gray-400 shrink-0" />
+                  <span>
+                    <span className="font-medium text-gray-700">Period: </span>
+                    {new Date(subscriptionData.current_period_start).toLocaleDateString()} –{' '}
+                    {subscriptionData.current_period_end
+                      ? new Date(subscriptionData.current_period_end).toLocaleDateString()
+                      : '—'}
+                  </span>
+                </div>
+              )}
+
+              {subscriptionData.trial_ends_at && (
+                <div className="flex items-center gap-2 text-gray-600">
+                  <CalendarDays className="w-4 h-4 text-gray-400 shrink-0" />
+                  <span>
+                    <span className="font-medium text-gray-700">Trial ends: </span>
+                    {new Date(subscriptionData.trial_ends_at).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+
+              {subscriptionData.stripe_customer_id && (
+                <div className="text-gray-600">
+                  <span className="font-medium text-gray-700">Stripe customer: </span>
+                  <code className="ml-1 px-1.5 py-0.5 bg-gray-100 rounded text-xs">
+                    {subscriptionData.stripe_customer_id}
+                  </code>
+                </div>
+              )}
+
+              {subscriptionData.stripe_subscription_id && (
+                <div className="text-gray-600">
+                  <span className="font-medium text-gray-700">Stripe subscription: </span>
+                  <code className="ml-1 px-1.5 py-0.5 bg-gray-100 rounded text-xs">
+                    {subscriptionData.stripe_subscription_id}
+                  </code>
+                </div>
+              )}
+
+              {/* Employer-only fields */}
+              {role === 'employer' && typeof subscriptionData.setup_fee_paid === 'boolean' && (
+                <div className="text-gray-600">
+                  <span className="font-medium text-gray-700">Setup fee paid: </span>
+                  <span className={subscriptionData.setup_fee_paid ? 'text-green-600' : 'text-red-500'}>
+                    {subscriptionData.setup_fee_paid ? 'Yes' : 'No'}
+                  </span>
+                </div>
+              )}
+
+              {role === 'employer' && typeof subscriptionData.letters_sent_this_month === 'number' && (
+                <div className="text-gray-600">
+                  <span className="font-medium text-gray-700">Letters sent this month: </span>
+                  {subscriptionData.letters_sent_this_month}
+                </div>
+              )}
+
+              {/* Talent-only fields */}
+              {role === 'talent' && typeof subscriptionData.igta_member_verified === 'boolean' && (
+                <div className="text-gray-600">
+                  <span className="font-medium text-gray-700">IGTA verified: </span>
+                  <span className={subscriptionData.igta_member_verified ? 'text-green-600' : 'text-gray-400'}>
+                    {subscriptionData.igta_member_verified ? 'Yes' : 'No'}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Main Form Component ───────────────────────────────────
-export function EditableUserForm({ profile: initialProfile, additionalData: initialAdditional }: EditableUserFormProps) {
+export function EditableUserForm({ profile: initialProfile, additionalData: initialAdditional, subscriptionData }: EditableUserFormProps) {
   const router = useRouter();
 
   // ── Profile state ──
@@ -657,6 +833,9 @@ export function EditableUserForm({ profile: initialProfile, additionalData: init
           </CardContent>
         </Card>
       )}
+
+      {/* ── Subscription Plan ── */}
+      <SubscriptionCard subscriptionData={subscriptionData} role={role} />
 
       {/* ── Other Admin Actions ── */}
       <Card>

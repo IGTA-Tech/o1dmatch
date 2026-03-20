@@ -68,10 +68,30 @@ export default async function AdminUserDetailPage({
     additionalData = data;
   }
 
+  // Get subscription data based on role
+  let subscriptionData = null;
+
+  if (profile.role === 'talent') {
+    const { data } = await supabase
+      .from('talent_subscriptions')
+      .select('*')
+      .eq('talent_id', id)
+      .single();
+    subscriptionData = data;
+  } else if (profile.role === 'employer') {
+    const { data } = await supabase
+      .from('employer_subscriptions')
+      .select('*')
+      .eq('employer_id', id)
+      .single();
+    subscriptionData = data;
+  }
+
   return (
     <EditableUserForm
       profile={profile}
       additionalData={additionalData}
+      subscriptionData={subscriptionData}
     />
   );
 }

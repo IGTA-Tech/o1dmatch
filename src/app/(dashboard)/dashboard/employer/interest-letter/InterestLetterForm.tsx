@@ -245,171 +245,396 @@ export function InterestLetterForm({
 
     // Generate PDF document
     const generatePDF = async (): Promise<Blob> => {
-        const doc = new jsPDF();
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const margin = 20;
-        const contentWidth = pageWidth - (margin * 2);
-        let yPos = 20;
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pageW  = doc.internal.pageSize.getWidth();
+        const pageH  = doc.internal.pageSize.getHeight();
+        const ML     = 18;   // left margin
+        const MR     = 18;   // right margin
+        const CW     = pageW - ML - MR; // content width
+        let   y      = 0;
 
-        // Helper: draw horizontal line
-        const addLine = (thickness: number = 0.5) => {
-            doc.setLineWidth(thickness);
-            doc.line(margin, yPos, pageWidth - margin, yPos);
-            yPos += 5;
+        // ── Colour palette ────────────────────────────────────────────────────
+        const NAVY   = [11,  29,  53]  as [number,number,number];
+        const GOLD   = [212, 168, 75]  as [number,number,number];
+        const WHITE  = [255, 255, 255] as [number,number,number];
+        const LIGHT  = [248, 246, 242] as [number,number,number];
+        const BORDER = [226, 217, 204] as [number,number,number];
+        const TEXT   = [30,  30,  30]  as [number,number,number];
+        const MUTED  = [100, 116, 139] as [number,number,number];
+
+        // ── Helpers ───────────────────────────────────────────────────────────
+        const setColor = (rgb: [number,number,number]) =>
+            doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+
+        const setFill = (rgb: [number,number,number]) =>
+            doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+
+        const setDraw = (rgb: [number,number,number]) =>
+            doc.setDrawColor(rgb[0], rgb[1], rgb[2]);
+
+        const txt = (
+            text: string,
+            x: number,
+            yy: number,
+            opts?: { size?: number; bold?: boolean; color?: [number,number,number]; align?: 'left'|'center'|'right' }
+        ) => {
+            doc.setFontSize(opts?.size ?? 10);
+            doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal');
+            if (opts?.color) setColor(opts.color);
+            doc.text(text, x, yy, { align: opts?.align ?? 'left' });
         };
 
-        // Helper: add text with word wrap
-        const addText = (text: string, fontSize: number = 10, isBold: boolean = false) => {
-            doc.setFontSize(fontSize);
-            doc.setFont('helvetica', isBold ? 'bold' : 'normal');
-            const lines = doc.splitTextToSize(text, contentWidth);
-            doc.text(lines, margin, yPos);
-            yPos += (lines.length * fontSize * 0.4) + 2;
+        const wrappedTxt = (
+            text: string,
+            x: number,
+            yy: number,
+            maxW: number,
+            opts?: { size?: number; bold?: boolean; color?: [number,number,number]; lineH?: number }
+        ): number => {
+            doc.setFontSize(opts?.size ?? 10);
+            doc.setFont('helvetica', opts?.bold ? 'bold' : 'normal');
+            if (opts?.color) setColor(opts.color);
+            const lines = doc.splitTextToSize(text, maxW) as string[];
+            const lh = opts?.lineH ?? ((opts?.size ?? 10) * 0.45);
+            doc.text(lines, x, yy);
+            return lh * lines.length;
         };
 
-        // Helper: add bullet point
-        const addBulletPoint = (text: string, fontSize: number = 10) => {
-            doc.setFontSize(fontSize);
-            doc.setFont('helvetica', 'normal');
-            const bulletMargin = margin + 5;
-            const bulletWidth = contentWidth - 5;
-            doc.text('-', margin, yPos);
-            const lines = doc.splitTextToSize(text, bulletWidth);
-            doc.text(lines, bulletMargin, yPos);
-            yPos += (lines.length * fontSize * 0.4) + 3;
-        };
-
-        // Helper: check page break
-        const checkPageBreak = (neededSpace: number = 30) => {
-            if (yPos > doc.internal.pageSize.getHeight() - neededSpace) {
+        const checkBreak = (needed: number = 35) => {
+            if (y > pageH - needed) {
                 doc.addPage();
-                yPos = 20;
+                // Repeat narrow top-bar on new pages
+                setFill(NAVY);
+                doc.rect(0, 0, pageW, 8, 'F');
+                txt(`${(fullEmployerProfile?.company_name || employerProfile.company_name).toUpperCase()}  ·  Employer Agreement`, ML, 5.5,
+                    { size: 7, bold: false, color: [212, 168, 75] });
+                const pn = String((doc.internal as unknown as { getCurrentPageInfo: () => { pageNumber: number } }).getCurrentPageInfo().pageNumber);
+                txt(`Page ${pn}`, pageW - MR, 5.5,
+                    { size: 7, color: [212, 168, 75], align: 'right' });
+                y = 18;
             }
         };
 
-        // Try to add company logo
+        // Section header: navy pill with white number + gold title text
+        const sectionHeader = (num: string, title: string) => {
+            checkBreak(20);
+            // Number badge
+            setFill(NAVY);
+            doc.roundedRect(ML, y - 4.5, 7, 6, 1.5, 1.5, 'F');
+            txt(num, ML + 3.5, y, { size: 8, bold: true, color: WHITE, align: 'center' });
+            // Title
+            txt(title, ML + 10, y, { size: 11, bold: true, color: NAVY });
+            y += 2;
+            // Gold underline
+            setDraw(GOLD);
+            doc.setLineWidth(0.6);
+            doc.line(ML + 10, y, pageW - MR, y);
+            y += 5;
+        };
+
+        // Two-column field row (label | value) with light-grey row background
+        let rowAlt = false;
+        const fieldRow = (label: string, value: string, fullWidth = false) => {
+            const rowH = 7;
+            checkBreak(rowH + 4);
+            if (rowAlt) {
+                setFill(LIGHT);
+                doc.rect(ML, y - 5, CW, rowH, 'F');
+            }
+            rowAlt = !rowAlt;
+            const colW = fullWidth ? CW : CW * 0.36;
+            txt(label, ML + 2, y, { size: 9, bold: true, color: MUTED });
+            const valX = fullWidth ? ML + 2 : ML + colW + 2;
+            const valW = fullWidth ? CW - 4 : CW - colW - 2;
+            wrappedTxt(value || '—', valX, y, valW, { size: 9, color: TEXT });
+            y += rowH;
+        };
+
+        // Bullet item
+        const bullet = (text: string) => {
+            checkBreak(12);
+            setFill(GOLD);
+            doc.circle(ML + 2, y - 1.5, 1, 'F');
+            const h = wrappedTxt(text, ML + 6, y, CW - 6, { size: 9.5, color: TEXT, lineH: 4.8 });
+            y += Math.max(h, 5) + 1.5;
+        };
+
+        // ═══════════════════════════════════════════════════════════════════
+        // TOP BAND
+        // ═══════════════════════════════════════════════════════════════════
+        setFill(NAVY);
+        doc.rect(0, 0, pageW, 22, 'F');
+
+        // Gold accent strip
+        setFill(GOLD);
+        doc.rect(0, 22, pageW, 2, 'F');
+
+        // Try to embed logo
+        let logoLoaded = false;
         if (fullEmployerProfile?.company_logo_url) {
             try {
-                const logoResponse = await fetch(fullEmployerProfile.company_logo_url);
-                const logoBlob = await logoResponse.blob();
-                const logoBase64 = await new Promise<string>((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.readAsDataURL(logoBlob);
+                const lr  = await fetch(fullEmployerProfile.company_logo_url);
+                const lb  = await lr.blob();
+                const b64 = await new Promise<string>((res) => {
+                    const r = new FileReader();
+                    r.onloadend = () => res(r.result as string);
+                    r.readAsDataURL(lb);
                 });
-                doc.addImage(logoBase64, 'PNG', margin, yPos, 40, 40);
-                yPos += 45;
-            } catch (e) {
-                console.log('Could not load logo for PDF:', e);
-            }
+                doc.addImage(b64, 'PNG', ML, 3, 16, 16);
+                logoLoaded = true;
+            } catch { /* silent */ }
         }
 
-        // Header line
-        addLine(1);
+        const nameX = logoLoaded ? ML + 20 : ML;
+        txt(
+            (fullEmployerProfile?.company_name || employerProfile.company_name).toUpperCase(),
+            nameX, 11,
+            { size: 14, bold: true, color: WHITE }
+        );
+        txt('O-1 VISA EMPLOYER AGREEMENT', nameX, 17,
+            { size: 8, bold: false, color: GOLD });
 
-        // Title
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text('MULTIPLE EMPLOYER AGREEMENT FOR P-1/O-1 VISA BENEFICIARY', margin, yPos);
-        yPos += 10;
+        // Date top-right
+        const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        txt(today, pageW - MR, 11, { size: 8, color: [200, 200, 200], align: 'right' });
+        const refNum = `REF-${Date.now().toString(36).toUpperCase()}`;
+        txt(`Ref: ${refNum}`, pageW - MR, 16, { size: 7, color: [180, 180, 180], align: 'right' });
 
-        // Intro text
-        addText('This Agreement ("Agreement") is made between the Employer(s) identified below and the Petitioner, who will act on behalf of the visa beneficiary named below.');
-        yPos += 5;
+        y = 32;
 
-        addLine(1);
+        // ── Document title block ──────────────────────────────────────────────
+        txt(
+            'MULTIPLE EMPLOYER AGREEMENT FOR P-1/O-1 VISA BENEFICIARY',
+            pageW / 2, y,
+            { size: 13, bold: true, color: NAVY, align: 'center' }
+        );
+        y += 6;
 
-        // Section 1: Employer Information
-        checkPageBreak();
-        addText('1. EMPLOYER INFORMATION', 12, true);
-        yPos += 2;
-        addBulletPoint(`Name of Employer: ${fullEmployerProfile?.signatory_name || 'N/A'}`);
-        addBulletPoint(`Organization Name: ${fullEmployerProfile?.company_name || employerProfile.company_name}`);
-        
+        setColor(MUTED);
+        doc.setFontSize(9);
+        const introLines = doc.splitTextToSize(
+            'This Agreement is made between the Employer identified below and the Petitioner, who will act on behalf of the visa beneficiary named herein. This document may be submitted as supporting evidence in the O-1 visa petition.',
+            CW
+        ) as string[];
+        doc.text(introLines, pageW / 2, y, { align: 'center' });
+        y += introLines.length * 4.2 + 6;
+
+        // thin full-width border line
+        setDraw(BORDER);
+        doc.setLineWidth(0.3);
+        doc.line(ML, y, pageW - MR, y);
+        y += 7;
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SECTION 1 — EMPLOYER INFORMATION
+        // ═══════════════════════════════════════════════════════════════════
+        sectionHeader('1', 'EMPLOYER INFORMATION');
+        rowAlt = false;
+
         const address = [
             fullEmployerProfile?.street_address,
             fullEmployerProfile?.city,
             fullEmployerProfile?.state,
             fullEmployerProfile?.zip_code,
-            fullEmployerProfile?.country
+            fullEmployerProfile?.country,
         ].filter(Boolean).join(', ');
-        addBulletPoint(`Contact Information: ${address || 'N/A'}`);
-        addBulletPoint(`Phone: ${fullEmployerProfile?.signatory_phone || 'N/A'}`);
-        addBulletPoint(`Email: ${fullEmployerProfile?.signatory_email || 'N/A'}`);
-        yPos += 5;
 
-        // Section 2: Beneficiary Information
-        checkPageBreak();
-        addText('2. BENEFICIARY INFORMATION', 12, true);
-        yPos += 2;
-        addBulletPoint(`Full Name of Beneficiary: ${talent.name}`);
-        yPos += 5;
+        fieldRow('Organization Name',  fullEmployerProfile?.company_name || employerProfile.company_name);
+        fieldRow('Authorized Signatory', fullEmployerProfile?.signatory_name || '');
+        fieldRow('Title',              fullEmployerProfile?.signatory_title || '');
+        fieldRow('Address',            address);
+        fieldRow('Phone',              fullEmployerProfile?.signatory_phone || '');
+        fieldRow('Email',              fullEmployerProfile?.signatory_email || '');
+        y += 4;
 
-        // Section 3: Duration of Activities
-        checkPageBreak();
-        addText('3. DURATION OF ACTIVITIES', 12, true);
-        yPos += 2;
+        // ═══════════════════════════════════════════════════════════════════
+        // SECTION 2 — BENEFICIARY INFORMATION
+        // ═══════════════════════════════════════════════════════════════════
+        checkBreak();
+        sectionHeader('2', 'BENEFICIARY INFORMATION');
+        rowAlt = false;
+        fieldRow('Full Legal Name',    talent.name);
+        fieldRow('Email',              talent.email || '');
+        if (talent.headline) fieldRow('Professional Headline', talent.headline);
+        if (talent.designation) fieldRow('Current Designation', talent.designation);
+        if (talent.employer)    fieldRow('Current Employer',    talent.employer);
+        y += 4;
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SECTION 3 — DURATION OF ACTIVITIES
+        // ═══════════════════════════════════════════════════════════════════
+        checkBreak();
+        sectionHeader('3', 'DURATION OF ACTIVITIES');
+        rowAlt = false;
         const startDateStr = useTextStartDate ? (startTiming || 'Upon visa approval') : formatDateForPdf(startDate);
-        const endDateStr = useTextStartDate ? 'Up to three years from visa approval' : formatDateForPdf(endDate);
-        addBulletPoint(`Dates of Activities: From ${startDateStr} to ${endDateStr}`);
-        yPos += 2;
-        addText('   If no specific date is listed, it is understood that the beneficiary\'s activities will commence on the date of visa approval and extend up to three years from that date.', 9);
-        yPos += 5;
+        const endDateStr   = useTextStartDate ? 'Up to three years from visa approval' : formatDateForPdf(endDate);
+        fieldRow('Start Date', startDateStr);
+        fieldRow('End Date',   endDateStr);
+        y += 2;
+        wrappedTxt(
+            'If no specific date is listed, it is understood that the activities will commence on the date of visa approval and extend up to three years from that date.',
+            ML, y, CW, { size: 8.5, color: MUTED }
+        );
+        y += 10;
 
-        // Section 4: Description of Authorized Activities
-        checkPageBreak();
-        addText('4. DESCRIPTION OF AUTHORIZED ACTIVITIES', 12, true);
-        yPos += 2;
-        addText(`Position: ${jobTitle}`, 10, true);
-        yPos += 3;
-        addText('Job Duties:', 10, true);
-        addText(dutiesDescription);
-        yPos += 3;
-        addText('Required Skills:', 10, true);
-        addText(requiredSkills);
-        yPos += 3;
-        addText(`Compensation: ${formatSalaryRange()}`, 10, true);
-        yPos += 5;
+        // ═══════════════════════════════════════════════════════════════════
+        // SECTION 4 — DESCRIPTION OF AUTHORIZED ACTIVITIES
+        // ═══════════════════════════════════════════════════════════════════
+        checkBreak();
+        sectionHeader('4', 'DESCRIPTION OF AUTHORIZED ACTIVITIES');
+        rowAlt = false;
+        fieldRow('Position / Job Title',  jobTitle);
+        if (department) fieldRow('Department', department);
+        fieldRow('Engagement Type',
+            engagementType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+        fieldRow('Work Arrangement',
+            workArrangement.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+        if (locations) fieldRow('Work Location(s)', locations);
+        fieldRow('Compensation',          formatSalaryRange());
+        if (salaryNegotiable) fieldRow('Negotiable', 'Yes — compensation is negotiable');
+        y += 3;
 
-        // Section 5: Authorization for Service of Process
-        checkPageBreak();
-        addText('5. AUTHORIZATION FOR SERVICE OF PROCESS', 12, true);
-        yPos += 2;
-        addBulletPoint('The Employer grants permission for the Petitioner to act as the agent for the beneficiary and to receive service of process on behalf of the beneficiary and all involved Employers related to this petition.');
-        yPos += 5;
+        // Duties sub-block
+        checkBreak(30);
+        txt('Job Duties & Responsibilities', ML, y, { size: 10, bold: true, color: NAVY });
+        y += 5;
+        const dh = wrappedTxt(dutiesDescription, ML + 4, y, CW - 4, { size: 9.5, color: TEXT, lineH: 4.8 });
+        y += dh + 5;
 
-        // Section 6: Agent-Based Petition Filing
-        checkPageBreak();
-        addText('6. AGENT-BASED PETITION FILING', 12, true);
-        yPos += 2;
-        addBulletPoint('The Employer authorizes the Petitioner to file the visa petition on behalf of the beneficiary, including the representation of all involved Employers for purposes of this agent-based petition.');
-        yPos += 5;
+        // Skills sub-block
+        checkBreak(20);
+        txt('Required Skills & Qualifications', ML, y, { size: 10, bold: true, color: NAVY });
+        y += 5;
+        const sh = wrappedTxt(requiredSkills, ML + 4, y, CW - 4, { size: 9.5, color: TEXT, lineH: 4.8 });
+        y += sh + 7;
 
-        // Section 7: Additional Provisions
-        checkPageBreak();
-        addText('7. ADDITIONAL PROVISIONS', 12, true);
-        yPos += 2;
-        addBulletPoint('Responsibility for Compliance: The Employer agrees to comply with all applicable U.S. immigration laws and regulations concerning the employment of the beneficiary.');
-        addBulletPoint('Notification of Changes: The Employer agrees to promptly inform the Petitioner of any changes to the beneficiary\'s employment status or any changes that may impact the beneficiary\'s visa status.');
-        addBulletPoint('Liability and Indemnification: The Employer agrees to indemnify and hold harmless the Petitioner for any legal claims or liabilities arising from the beneficiary\'s activities under this visa.');
-        yPos += 5;
+        // ═══════════════════════════════════════════════════════════════════
+        // SECTION 5 — WHY O-1 TALENT IS REQUIRED
+        // ═══════════════════════════════════════════════════════════════════
+        checkBreak(30);
+        sectionHeader('5', 'EXTRAORDINARY ABILITY REQUIREMENT');
+        const wh = wrappedTxt(whyO1Required, ML + 4, y, CW - 4, { size: 9.5, color: TEXT, lineH: 4.8 });
+        y += wh + 8;
 
-        // Signature Section
-        checkPageBreak(60);
-        addLine(1);
-        addText('AUTHORIZED SIGNATURE', 12, true);
-        yPos += 5;
-        
-        addText('- Employer Signature: _________________________________');
-        yPos += 5;
-        addText(`- Printed Name: ${fullEmployerProfile?.signatory_name || 'N/A'}`);
-        yPos += 5;
-        addText(`- Title: ${fullEmployerProfile?.signatory_title || 'N/A'}`);
-        yPos += 5;
-        addText(`- Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`);
-        yPos += 5;
+        // ═══════════════════════════════════════════════════════════════════
+        // SECTION 6 — AUTHORIZATION FOR SERVICE OF PROCESS
+        // ═══════════════════════════════════════════════════════════════════
+        checkBreak(25);
+        sectionHeader('6', 'AUTHORIZATION FOR SERVICE OF PROCESS');
+        bullet('The Employer grants permission for the Petitioner to act as the agent for the beneficiary and to receive service of process on behalf of the beneficiary and all involved Employers related to this petition.');
+        y += 2;
 
-        addLine(1);
+        // ═══════════════════════════════════════════════════════════════════
+        // SECTION 7 — AGENT-BASED PETITION FILING
+        // ═══════════════════════════════════════════════════════════════════
+        checkBreak(25);
+        sectionHeader('7', 'AGENT-BASED PETITION FILING');
+        bullet('The Employer authorizes the Petitioner to file the visa petition on behalf of the beneficiary, including the representation of all involved Employers for purposes of this agent-based petition.');
+        y += 2;
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SECTION 8 — ADDITIONAL PROVISIONS
+        // ═══════════════════════════════════════════════════════════════════
+        checkBreak(40);
+        sectionHeader('8', 'ADDITIONAL PROVISIONS');
+        bullet('Responsibility for Compliance: The Employer agrees to comply with all applicable U.S. immigration laws and regulations concerning the employment of the beneficiary.');
+        bullet('Notification of Changes: The Employer agrees to promptly inform the Petitioner of any changes to the beneficiary\'s employment status or any changes that may impact the beneficiary\'s visa status.');
+        bullet('Liability and Indemnification: The Employer agrees to indemnify and hold harmless the Petitioner for any legal claims or liabilities arising from the beneficiary\'s activities under this visa.');
+        y += 4;
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SIGNATURE BLOCK
+        // ═══════════════════════════════════════════════════════════════════
+        checkBreak(90);
+
+        // Navy header bar for signature
+        setFill(NAVY);
+        doc.rect(ML, y - 1, CW, 8, 'F');
+        txt('AUTHORIZED SIGNATURE', ML + 4, y + 4.5,
+            { size: 10, bold: true, color: WHITE });
+        y += 14;
+
+        // Two-column layout: left = signature area, right = supporting fields
+        const colL  = ML;
+        const colR  = ML + CW * 0.55;
+        const colLW = CW * 0.48;
+        const colRW = CW * 0.40;
+
+        // ── Left column ───────────────────────────────────────────────────
+        // "Authorized Signature" label
+        txt('Authorized Signature', colL, y, { size: 8, bold: true, color: MUTED });
+        y += 4;
+
+        // Light-tinted signing box (tall, easy to sign inside)
+        const sigBoxH = 28;
+        setFill([245, 243, 238]);
+        setDraw(BORDER);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(colL, y, colLW, sigBoxH, 2, 2, 'FD');
+
+        // Subtle "Sign here" watermark text inside the box
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(210, 200, 185);
+        doc.text('Sign here', colL + colLW / 2, y + sigBoxH / 2 + 2, { align: 'center' });
+
+        // Solid navy baseline inside the box (near the bottom)
+        setDraw(NAVY);
+        doc.setLineWidth(0.6);
+        doc.line(colL + 4, y + sigBoxH - 6, colL + colLW - 4, y + sigBoxH - 6);
+        y += sigBoxH + 5;
+
+        // Printed name (pre-filled) below the signing box
+        setDraw(BORDER);
+        doc.setLineWidth(0.3);
+        doc.line(colL, y, colL + colLW, y);
+        y += 4;
+        txt(fullEmployerProfile?.signatory_name || '', colL, y - 5,
+            { size: 9, bold: true, color: TEXT });
+        txt('Printed Name', colL, y, { size: 8, color: MUTED });
+        y += 9;
+
+        // Title
+        doc.line(colL, y, colL + colLW, y);
+        y += 4;
+        txt(fullEmployerProfile?.signatory_title || '', colL, y - 5,
+            { size: 9, color: TEXT });
+        txt('Title / Position', colL, y, { size: 8, color: MUTED });
+
+        // ── Right column (reset y to top of block) ────────────────────────
+        y -= (4 + 9 + 4 + sigBoxH + 5 + 4); // back to start of left column
+
+        // Date
+        setDraw(NAVY);
+        doc.setLineWidth(0.5);
+        doc.line(colR, y, colR + colRW, y);
+        y += 4;
+        txt(today, colR, y - 5, { size: 9, color: TEXT });
+        txt('Date', colR, y, { size: 8, color: MUTED });
+        y += 12;
+
+        // Organization
+        setDraw(BORDER);
+        doc.setLineWidth(0.3);
+        doc.line(colR, y, colR + colRW, y);
+        y += 4;
+        txt(fullEmployerProfile?.company_name || employerProfile.company_name,
+            colR, y - 5, { size: 9, color: TEXT });
+        txt('Organization', colR, y, { size: 8, color: MUTED });
+        y += 28;
+
+        // ── Footer band on last page ──────────────────────────────────────────
+        setFill(NAVY);
+        doc.rect(0, pageH - 12, pageW, 12, 'F');
+        setFill(GOLD);
+        doc.rect(0, pageH - 12, pageW, 1.5, 'F');
+        txt(
+            'Generated by O1DMatch · This document is confidential and intended solely for O-1 visa petition purposes.',
+            pageW / 2, pageH - 5,
+            { size: 7, color: [180, 180, 180], align: 'center' }
+        );
+        txt(`Ref: ${refNum}`, pageW - MR, pageH - 5,
+            { size: 7, color: GOLD, align: 'right' });
 
         return doc.output('blob');
     };

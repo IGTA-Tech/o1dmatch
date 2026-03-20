@@ -20,6 +20,8 @@ import {
   FolderOpen,
   Ticket,
   Scale,
+  BarChart2,
+  MessageSquare,
 } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SignOutButton } from '@/components/auth/SignOutButton';
@@ -38,6 +40,7 @@ const navigationItems = {
     { href: '/dashboard/talent/jobs', label: 'Jobs', icon: Briefcase },
     { href: '/dashboard/talent/applications', label: 'Applications', icon: Send },
     { href: '/dashboard/talent/letters', label: 'Letters', icon: Mail },
+    { href: '/dashboard/talent/messages', label: 'Messages', icon: MessageSquare },
     { href: '/dashboard/talent/billing', label: 'Billing', icon: CreditCard },
     { href: '/dashboard/talent/petitioner', label: 'Seek a Petitioner', icon: Scale },
   ],
@@ -47,6 +50,7 @@ const navigationItems = {
     { href: '/dashboard/employer/jobs', label: 'Jobs', icon: Briefcase },
     { href: '/dashboard/employer/browse', label: 'Browse Talent', icon: Users },
     { href: '/dashboard/employer/letters', label: 'Letters', icon: Mail },
+    { href: '/dashboard/employer/messages', label: 'Messages', icon: MessageSquare },
     { href: '/dashboard/employer/applications', label: 'Applications', icon: Send },
     { href: '/dashboard/employer/exhibits', label: 'Exhibits', icon: FolderOpen },
     { href: '/dashboard/employer/billing', label: 'Billing', icon: CreditCard },
@@ -57,8 +61,9 @@ const navigationItems = {
     { href: '/dashboard/admin/users', label: 'Users', icon: Users },
     { href: '/dashboard/admin/documents', label: 'Documents', icon: Files },
     { href: '/dashboard/admin/promo-codes', label: 'Promo Codes', icon: Ticket },
+    { href: '/dashboard/admin/conversations', label: 'Conversations', icon: MessageSquare },
     { href: '/dashboard/admin/settings', label: 'Settings', icon: Settings },
-    { href: '/dashboard/admin/reports', label: 'Reports', icon: Settings },
+    { href: '/dashboard/admin/reports', label: 'Reports', icon: BarChart2 },
     { href: '/dashboard/admin/articles', label: 'Articles', icon: FileText },
   ],
   agency: [

@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   X,
   AlertCircle,
+  Mail,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -175,6 +176,12 @@ export default function TalentProfilePage() {
   // Auth state
   const [authData, setAuthData] = useState<{ userId: string; accessToken: string } | null>(null);
 
+  // Email update state
+  const [currentEmail, setCurrentEmail] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailMessage, setEmailMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -192,6 +199,12 @@ export default function TalentProfilePage() {
       const accessToken = auth.access_token;
       
       setAuthData({ userId, accessToken });
+
+      // Store current email from auth
+      if (auth.user.email) {
+        setCurrentEmail(auth.user.email);
+        setNewEmail(auth.user.email);
+      }
 
       try {
         // Fetch profile using direct REST API call
@@ -334,6 +347,50 @@ export default function TalentProfilePage() {
     }
 
     setSaving(false);
+  };
+
+  const handleEmailUpdate = async () => {
+    if (!authData || !newEmail.trim()) return;
+    if (newEmail.trim() === currentEmail) {
+      setEmailMessage({ type: 'error', text: 'New email is the same as the current email.' });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail.trim())) {
+      setEmailMessage({ type: 'error', text: 'Please enter a valid email address.' });
+      return;
+    }
+
+    setEmailSaving(true);
+    setEmailMessage(null);
+
+    try {
+      // Supabase Auth REST API — update authenticated user's email
+      const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${authData.accessToken}`,
+          'apikey': supabaseAnonKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: newEmail.trim() }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        setEmailMessage({ type: 'error', text: err?.msg || 'Failed to update email. Please try again.' });
+      } else {
+        setCurrentEmail(newEmail.trim());
+        setEmailMessage({
+          type: 'success',
+          text: 'Confirmation email sent to your new address. Please verify it to complete the change.',
+        });
+      }
+    } catch {
+      setEmailMessage({ type: 'error', text: 'Failed to update email. Please try again.' });
+    }
+
+    setEmailSaving(false);
   };
 
   const handleSkillInput = (value: string) => {
@@ -512,6 +569,44 @@ export default function TalentProfilePage() {
                 </button>
               </div>
             </form>
+
+            {/* ── Email Update — separate from the main form ── */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex items-center gap-2 mb-3">
+                <Mail className="w-4 h-4 text-gray-400" />
+                <h3 className="text-sm font-semibold text-gray-700">Email Address</h3>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => {
+                    setNewEmail(e.target.value);
+                    setEmailMessage(null);
+                  }}
+                  placeholder="you@example.com"
+                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleEmailUpdate}
+                  disabled={emailSaving || newEmail.trim() === currentEmail}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
+                >
+                  {emailSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Update Email
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                Current: <span className="font-medium text-gray-500">{currentEmail}</span>
+              </p>
+              {emailMessage && (
+                <p className={`mt-1.5 text-sm flex items-center gap-1.5 ${emailMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  {emailMessage.text}
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}

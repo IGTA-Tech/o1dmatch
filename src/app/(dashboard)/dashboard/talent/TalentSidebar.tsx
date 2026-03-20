@@ -19,6 +19,7 @@ import {
   BarChart3,
   // ClipboardCheck,
   Shield,
+  MessageSquare,
 } from 'lucide-react';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -44,6 +45,7 @@ const navSections = [
     items: [
       { href: '/dashboard/talent/applications', label: 'Applications', icon: Send },
       { href: '/dashboard/talent/letters', label: 'Letters', icon: Mail },
+      { href: '/dashboard/talent/messages', label: 'Messages', icon: MessageSquare },
       { href: '/dashboard/talent/petitioner', label: 'Seek a Petitioner', icon: Scale },
     ],
   },

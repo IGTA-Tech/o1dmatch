@@ -20,6 +20,7 @@ import {
   ClipboardCheck,
   TrendingUp,
   Lock,
+  MessageSquare,
 } from 'lucide-react';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 
@@ -43,6 +44,7 @@ const navSections = [
     label: 'Engagement',
     items: [
       { href: '/dashboard/employer/letters', label: 'Interest Letters', icon: Mail },
+      { href: '/dashboard/employer/messages', label: 'Messages', icon: MessageSquare },
       { href: '/dashboard/employer/exhibits', label: 'Exhibits', icon: FolderOpen },
       { href: '/dashboard/employer/scoring', label: 'O-1 Scoring', icon: BarChart3 },
       { href: '/dashboard/employer/xtraordinarypetitions', label: 'Xtraordinary Petitions', icon: FileText },
