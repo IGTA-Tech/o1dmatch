@@ -425,6 +425,9 @@ export function EditableUserForm({ profile: initialProfile, additionalData: init
   const [skills, setSkills] = useState<string[]>(initialProfile.skills || []);
   const [isVerified, setIsVerified] = useState(initialProfile.is_verified);
   const [onboardingCompleted, setOnboardingCompleted] = useState(initialProfile.onboarding_completed);
+  const [additionalStatus, setAdditionalStatus] = useState<string>(
+    (initialAdditional?.status as string) || 'enabled'
+  );
 
   // ── Talent state ──
   const [currentJobTitle, setCurrentJobTitle] = useState((initialAdditional?.current_job_title as string) || '');
@@ -513,6 +516,7 @@ export function EditableUserForm({ profile: initialProfile, additionalData: init
           current_employer: currentEmployer || null,
           years_experience: yearsExperience ? parseInt(yearsExperience) : null,
           o1_score: o1Score ? parseFloat(o1Score) : null,
+          status: additionalStatus,
           updated_at: new Date().toISOString(),
         };
 
@@ -540,6 +544,7 @@ export function EditableUserForm({ profile: initialProfile, additionalData: init
           company_website: companyWebsite || null,
           company_logo_url: companyLogoUrl || null,
           company_description: companyDescription || null,
+          status: additionalStatus,
           updated_at: new Date().toISOString(),
         };
 
@@ -596,6 +601,7 @@ export function EditableUserForm({ profile: initialProfile, additionalData: init
     }
   }, [
     fullName, headline, bio, location, avatarUrl, role, skills, isVerified, onboardingCompleted,
+    additionalStatus,
     currentJobTitle, currentEmployer, yearsExperience, o1Score,
     companyName, industry, companySize, companyWebsite, companyLogoUrl, companyDescription,
     lawFirm, barNumber, lawyerYearsExp, practiceAreas,
@@ -710,6 +716,28 @@ export function EditableUserForm({ profile: initialProfile, additionalData: init
             onChange={setOnboardingCompleted}
             description="Whether the user has finished the onboarding flow"
           />
+          {(role === 'talent' || role === 'employer') && initialAdditional && (
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-sm font-medium text-gray-700">Account Status</p>
+                <p className="text-xs text-gray-500">
+                  Controls whether this {role} profile is active on the platform
+                </p>
+              </div>
+              <select
+                value={additionalStatus}
+                onChange={(e) => setAdditionalStatus(e.target.value)}
+                className={`px-3 py-1.5 rounded-lg border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                  additionalStatus === 'enabled'
+                    ? 'bg-green-50 border-green-300 text-green-700'
+                    : 'bg-red-50 border-red-300 text-red-700'
+                }`}
+              >
+                <option value="enabled">Enabled</option>
+                <option value="disabled">Disabled</option>
+              </select>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -31,7 +31,8 @@ export default async function BrowseTalentPage() {
   // Get public talent profiles
   const { data: talents } = await supabase
     .from('talent_profiles')
-    .select('*');
+    .select('*')
+    .eq('status', 'enabled');
 
   // Check which talents already have letters from this employer
   const { data: existingLetters } = await supabase

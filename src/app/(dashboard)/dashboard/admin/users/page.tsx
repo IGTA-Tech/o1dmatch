@@ -14,15 +14,23 @@ import {
   Calendar,
   CheckCircle,
   XCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
+import { StatusToggle } from './StatusToggle';
 
 interface PageProps {
-  searchParams: Promise<{ role?: string; search?: string }>;
+  searchParams: Promise<{ role?: string; search?: string; page?: string }>;
 }
 
 export default async function AdminUsersPage({ searchParams }: PageProps) {
-  const { role, search } = await searchParams;
+  const { role, search, page } = await searchParams;
+
+  const PAGE_SIZE = 80;
+  const currentPage = Math.max(1, parseInt(page || '1', 10));
+  const rangeFrom = (currentPage - 1) * PAGE_SIZE;
+  const rangeTo = rangeFrom + PAGE_SIZE - 1;
   const supabase = await createClient();
 
   const {
@@ -55,16 +63,74 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     query = query.eq('role', role);
   }
 
-  // Search by email or name if provided
+  // Search by email, name, or candidate_id
+  // candidate_id lives in talent_profiles, so we resolve matching user_ids first
+  let candidateUserIds: string[] = [];
   if (search) {
-    query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`);
+    const { data: candidateMatches } = await supabase
+      .from('talent_profiles')
+      .select('user_id')
+      .ilike('candidate_id', `%${search}%`);
+    candidateUserIds = (candidateMatches || [])
+      .map((r) => r.user_id)
+      .filter(Boolean) as string[];
   }
 
-  const { data: users, error } = await query;
+  // Build the OR filter: email / name match OR is a matched candidate
+  if (search) {
+    const orParts = [`email.ilike.%${search}%`, `full_name.ilike.%${search}%`];
+    if (candidateUserIds.length > 0) {
+      orParts.push(`id.in.(${candidateUserIds.join(',')})`);
+    }
+    query = query.or(orParts.join(','));
+  }
+
+  // Filtered count for pagination (same OR logic)
+  const countQuery = supabase.from('profiles').select('*', { count: 'exact', head: true });
+  let filteredCountQuery = countQuery;
+  if (role && role !== 'all') filteredCountQuery = filteredCountQuery.eq('role', role);
+  if (search) {
+    const orParts = [`email.ilike.%${search}%`, `full_name.ilike.%${search}%`];
+    if (candidateUserIds.length > 0) {
+      orParts.push(`id.in.(${candidateUserIds.join(',')})`);
+    }
+    filteredCountQuery = filteredCountQuery.or(orParts.join(','));
+  }
+  const { count: filteredTotal } = await filteredCountQuery;
+
+  const { data: users, error } = await query.range(rangeFrom, rangeTo);
+  const totalPages = Math.max(1, Math.ceil((filteredTotal || 0) / PAGE_SIZE));
 
   if (error) {
     console.error('Error fetching users:', error);
   }
+
+  // Fetch status from talent_profiles and employer_profiles in bulk
+  const userIds = (users || []).map((u) => u.id);
+
+  const [{ data: talentStatuses }, { data: employerStatuses }] = await Promise.all([
+    supabase
+      .from('talent_profiles')
+      .select('user_id, status')
+      .in('user_id', userIds.length > 0 ? userIds : ['']),
+    supabase
+      .from('employer_profiles')
+      .select('user_id, status')
+      .in('user_id', userIds.length > 0 ? userIds : ['']),
+  ]);
+
+  const talentStatusMap = new Map<string, string>(
+    (talentStatuses || []).map((r) => [r.user_id, r.status ?? 'enabled'])
+  );
+  const employerStatusMap = new Map<string, string>(
+    (employerStatuses || []).map((r) => [r.user_id, r.status ?? 'enabled'])
+  );
+
+  const getProfileStatus = (profileId: string, profileRole: string): string | null => {
+    if (profileRole === 'talent') return talentStatusMap.get(profileId) ?? null;
+    if (profileRole === 'employer') return employerStatusMap.get(profileId) ?? null;
+    return null;
+  };
 
   // Get counts for each role
   const [
@@ -129,6 +195,22 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     });
   };
 
+  // ── Pagination URL builder ──
+  const buildPageUrl = (p: number) => {
+    const params = new URLSearchParams();
+    if (role && role !== 'all') params.set('role', role);
+    if (search) params.set('search', search);
+    params.set('page', String(p));
+    return `/dashboard/admin/users?${params.toString()}`;
+  };
+
+  const pageWindow = (() => {
+    const delta = 2;
+    const start = Math.max(1, currentPage - delta);
+    const end = Math.min(totalPages, currentPage + delta);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  })();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -147,7 +229,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                 type="text"
                 name="search"
                 defaultValue={search || ''}
-                placeholder="Search by email or name..."
+                placeholder="Search by email, name, or Candidate ID..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -191,6 +273,18 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
         ))}
       </div>
 
+      {/* Results summary */}
+      <div className="flex items-center justify-between text-sm text-gray-500">
+        <span>
+          Showing{' '}
+          {(filteredTotal ?? 0) === 0 ? 0 : rangeFrom + 1}–
+          {Math.min(rangeTo + 1, filteredTotal ?? 0)} of {filteredTotal ?? 0} user
+          {(filteredTotal ?? 0) !== 1 ? 's' : ''}
+          {(role && role !== 'all') || search ? ' (filtered)' : ''}
+        </span>
+        <span>{PAGE_SIZE} per page</span>
+      </div>
+
       {/* Users List */}
       <Card>
         <CardContent>
@@ -201,6 +295,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-3 px-4 font-medium text-gray-600">User</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Role</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Verified?</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Joined</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
@@ -236,23 +331,25 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                       <td className="py-4 px-4">
                         {getRoleBadge(profile.role)}
                       </td>
+                      {/* Verified? */}
                       <td className="py-4 px-4">
-                        <div className="flex flex-col gap-1">
-                          {profile.is_verified ? (
-                            <span className="inline-flex items-center gap-1 text-sm text-green-600">
-                              <CheckCircle className="w-4 h-4" />
-                              Verified
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-sm text-gray-500">
-                              <XCircle className="w-4 h-4" />
-                              Not verified
-                            </span>
-                          )}
-                          {profile.onboarding_completed && (
-                            <span className="text-xs text-blue-600">Onboarding complete</span>
-                          )}
-                        </div>
+                        {profile.is_verified ? (
+                          <span className="inline-flex items-center gap-1 text-sm text-green-600">
+                            <CheckCircle className="w-4 h-4" /> Yes
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-sm text-gray-400">
+                            <XCircle className="w-4 h-4" /> No
+                          </span>
+                        )}
+                      </td>
+                      {/* Account Status — inline toggle */}
+                      <td className="py-4 px-4">
+                        <StatusToggle
+                          userId={profile.id}
+                          role={profile.role}
+                          currentStatus={getProfileStatus(profile.id, profile.role)}
+                        />
                       </td>
                       <td className="py-4 px-4">
                         <span className="text-sm text-gray-600 flex items-center gap-1">
@@ -289,6 +386,54 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            Page {currentPage} of {totalPages}
+          </p>
+          <div className="flex items-center gap-1">
+            <Link
+              href={buildPageUrl(1)}
+              aria-disabled={currentPage === 1}
+              className={`px-2 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors ${currentPage === 1 ? 'pointer-events-none opacity-30' : ''}`}
+            >«</Link>
+            <Link
+              href={buildPageUrl(currentPage - 1)}
+              aria-disabled={currentPage === 1}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors ${currentPage === 1 ? 'pointer-events-none opacity-30' : ''}`}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Prev
+            </Link>
+            {pageWindow[0] > 1 && <span className="px-2 text-gray-400">…</span>}
+            {pageWindow.map((p) => (
+              <Link
+                key={p}
+                href={buildPageUrl(p)}
+                className={`min-w-[2rem] text-center px-2 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  p === currentPage ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {p}
+              </Link>
+            ))}
+            {pageWindow[pageWindow.length - 1] < totalPages && <span className="px-2 text-gray-400">…</span>}
+            <Link
+              href={buildPageUrl(currentPage + 1)}
+              aria-disabled={currentPage === totalPages}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors ${currentPage === totalPages ? 'pointer-events-none opacity-30' : ''}`}
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+            <Link
+              href={buildPageUrl(totalPages)}
+              aria-disabled={currentPage === totalPages}
+              className={`px-2 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors ${currentPage === totalPages ? 'pointer-events-none opacity-30' : ''}`}
+            >»</Link>
+          </div>
+        </div>
+      )}
 
       {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

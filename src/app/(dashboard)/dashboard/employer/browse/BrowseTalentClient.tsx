@@ -47,6 +47,8 @@ export default function BrowseTalentClient({ talents, lettersSentTo, subscriptio
   const [experienceFilter, setExperienceFilter] = useState('all');
   const [skillFilter, setSkillFilter] = useState('all');
   const [sortOption, setSortOption] = useState('score-desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 50;
 
   // Paid plans get all filters; free plan only gets Industry filter
   const isPaidPlan = subscriptionTier !== 'free';
@@ -139,6 +141,28 @@ export default function BrowseTalentClient({ talents, lettersSentTo, subscriptio
     return result;
   }, [talents, searchQuery, industryFilter, minScoreFilter, experienceFilter, skillFilter, sortOption]);
 
+
+  // Reset to page 1 whenever filters/sort change
+  const filterKey = `${searchQuery}|${industryFilter}|${minScoreFilter}|${experienceFilter}|${skillFilter}|${sortOption}`;
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (filterKey !== lastFilterKey) {
+    setLastFilterKey(filterKey);
+    setCurrentPage(1);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filteredTalents.length / PAGE_SIZE));
+  const paginatedTalents = filteredTalents.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
+  // Page window: up to 5 page buttons centred on current page
+  const pageWindow = useMemo(() => {
+    const delta = 2;
+    const start = Math.max(1, currentPage - delta);
+    const end = Math.min(totalPages, currentPage + delta);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }, [currentPage, totalPages]);
   const hasActiveFilters = searchQuery || industryFilter !== 'all' || minScoreFilter > 0 || experienceFilter !== 'all' || skillFilter !== 'all';
 
   const clearFilters = () => {
@@ -318,7 +342,12 @@ export default function BrowseTalentClient({ talents, lettersSentTo, subscriptio
       {/* Results */}
       <div className="flex items-center justify-between">
         <p className="text-gray-600">
-          {filteredTalents.length} candidate{filteredTalents.length !== 1 ? 's' : ''} found
+          Showing{' '}
+          {filteredTalents.length === 0
+            ? 0
+            : (currentPage - 1) * PAGE_SIZE + 1}
+          –{Math.min(currentPage * PAGE_SIZE, filteredTalents.length)} of{' '}
+          {filteredTalents.length} candidate{filteredTalents.length !== 1 ? 's' : ''}
           {hasActiveFilters && ` (of ${talents.length} total)`}
         </p>
         <select
@@ -351,7 +380,7 @@ export default function BrowseTalentClient({ talents, lettersSentTo, subscriptio
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTalents.map((talent) => {
+          {paginatedTalents.map((talent) => {
             const hasLetter = lettersSentTo.has(talent.id);
             return (
               <Card key={talent.id} hover className="h-full">
@@ -448,6 +477,71 @@ export default function BrowseTalentClient({ talents, lettersSentTo, subscriptio
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-gray-500">
+            Page {currentPage} of {totalPages}
+          </p>
+          <div className="flex items-center gap-1">
+            {/* First */}
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="px-2 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="First page"
+            >
+              «
+            </button>
+            {/* Prev */}
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Prev
+            </button>
+            {/* Page numbers */}
+            {pageWindow[0] > 1 && (
+              <span className="px-2 text-gray-400 text-sm">…</span>
+            )}
+            {pageWindow.map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`min-w-[2rem] px-2 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  page === currentPage
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            {pageWindow[pageWindow.length - 1] < totalPages && (
+              <span className="px-2 text-gray-400 text-sm">…</span>
+            )}
+            {/* Next */}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              Next <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+            {/* Last */}
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="px-2 py-1.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Last page"
+            >
+              »
+            </button>
+          </div>
         </div>
       )}
     </div>
