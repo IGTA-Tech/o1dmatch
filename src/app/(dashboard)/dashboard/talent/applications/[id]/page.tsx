@@ -221,7 +221,7 @@ export default async function ApplicationDetailPage({
           {/* Application Status */}
           <Card>
             <CardHeader>
-              <CardTitle>Application Status</CardTitle>
+              <CardTitle>Interest inquiry Status</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
@@ -269,7 +269,7 @@ export default async function ApplicationDetailPage({
                   <span className="text-gray-400 font-medium text-sm">%</span>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">O-1 Score at Application</p>
+                  <p className="text-sm text-gray-500">O-1 Score at Interest inquiry</p>
                   <p className="font-medium">{application.score_at_application || 0}%</p>
                 </div>
               </div>

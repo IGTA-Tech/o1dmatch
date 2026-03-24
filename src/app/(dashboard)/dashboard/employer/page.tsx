@@ -188,7 +188,7 @@ export default async function EmployerDashboardPage() {
       trend:
         (totalApplicationsCount || 0) > 0
           ? `${totalApplicationsCount} received`
-          : 'Publish a job to attract applicants',
+          : 'Publish a job to attract interested candidates',
       trendUp: (totalApplicationsCount || 0) > 0,
       href: '/dashboard/employer/jobs',
     },
@@ -416,7 +416,7 @@ export default async function EmployerDashboardPage() {
                 className="text-[0.95rem] font-semibold"
                 style={{ color: '#0B1D35' }}
               >
-                Recent Applications
+                Recent interest inquiry
               </h3>
               <Link
                 href="/dashboard/employer/jobs"
@@ -439,13 +439,13 @@ export default async function EmployerDashboardPage() {
                   className="text-base font-semibold mb-1.5"
                   style={{ color: '#0B1D35' }}
                 >
-                  No applications yet
+                  No interest inquiry yet
                 </h4>
                 <p
                   className="text-sm leading-relaxed mb-5 max-w-md mx-auto"
                   style={{ color: '#64748B' }}
                 >
-                  Post a job to start receiving applications from pre-vetted O-1
+                  Post a job to start receiving interest inquiry from pre-vetted O-1
                   talent. You can also browse our talent pool and send interest
                   letters directly.
                 </p>

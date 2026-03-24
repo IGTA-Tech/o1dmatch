@@ -158,7 +158,7 @@ export default async function EmployerJobsPage() {
         <Card padding="sm">
           <CardContent>
             <p className="text-2xl font-bold text-blue-600">{stats.totalApplications}</p>
-            <p className="text-sm text-gray-600">Total Applications</p>
+            <p className="text-sm text-gray-600">Total Interest inquiry</p>
           </CardContent>
         </Card>
       </div>
@@ -170,7 +170,7 @@ export default async function EmployerJobsPage() {
             <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs posted yet</h3>
             <p className="text-gray-600 mb-4">
-              Create your first job listing to start receiving applications.
+              Create your first job listing to start receiving interest inquiry.
             </p>
             {canPostJob ? (
               <Link
@@ -241,7 +241,7 @@ export default async function EmployerJobsPage() {
                         <span className="flex items-center gap-1 text-sm">
                           <Users className="w-4 h-4 text-gray-400" />
                           <span className="font-medium">{applicationCount}</span>
-                          <span className="text-gray-500">applications</span>
+                          <span className="text-gray-500">interest inquiry</span>
                         </span>
                         <span className="flex items-center gap-1 text-sm">
                           <Eye className="w-4 h-4 text-gray-400" />
@@ -259,7 +259,7 @@ export default async function EmployerJobsPage() {
                         href={`/dashboard/employer/jobs/${job.id}/applications`}
                         className="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       >
-                        View Applications
+                        View Interest inquiry
                       </Link>
                       <Link
                         href={`/dashboard/employer/jobs/${job.id}/edit`}

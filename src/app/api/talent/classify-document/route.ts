@@ -8,25 +8,45 @@ You are an expert immigration attorney specializing in O-1 visas (Extraordinary 
 Analyze the provided document and classify it against the 8 USCIS O-1A criteria.
 
 The 8 criteria keys and their meanings:
-- "awards": Prizes or awards for excellence in the field
+- "awards": Prizes or awards for excellence in the field of endeavor
 - "membership": Membership in associations requiring outstanding achievement
-- "media": Published material/press coverage about the person
-- "judging": Participation as a judge of others' work in the field
-- "contributions": Original scientific, scholarly, or business-related contributions of major significance
-- "publications": Authorship of scholarly articles in professional journals or major media
-- "critical_role": Critical or leading role in distinguished organizations or establishments
-- "salary": High salary or remuneration commanding significantly above others in the field
+- "media": Published material in professional/major trade publications or major media about the person
+- "judging": Participation as a judge of the work of others in the same or allied field
+- "contributions": Original scientific, scholarly, artistic, athletic, or business-related contributions of major significance
+- "publications": Authorship of scholarly articles in professional journals or major media in the field
+- "critical_role": Performance of a critical or essential role for organizations or establishments with distinguished reputations
+- "salary": High salary or other remuneration commanding significantly above others in the field
 
-Respond ONLY with a JSON object in this exact format (no markdown, no explanation):
+Respond ONLY with a valid JSON object (no markdown fences, no explanation) in this exact format:
 {
-  "criterion": "<one of the 8 keys above>",
-  "confidence": <integer 0-100>,
-  "reasoning": "<one sentence explaining why>",
-  "criterion_name": "<human readable name>",
-  "extraction_keywords": ["<key phrase 1>", "<key phrase 2>", "<key phrase 3>"]
+  "suggestions": [
+    {
+      "criterion": "<one of the 8 keys above>",
+      "criterion_name": "<human readable name>",
+      "confidence": <integer 0-100>,
+      "reasoning": "<one sentence explaining why this criterion applies>"
+    },
+    {
+      "criterion": "<second best match key>",
+      "criterion_name": "<human readable name>",
+      "confidence": <integer 0-100>,
+      "reasoning": "<one sentence>"
+    },
+    {
+      "criterion": "<third best match key>",
+      "criterion_name": "<human readable name>",
+      "confidence": <integer 0-100>,
+      "reasoning": "<one sentence>"
+    }
+  ],
+  "extraction_keywords": ["<key phrase 1>", "<key phrase 2>", "<key phrase 3>", "<key phrase 4>"]
 }
 
-If the document does not clearly match any criterion, pick the closest one and set confidence below 50.
+Rules:
+- Always return exactly 3 suggestions, ranked from highest to lowest confidence
+- Each criterion key must be unique across the 3 suggestions
+- If only 1-2 criteria clearly apply, set confidence below 30 for the remaining slots
+- confidence must be an integer between 0 and 100
 `.trim();
 
 export async function POST(req: NextRequest) {
@@ -61,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     const response = await client.messages.create({
       model: 'claude-opus-4-5',
-      max_tokens: 512,
+      max_tokens: 1024,
       messages: [
         {
           role: 'user',
@@ -82,13 +102,28 @@ export async function POST(req: NextRequest) {
     const clean = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
 
+    // Parse and sort suggestions descending by confidence
+    const suggestions: { criterion: string; criterion_name: string; confidence: number; reasoning: string }[] =
+      Array.isArray(parsed.suggestions) ? parsed.suggestions : [];
+    suggestions.sort((a, b) => b.confidence - a.confidence);
+
+    if (suggestions.length === 0) {
+      return NextResponse.json({ error: 'No suggestions returned by AI' }, { status: 500 });
+    }
+
+    // Top suggestion drives backward-compatible top-level fields
+    const top = suggestions[0];
+
     return NextResponse.json({
-      success: true,
-      criterion: parsed.criterion,
-      confidence: parsed.confidence,
-      reasoning: parsed.reasoning,
-      criterion_name: parsed.criterion_name,
+      success:             true,
+      // Backward-compat fields (existing consumers unaffected)
+      criterion:           top.criterion,
+      confidence:          top.confidence,
+      reasoning:           top.reasoning,
+      criterion_name:      top.criterion_name,
       extraction_keywords: parsed.extraction_keywords || [],
+      // New: full ranked list
+      suggestions,
     });
   } catch (err) {
     console.error('classify-document error:', err);

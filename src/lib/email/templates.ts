@@ -200,10 +200,10 @@ export function applicationReceived(params: {
   const { employerName, candidateId, jobTitle, o1Score, dashboardUrl } = params;
 
   return {
-    subject: `New Application Received - ${jobTitle}`,
+    subject: `New Interest inquiry Received - ${jobTitle}`,
     html: layout(`
       <h2 style="margin: 0 0 20px; font-size: 20px; color: #111827;">
-        New Application Received
+        New Interest inquiry Received
       </h2>
       <p>Hi ${employerName},</p>
       <p>
@@ -214,10 +214,10 @@ export function applicationReceived(params: {
         <p style="margin: 5px 0;"><strong>O-1 Readiness Score:</strong> ${o1Score}%</p>
       </div>
       <p>
-        Log in to your dashboard to review the application and take action.
+        Log in to your dashboard to review the interest inquiry and take action.
       </p>
       <p style="margin: 30px 0;">
-        <a href="${dashboardUrl}" style="${buttonStyle}">Review Application</a>
+        <a href="${dashboardUrl}" style="${buttonStyle}">Review Interest inquiry</a>
       </p>
       <p>Best regards,<br>The O1DMatch Team</p>
     `),
@@ -229,9 +229,9 @@ A new candidate has applied for your ${jobTitle} position.
 Candidate ID: ${candidateId}
 O-1 Readiness Score: ${o1Score}%
 
-Log in to your dashboard to review the application and take action.
+Log in to your dashboard to review the interest inquiry and take action.
 
-Review Application: ${dashboardUrl}
+Review Interest inquiry: ${dashboardUrl}
 
 Best regards,
 The O1DMatch Team

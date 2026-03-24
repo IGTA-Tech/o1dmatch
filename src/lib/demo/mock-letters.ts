@@ -317,7 +317,7 @@ I'd love to discuss how design thinking can enhance AI research and product deve
 
 At IBM Quantum, I have developed novel error correction codes that have improved qubit coherence times by 40%. My 25 publications and APS Fellowship demonstrate my contributions to the field.
 
-I am excited about the opportunity to work on practical quantum computing applications and would welcome the chance to discuss how I can contribute to Quantum Dynamics' mission.`,
+I am excited about the opportunity to work on practical quantum computing interest inquirys and would welcome the chance to discuss how I can contribute to Quantum Dynamics' mission.`,
     attached_documents: ['doc-6', 'doc-7'],
     score_at_application: 75,
     criteria_met_at_application: ['scholarly_articles', 'original_contributions', 'memberships'],

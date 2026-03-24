@@ -59,7 +59,7 @@ export default async function TalentJobsPage() {
         user_id
       )
     `)
-    .eq('status', 'active')
+    // .eq('status', 'active')
     .order('created_at', { ascending: false });
 
   // Get existing applications to filter out applied jobs

@@ -43,7 +43,7 @@ const navSections = [
   {
     label: 'Engagement',
     items: [
-      { href: '/dashboard/talent/applications', label: 'Applications', icon: Send },
+      { href: '/dashboard/talent/applications', label: 'Interest inquiry', icon: Send },
       { href: '/dashboard/talent/letters', label: 'Letters', icon: Mail },
       { href: '/dashboard/talent/messages', label: 'Messages', icon: MessageSquare },
       { href: '/dashboard/talent/petitioner', label: 'Seek a Petitioner', icon: Scale },

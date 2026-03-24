@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Lock, MessageSquare, X, Zap, CheckCircle } from 'lucide-react';
 
 const fakeConversations = [
-  { name: 'Acme Corp', msg: "We'd love to discuss your O-1 application...", time: '2m ago', unread: true },
+  { name: 'Acme Corp', msg: "We'd love to discuss your O-1 interest inquiry...", time: '2m ago', unread: true },
   { name: 'TechStart Inc.', msg: 'Hi! We reviewed your profile and think...', time: '1h ago', unread: true },
   { name: 'Global Talent Agency', msg: 'Following up on your petition status...', time: 'Yesterday', unread: false },
 ];

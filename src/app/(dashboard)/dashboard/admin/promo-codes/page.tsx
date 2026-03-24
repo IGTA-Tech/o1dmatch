@@ -24,6 +24,7 @@ import {
   ChevronDown,
   ChevronUp,
   Gift,
+  Pencil,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -56,7 +57,7 @@ interface FormData {
   trial_days: number;
   discount_percent: number;
   grants_igta_member: boolean;
-  applicable_tier: string;
+  applicable_tiers: string[];
   applicable_user_type: string;
   max_uses: string;
   max_uses_per_user: string;
@@ -72,7 +73,7 @@ const defaultForm: FormData = {
   trial_days: 14,
   discount_percent: 0,
   grants_igta_member: false,
-  applicable_tier: "",
+  applicable_tiers: [],
   applicable_user_type: "both",
   max_uses: "",
   max_uses_per_user: "1",
@@ -88,18 +89,47 @@ const typeOptions = [
   { value: "free_upgrade", label: "Free Upgrade", icon: Gift, color: "amber" },
 ];
 
-const tierOptions = [
-  { value: "", label: "Any Tier" },
-  { value: "starter", label: "Starter" },
-  { value: "professional", label: "Professional" },
-  { value: "enterprise", label: "Enterprise" },
+const userTypeOptions = [
+  { value: "both", label: "Both (any user)" },
+  { value: "employer", label: "Employer only" },
+  { value: "talent", label: "Talent only" },
 ];
 
-const userTypeOptions = [
-  { value: "both", label: "Both" },
-  { value: "employer", label: "Employer" },
-  { value: "talent", label: "Talent" },
+// Mirrors EMPLOYER_TIERS from @/lib/subscriptions/tiers
+const EMPLOYER_PLAN_OPTIONS = [
+  { value: "", label: "Any Employer Plan" },
+  { value: "employer:free", label: "Free — $0/mo" },
+  { value: "employer:starter", label: "Starter — $25/mo" },
+  { value: "employer:growth", label: "Growth — $49/mo" },
+  { value: "employer:business", label: "Business — $99/mo" },
+  { value: "employer:enterprise", label: "Enterprise — $199/mo" },
 ];
+
+// Mirrors TALENT_TIERS from @/lib/subscriptions/tiers
+const TALENT_PLAN_OPTIONS = [
+  { value: "", label: "Any Talent Plan" },
+  { value: "talent:profile_only", label: "Free Profile — $0/mo" },
+  { value: "talent:starter", label: "Starter — $100/mo" },
+  { value: "talent:active_match", label: "Active Match — $500/mo" },
+];
+
+/** Strip the "employer:" / "talent:" prefix → raw tier key sent to API/DB */
+function stripPrefix(v: string): string {
+  return v.replace(/^(employer|talent):/, "");
+}
+
+/** Resolve a prefixed or raw tier value to its display label */
+function planLabel(v: string): string {
+  const all = [...EMPLOYER_PLAN_OPTIONS, ...TALENT_PLAN_OPTIONS];
+  // Try exact match first (prefixed), then raw match
+  const match = all.find((o) => o.value === v) ?? all.find((o) => stripPrefix(o.value) === v);
+  return match ? match.label.split(" —")[0] : v;
+}
+
+/** Detect whether a stored value is already prefixed */
+function isPrefixed(v: string): boolean {
+  return v.startsWith("employer:") || v.startsWith("talent:");
+}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -150,6 +180,7 @@ export default function AdminPromoCodesPage() {
   const [success, setSuccess] = useState("");
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>("all");
@@ -175,6 +206,99 @@ export default function AdminPromoCodesPage() {
     loadPromoCodes();
   }, [loadPromoCodes]);
 
+  /* ---------- Open Edit ---------- */
+  const handleEdit = (promo: PromoCode) => {
+    setEditingId(promo.id);
+    setError("");
+    setSuccess("");
+    setForm({
+      code: promo.code,
+      type: promo.type,
+      description: promo.description ?? "",
+      trial_days: promo.trial_days,
+      discount_percent: promo.discount_percent,
+      grants_igta_member: promo.grants_igta_member,
+      applicable_tiers: promo.applicable_tier
+        ? promo.applicable_tier.split(",").map((s) => s.trim()).filter(Boolean).map((raw) => {
+            // If already prefixed (new format), keep as-is
+            if (isPrefixed(raw)) return raw;
+            // Re-add prefix based on user type or by matching which list contains it
+            const empValues = EMPLOYER_PLAN_OPTIONS.filter((o) => o.value !== "").map((o) => stripPrefix(o.value));
+            const talValues = TALENT_PLAN_OPTIONS.filter((o) => o.value !== "").map((o) => stripPrefix(o.value));
+            if (promo.applicable_user_type === "employer") return `employer:${raw}`;
+            if (promo.applicable_user_type === "talent") return `talent:${raw}`;
+            // "both" — check which side it belongs to (talent:starter takes priority if ambiguous)
+            if (talValues.includes(raw) && empValues.includes(raw)) return `employer:${raw}`; // ambiguous: default employer
+            if (empValues.includes(raw)) return `employer:${raw}`;
+            if (talValues.includes(raw)) return `talent:${raw}`;
+            return raw;
+          })
+        : [],
+      applicable_user_type: promo.applicable_user_type ?? "both",
+      max_uses: promo.max_uses !== null ? String(promo.max_uses) : "",
+      max_uses_per_user: promo.max_uses_per_user !== null ? String(promo.max_uses_per_user) : "",
+      valid_from: promo.valid_from ? promo.valid_from.split("T")[0] : "",
+      valid_until: promo.valid_until ? promo.valid_until.split("T")[0] : "",
+      is_active: promo.is_active,
+    });
+    setShowForm(true);
+  };
+
+  /* ---------- Update ---------- */
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId) return;
+    setError("");
+    setSuccess("");
+
+    if (!form.code.trim()) {
+      setError("Promo code is required");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        id: editingId,
+        code: form.code.toUpperCase().trim(),
+        type: form.type,
+        description: form.description.trim() || null,
+        trial_days: form.type === "trial" ? form.trial_days : 0,
+        discount_percent: form.type === "discount" ? form.discount_percent : 0,
+        grants_igta_member: form.type === "igta_verification" ? true : form.grants_igta_member,
+        applicable_tier: form.applicable_tiers.length > 0 ? form.applicable_tiers.map(stripPrefix).join(",") : null,
+        applicable_user_type: form.applicable_user_type,
+        max_uses: form.max_uses ? parseInt(form.max_uses) : null,
+        max_uses_per_user: form.max_uses_per_user ? parseInt(form.max_uses_per_user) : 1,
+        valid_from: form.valid_from ? new Date(form.valid_from).toISOString() : new Date().toISOString(),
+        valid_until: form.valid_until ? new Date(form.valid_until).toISOString() : null,
+        is_active: form.is_active,
+      };
+
+      const res = await fetch("/api/admin/promo-codes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setSuccess(`Promo code "${payload.code}" updated successfully!`);
+        setForm(defaultForm);
+        setShowForm(false);
+        setEditingId(null);
+        loadPromoCodes();
+        setTimeout(() => setSuccess(""), 4000);
+      } else {
+        setError(json.error || "Failed to update promo code");
+      }
+    } catch {
+      setError("Failed to update promo code");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   /* ---------- Create ---------- */
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,7 +319,7 @@ export default function AdminPromoCodesPage() {
         trial_days: form.type === "trial" ? form.trial_days : 0,
         discount_percent: form.type === "discount" ? form.discount_percent : 0,
         grants_igta_member: form.type === "igta_verification" ? true : form.grants_igta_member,
-        applicable_tier: form.applicable_tier || null,
+        applicable_tier: form.applicable_tiers.length > 0 ? form.applicable_tiers.map(stripPrefix).join(",") : null,
         applicable_user_type: form.applicable_user_type,
         max_uses: form.max_uses ? parseInt(form.max_uses) : null,
         max_uses_per_user: form.max_uses_per_user ? parseInt(form.max_uses_per_user) : 1,
@@ -314,6 +438,34 @@ export default function AdminPromoCodesPage() {
       return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir;
     });
 
+  /* ---------- Plan Options (dynamic by user type) ---------- */
+  // All selectable plans (no empty "Any" sentinel) grouped by user type
+  const EMPLOYER_PLANS = EMPLOYER_PLAN_OPTIONS.filter((o) => o.value !== "");
+  const TALENT_PLANS   = TALENT_PLAN_OPTIONS.filter((o) => o.value !== "");
+
+  const planOptions =
+    form.applicable_user_type === "employer"
+      ? EMPLOYER_PLANS
+      : form.applicable_user_type === "talent"
+      ? TALENT_PLANS
+      : [...EMPLOYER_PLANS, ...TALENT_PLANS]; // "both" — show all
+
+  // When user type changes, keep only tiers valid for the new type
+  // (switching TO "both" keeps everything since all tiers are valid)
+  const handleUserTypeChange = (newUserType: string) => {
+    const validValues =
+      newUserType === "employer"
+        ? EMPLOYER_PLANS.map((o) => o.value)
+        : newUserType === "talent"
+        ? TALENT_PLANS.map((o) => o.value)
+        : [...EMPLOYER_PLANS, ...TALENT_PLANS].map((o) => o.value); // both — all valid
+    setForm({
+      ...form,
+      applicable_user_type: newUserType,
+      applicable_tiers: form.applicable_tiers.filter((t) => validValues.includes(t)),
+    });
+  };
+
   const activeCount = promoCodes.filter((p) => p.is_active).length;
   const totalUses = promoCodes.reduce((sum, p) => sum + p.current_uses, 0);
 
@@ -335,6 +487,7 @@ export default function AdminPromoCodesPage() {
           onClick={() => {
             setShowForm(!showForm);
             setError("");
+            setEditingId(null);
             if (!showForm) setForm(defaultForm);
           }}
           className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-colors ${
@@ -370,11 +523,11 @@ export default function AdminPromoCodesPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
             <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              New Promo Code
+              {editingId ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {editingId ? "Edit Promo Code" : "New Promo Code"}
             </h2>
           </div>
-          <form onSubmit={handleCreate} className="p-6 space-y-5">
+          <form onSubmit={editingId ? handleUpdate : handleCreate} className="p-6 space-y-5">
             {/* Row 1: Code + Type */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -387,10 +540,12 @@ export default function AdminPromoCodesPage() {
                     value={form.code}
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
                     placeholder="e.g. WELCOME-2026"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono uppercase tracking-wider"
+                    className={`flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono uppercase tracking-wider ${editingId ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""}`}
                     maxLength={50}
+                    readOnly={!!editingId}
                     required
                   />
+                  {!editingId && (
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, code: generateCode() })}
@@ -398,6 +553,7 @@ export default function AdminPromoCodesPage() {
                   >
                     Generate
                   </button>
+                  )}
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
                   Uppercase, alphanumeric, hyphens, underscores
@@ -497,31 +653,15 @@ export default function AdminPromoCodesPage() {
               </div>
             )}
 
-            {/* Row 3: Tier + User Type + Max Uses + Max Per User */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Row 3: User Type + Applicable Plans + Max Uses + Max Per User */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Applicable Tier
-                </label>
-                <select
-                  value={form.applicable_tier}
-                  onChange={(e) => setForm({ ...form, applicable_tier: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                  {tierOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  User Type
+                  Applies To (User Type)
                 </label>
                 <select
                   value={form.applicable_user_type}
-                  onChange={(e) => setForm({ ...form, applicable_user_type: e.target.value })}
+                  onChange={(e) => handleUserTypeChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
                   {userTypeOptions.map((opt) => (
@@ -530,6 +670,88 @@ export default function AdminPromoCodesPage() {
                     </option>
                   ))}
                 </select>
+                <p className="text-xs text-gray-400 mt-1">Which users can redeem this</p>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Applicable Plans
+                  {form.applicable_tiers.length > 0 && (
+                    <span className="ml-2 text-xs font-normal text-blue-600">
+                      {form.applicable_tiers.length} selected
+                    </span>
+                  )}
+                </label>
+                {(() => {
+                  const isBoth = form.applicable_user_type === "both";
+
+                  const PillGroup = ({ plans, groupLabel, groupColor }: {
+                    plans: { value: string; label: string }[];
+                    groupLabel?: string;
+                    groupColor?: string;
+                  }) => (
+                    <div>
+                      {groupLabel && (
+                        <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 ${groupColor ?? "text-gray-400"}`}>
+                          {groupLabel}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {plans.map((opt) => {
+                          const checked = form.applicable_tiers.includes(opt.value);
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => {
+                                const next = checked
+                                  ? form.applicable_tiers.filter((t) => t !== opt.value)
+                                  : [...form.applicable_tiers, opt.value];
+                                setForm({ ...form, applicable_tiers: next });
+                              }}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                                checked
+                                  ? "bg-blue-600 text-white border-blue-600"
+                                  : "bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600"
+                              }`}
+                            >
+                              {checked && <Check className="w-3 h-3" />}
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+
+                  return (
+                    <>
+                      <div className="p-3 border border-gray-300 rounded-lg bg-white min-h-[42px] space-y-3">
+                        {isBoth ? (
+                          <>
+                            <PillGroup
+                              plans={EMPLOYER_PLANS}
+                              groupLabel="Employer Plans"
+                              groupColor="text-blue-500"
+                            />
+                            <div className="border-t border-gray-100" />
+                            <PillGroup
+                              plans={TALENT_PLANS}
+                              groupLabel="Talent Plans"
+                              groupColor="text-purple-500"
+                            />
+                          </>
+                        ) : (
+                          <PillGroup plans={planOptions} />
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {form.applicable_tiers.length === 0
+                          ? "No plan selected — code applies to all plans"
+                          : `Applies to: ${form.applicable_tiers.join(", ")}`}
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -616,6 +838,7 @@ export default function AdminPromoCodesPage() {
                 type="button"
                 onClick={() => {
                   setShowForm(false);
+                  setEditingId(null);
                   setForm(defaultForm);
                 }}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
@@ -627,8 +850,20 @@ export default function AdminPromoCodesPage() {
                 disabled={saving || !form.code.trim()}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                {saving ? "Creating..." : "Create Promo Code"}
+                {saving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : editingId ? (
+                  <Pencil className="w-4 h-4" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                {saving
+                  ? editingId
+                    ? "Saving..."
+                    : "Creating..."
+                  : editingId
+                  ? "Save Changes"
+                  : "Create Promo Code"}
               </button>
             </div>
           </form>
@@ -808,18 +1043,37 @@ export default function AdminPromoCodesPage() {
                         {promo.type === "discount" && <span>{promo.discount_percent}% off</span>}
                         {promo.type === "igta_verification" && <span>IGTA Badge</span>}
                         {promo.type === "free_upgrade" && (
-                          <span>{promo.applicable_tier ? `→ ${promo.applicable_tier}` : "Upgrade"}</span>
+                          <span>
+                            {promo.applicable_tier
+                              ? `→ ${promo.applicable_tier.split(",").map((t) => planLabel(t.trim())).join(", ")}`
+                              : "Upgrade"}
+                          </span>
                         )}
                       </td>
 
-                      {/* User Type */}
+                      {/* User Type + Plans */}
                       <td className="px-4 py-3 hidden md:table-cell">
-                        <span className="text-xs text-gray-500 capitalize">
-                          {promo.applicable_user_type || "Both"}
-                          {promo.applicable_tier && (
-                            <span className="block text-gray-400">{promo.applicable_tier}</span>
-                          )}
+                        <span className="text-xs text-gray-600 capitalize font-medium">
+                          {promo.applicable_user_type === "employer"
+                            ? "Employer"
+                            : promo.applicable_user_type === "talent"
+                            ? "Talent"
+                            : "Both"}
                         </span>
+                        {promo.applicable_tier ? (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {promo.applicable_tier.split(",").map((t) => (
+                              <span
+                                key={t}
+                                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200"
+                              >
+                                {planLabel(t.trim())}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="block text-[11px] text-gray-400 mt-0.5">Any plan</span>
+                        )}
                       </td>
 
                       {/* Uses */}
@@ -877,6 +1131,13 @@ export default function AdminPromoCodesPage() {
                       {/* Actions */}
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleEdit(promo)}
+                            className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => handleToggle(promo.id, promo.is_active)}
                             disabled={togglingId === promo.id}

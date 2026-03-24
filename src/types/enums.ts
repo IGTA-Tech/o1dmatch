@@ -113,7 +113,7 @@ export const COMMITMENT_LEVELS: Record<
     name: 'Firm Commitment',
     description: 'Strong commitment to immediately engage upon approval',
     language:
-      'We are prepared to immediately engage {name} as a {title} upon approval of {his_her} O-1 visa petition. We are offering an annual compensation package in the range of {salary_range}. This position is available immediately, and we are committed to sponsoring {name}\'s visa application.',
+      'We are prepared to immediately engage {name} as a {title} upon approval of {his_her} O-1 visa petition. We are offering an annual compensation package in the range of {salary_range}. This position is available immediately, and we are committed to sponsoring {name}\'s visa Interest inquiry.',
   },
   offer_extended: {
     name: 'Offer Extended',

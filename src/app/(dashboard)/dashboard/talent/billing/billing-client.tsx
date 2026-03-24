@@ -107,7 +107,13 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
   const [promoStatus, setPromoStatus] = useState<{
     valid: boolean;
     message: string;
-    promo?: { type: string; trialDays?: number; discountPercent?: number; grantsIGTAMember?: boolean };
+    promo?: {
+      type: string;
+      trialDays?: number;
+      discountPercent?: number;
+      grantsIGTAMember?: boolean;
+      applicableTiers?: string[]; // empty = applies to all plans
+    };
   } | null>(null);
   const [validatingPromo, setValidatingPromo] = useState(false);
   const [showPromoInput, setShowPromoInput] = useState(false);
@@ -209,11 +215,12 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
       });
       const data = await response.json();
       if (data.valid) {
+        const p = data.promo;
         let message = 'Code applied! ';
-        if (data.promo.trialDays) message += `${data.promo.trialDays}-day free trial included.`;
-        if (data.promo.discountPercent) message += `${data.promo.discountPercent}% discount applied.`;
-        if (data.promo.grantsIGTAMember) message = 'IGTA member code verified!';
-        setPromoStatus({ valid: true, message, promo: data.promo });
+        if (p.trialDays) message += `${p.trialDays}-day free trial included.`;
+        if (p.discountPercent) message += `${p.discountPercent}% discount applied.`;
+        if (p.grantsIGTAMember) message = 'IGTA member code verified!';
+        setPromoStatus({ valid: true, message, promo: p });
       } else {
         setPromoStatus({ valid: false, message: data.error || 'Invalid code' });
       }
@@ -228,6 +235,20 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
     setPromoCode('');
     setPromoStatus(null);
   }
+
+  /** Returns true if an active promo code applies to the given plan key.
+   *  An empty applicableTiers array means the promo applies to ALL plans. */
+  function promoAppliesToPlan(planKey: string): boolean {
+    if (!promoStatus?.valid) return true; // no promo — always "applies"
+    const tiers = promoStatus.promo?.applicableTiers ?? [];
+    return tiers.length === 0 || tiers.includes(planKey);
+  }
+
+  const TALENT_TIER_LABELS: Record<string, string> = {
+    profile_only: 'Free Profile',
+    starter: 'Starter',
+    active_match: 'Active Match',
+  };
 
   async function handleUpgrade(tier: TalentTier) {
     if (tier === 'profile_only') return;
@@ -563,6 +584,17 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
                           {promoStatus.promo.trialDays}-day free trial will be applied at checkout
                         </p>
                       )}
+                      {(() => {
+                        const tiers = promoStatus.promo?.applicableTiers ?? [];
+                        if (tiers.length === 0) return null;
+                        const names = tiers.map((t) => TALENT_TIER_LABELS[t] || t).join(', ');
+                        return (
+                          <p className="text-xs text-green-600 mt-0.5 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            Eligible plans: <span className="font-semibold">{names}</span>
+                          </p>
+                        );
+                      })()}
                     </div>
                   </div>
                   <button
@@ -627,11 +659,15 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
               const isCurrentPlan = key === currentTier;
               const isUpgrade = Object.keys(TALENT_TIERS).indexOf(key) > Object.keys(TALENT_TIERS).indexOf(currentTier);
               const isIGTA = (key as string) === 'igta_member';
+              const promoActive = promoStatus?.valid ?? false;
+              const promoEligible = promoAppliesToPlan(key);
+              // Dim the card if a promo is active but doesn't apply to this plan
+              const promoMismatch = promoActive && !promoEligible && key !== 'profile_only';
 
               return (
                 <Card
                   key={key}
-                  className={`relative ${isCurrentPlan ? 'ring-2 ring-green-500' : ''} ${key === 'active_match' && !isCurrentPlan ? 'ring-2 ring-blue-600' : ''}`}
+                  className={`relative transition-opacity ${isCurrentPlan ? 'ring-2 ring-green-500' : ''} ${key === 'active_match' && !isCurrentPlan ? 'ring-2 ring-blue-600' : ''} ${promoMismatch ? 'opacity-50' : ''}`}
                 >
                   {isCurrentPlan && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -654,7 +690,7 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
                       {isIGTA && <Shield className="w-4 h-4 text-purple-600" />}
                     </div>
                     <div className="mt-2">
-                      {promoStatus?.valid && promoStatus.promo?.discountPercent && tier.price > 0 && !isIGTA ? (
+                      {promoStatus?.valid && promoEligible && promoStatus.promo?.discountPercent && tier.price > 0 && !isIGTA ? (
                         <>
                           <div className="flex items-baseline gap-2">
                             <span className="text-2xl font-bold text-green-600">
@@ -676,10 +712,16 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
                         </>
                       )}
                     </div>
-                    {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade') && tier.price > 0 && !isIGTA && (
+                    {promoStatus?.valid && promoEligible && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade') && tier.price > 0 && !isIGTA && (
                       <p className="text-xs font-medium text-green-600 mt-1 flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" />
                         No payment required
+                      </p>
+                    )}
+                    {promoMismatch && tier.price > 0 && (
+                      <p className="text-xs font-medium text-amber-600 mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Promo not valid for this plan
                       </p>
                     )}
 
@@ -728,6 +770,15 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
                         >
                           Free Tier
                         </button>
+                      ) : promoMismatch ? (
+                        <button
+                          disabled
+                          title="This promo code does not apply to this plan"
+                          className="w-full py-2 px-4 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed flex items-center justify-center gap-2 border border-gray-200"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                          Promo Not Applicable
+                        </button>
                       ) : (
                         <button
                           onClick={() => handleUpgrade(key)}
@@ -738,7 +789,7 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <>
-                              {promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade')
+                              {promoStatus?.valid && promoEligible && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade')
                                 ? (promoStatus.promo?.type === 'trial' ? 'Start Free Trial' : 'Apply Promo')
                                 : (isUpgrade ? 'Upgrade' : 'Switch')}
                               <ArrowRight className="w-4 h-4" />

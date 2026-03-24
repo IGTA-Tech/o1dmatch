@@ -374,7 +374,7 @@ export default function SocialMediaScannerPage() {
               Social Media Scanner
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Scan your social media content for keywords that could flag your USCIS visa application
+              Scan your social media content for keywords that could flag your USCIS visa interest inquiry
             </p>
           </div>
 

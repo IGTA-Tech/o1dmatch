@@ -118,7 +118,7 @@ export default async function JobApplicationsPage({
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Applications</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Interest inquiry</h1>
           <p className="text-gray-600">{job.title}</p>
         </div>
       </div>
@@ -156,16 +156,16 @@ export default async function JobApplicationsPage({
         <Card>
           <CardContent className="text-center py-12">
             <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No applications yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No interest inquiry yet</h3>
             <p className="text-gray-600">
-              Applications will appear here when candidates apply to this job.
+            Interest inquiry will appear here when candidates apply to this job.
             </p>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>All Applications</CardTitle>
+            <CardTitle>All Interest inquiry</CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-gray-100">
             {applications.map((application) => {

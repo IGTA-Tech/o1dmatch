@@ -108,11 +108,11 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What are interest letters?',
-    a: "Interest letters are messages employers send to O-1 visa candidates expressing interest in sponsoring them. They're a key part of the O-1 visa application process.",
+    a: "Interest letters are messages employers send to O-1 visa candidates expressing interest in sponsoring them. They're a key part of the O-1 visa interest inquiry process.",
   },
   {
     q: 'What does the dedicated account manager do?',
-    a: 'With the Active Match plan ($500/mo), your dedicated account manager helps review your O-1 evidence, assists with job applications, handles interest letter responses, and provides personalized guidance throughout your visa journey.',
+    a: 'With the Active Match plan ($500/mo), your dedicated account manager helps review your O-1 evidence, assists with job interest inquirys, handles interest letter responses, and provides personalized guidance throughout your visa journey.',
   },
   {
     q: 'Do you offer refunds?',
@@ -128,7 +128,13 @@ function PricingPageContent() {
   const [promoStatus, setPromoStatus] = useState<{
     valid: boolean;
     message: string;
-    promo?: { type: string; trialDays?: number; discountPercent?: number; grantsIGTAMember?: boolean };
+    promo?: {
+      type: string;
+      trialDays?: number;
+      discountPercent?: number;
+      grantsIGTAMember?: boolean;
+      applicableTiers?: string[]; // empty = applies to all plans
+    };
   } | null>(null);
   const [validatingPromo, setValidatingPromo] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'canceled'; message: string } | null>(null);
@@ -176,7 +182,11 @@ function PricingPageContent() {
         if (data.promo.trialDays) message += `${data.promo.trialDays}-day free trial included.`;
         if (data.promo.discountPercent) message += `${data.promo.discountPercent}% discount applied.`;
         if (data.promo.grantsIGTAMember) message = 'Innovative Automations member code verified! You qualify for free full access.';
-        setPromoStatus({ valid: true, message, promo: data.promo });
+        const applicableTiers: string[] = data.promo.applicableTiers ?? [];
+        if (applicableTiers.length > 0) {
+          message += ` Applies to: ${applicableTiers.join(', ')}.`;
+        }
+        setPromoStatus({ valid: true, message, promo: { ...data.promo, applicableTiers } });
       } else {
         setPromoStatus({ valid: false, message: data.error || 'Invalid code' });
       }
@@ -247,8 +257,17 @@ function PricingPageContent() {
   const employerFeatured = 'growth';
   const talentFeatured   = 'starter';
 
-  function PriceDisplay({ tierPrice, setupFee }: { tierPrice: number; setupFee: number }) {
-    if (promoStatus?.valid && promoStatus.promo?.discountPercent && tierPrice > 0) {
+  /** Returns true if the active promo applies to this plan key.
+   *  Empty applicableTiers means the promo applies to ALL plans. */
+  function promoAppliesToTier(tierKey: string): boolean {
+    if (!promoStatus?.valid) return true;
+    const tiers = promoStatus.promo?.applicableTiers ?? [];
+    return tiers.length === 0 || tiers.includes(tierKey);
+  }
+
+  function PriceDisplay({ tierPrice, setupFee, tierKey }: { tierPrice: number; setupFee: number; tierKey: string }) {
+    const eligible = promoAppliesToTier(tierKey);
+    if (promoStatus?.valid && eligible && promoStatus.promo?.discountPercent && tierPrice > 0) {
       return (
         <>
           <div className="o1d-price-amount">
@@ -275,8 +294,14 @@ function PricingPageContent() {
     );
   }
 
-  function PromoExtras({ tierPrice }: { tierPrice: number }) {
+  function PromoExtras({ tierPrice, tierKey }: { tierPrice: number; tierKey: string }) {
     if (!promoStatus?.valid || tierPrice === 0) return null;
+    const eligible = promoAppliesToTier(tierKey);
+    if (!eligible) return (
+      <p style={{ fontSize: '0.72rem', color: '#F87171', marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+        ✕ Promo not valid for this plan
+      </p>
+    );
     return (
       <>
         {promoStatus.promo?.trialDays && (
@@ -290,9 +315,31 @@ function PricingPageContent() {
   }
 
   function SubscribeBtn({ tierKey, isFeatured }: { tierKey: string; isFeatured: boolean }) {
-    const label = promoStatus?.valid && (promoStatus.promo?.type === 'trial' || promoStatus.promo?.type === 'free_upgrade')
+    const promoActive  = promoStatus?.valid ?? false;
+    const eligible     = promoAppliesToTier(tierKey);
+    const promoMismatch = promoActive && !eligible;
+
+    const label = promoActive && eligible && (promoStatus?.promo?.type === 'trial' || promoStatus?.promo?.type === 'free_upgrade')
       ? (promoStatus.promo?.type === 'trial' ? 'Start Free Trial' : 'Apply Promo')
       : 'Subscribe';
+
+    if (promoMismatch) {
+      return (
+        <button
+          disabled
+          title="This promo code does not apply to this plan"
+          style={{
+            width: '100%', padding: '0.6rem 1rem', borderRadius: 8, fontSize: '0.82rem',
+            fontWeight: 600, cursor: 'not-allowed', opacity: 0.55,
+            background: 'transparent', border: '1.5px solid #CBD5E1', color: '#94A3B8',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+          }}
+        >
+          ✕ Not Eligible for Promo
+        </button>
+      );
+    }
+
     return (
       <button
         onClick={() => handleSubscribe(tierKey as EmployerTier | TalentTier)}
@@ -407,16 +454,21 @@ function PricingPageContent() {
           {view === 'employers' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1.25rem' }}>
               {(Object.entries(EMPLOYER_TIERS) as [EmployerTier, typeof EMPLOYER_TIERS[EmployerTier]][]).map(([key, tier]) => {
-                const isFeatured = key === employerFeatured;
-                const isFree = key === 'free';
-                const features = EMPLOYER_FEATURES[key as keyof typeof EMPLOYER_FEATURES];
+                const isFeatured    = key === employerFeatured;
+                const isFree        = key === 'free';
+                const features      = EMPLOYER_FEATURES[key as keyof typeof EMPLOYER_FEATURES];
+                const promoMismatch = (promoStatus?.valid ?? false) && !promoAppliesToTier(key) && !isFree;
                 return (
-                  <div key={key} className={`o1d-price-card${isFeatured ? ' o1d-price-card-featured' : ''}`}>
+                  <div
+                    key={key}
+                    className={`o1d-price-card${isFeatured ? ' o1d-price-card-featured' : ''}`}
+                    style={{ opacity: promoMismatch ? 0.5 : 1, transition: 'opacity 0.2s' }}
+                  >
                     {isFeatured && <div className="o1d-popular-badge"><Sparkles size={10} /> Popular</div>}
                     <div className="o1d-price-header" style={{ paddingTop: isFeatured ? '2.25rem' : undefined }}>
                       <p className="o1d-price-name">{tier.name}</p>
-                      <PriceDisplay tierPrice={tier.price} setupFee={tier.setupFee} />
-                      <PromoExtras tierPrice={tier.price} />
+                      <PriceDisplay tierPrice={tier.price} setupFee={tier.setupFee} tierKey={key} />
+                      <PromoExtras tierPrice={tier.price} tierKey={key} />
                     </div>
                     <div className="o1d-price-divider" />
                     <div className="o1d-price-features">
@@ -437,16 +489,21 @@ function PricingPageContent() {
           {view === 'talent' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem', maxWidth: 900, margin: '0 auto' }}>
               {(Object.entries(TALENT_TIERS) as [TalentTier, typeof TALENT_TIERS[TalentTier]][]).map(([key, tier]) => {
-                const isFeatured = key === talentFeatured;
-                const isFree = key === 'profile_only';
-                const features = TALENT_FEATURES[key as keyof typeof TALENT_FEATURES];
+                const isFeatured    = key === talentFeatured;
+                const isFree        = key === 'profile_only';
+                const features      = TALENT_FEATURES[key as keyof typeof TALENT_FEATURES];
+                const promoMismatch = (promoStatus?.valid ?? false) && !promoAppliesToTier(key) && !isFree;
                 return (
-                  <div key={key} className={`o1d-price-card${isFeatured ? ' o1d-price-card-featured' : ''}`}>
+                  <div
+                    key={key}
+                    className={`o1d-price-card${isFeatured ? ' o1d-price-card-featured' : ''}`}
+                    style={{ opacity: promoMismatch ? 0.5 : 1, transition: 'opacity 0.2s' }}
+                  >
                     {isFeatured && <div className="o1d-popular-badge"><Sparkles size={10} /> Most Popular</div>}
                     <div className="o1d-price-header" style={{ paddingTop: isFeatured ? '2.25rem' : undefined }}>
                       <p className="o1d-price-name">{tier.name}</p>
-                      <PriceDisplay tierPrice={tier.price} setupFee={(tier as { setupFee?: number }).setupFee ?? 0} />
-                      <PromoExtras tierPrice={tier.price} />
+                      <PriceDisplay tierPrice={tier.price} setupFee={(tier as { setupFee?: number }).setupFee ?? 0} tierKey={key} />
+                      <PromoExtras tierPrice={tier.price} tierKey={key} />
                     </div>
                     <div className="o1d-price-divider" />
                     <div className="o1d-price-features">

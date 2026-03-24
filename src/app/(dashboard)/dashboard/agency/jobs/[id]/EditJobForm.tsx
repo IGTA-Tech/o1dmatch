@@ -462,7 +462,7 @@ export function EditJobForm({ job, clients }: EditJobFormProps) {
             </h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete <strong>{job.title}</strong>? 
-              This action cannot be undone and will remove all associated applications.
+              This action cannot be undone and will remove all associated interest inquiry.
             </p>
             <div className="flex justify-end gap-3">
               <button

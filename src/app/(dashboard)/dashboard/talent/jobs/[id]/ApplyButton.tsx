@@ -87,7 +87,7 @@ export function ApplyButton({
         return;
       }
 
-      console.log('Application submitted successfully!');
+      console.log('Interest inquiry submitted successfully!');
 
       // ── 3. Email employer (non-blocking — failure won't block the user) ──
       try {
@@ -126,7 +126,7 @@ export function ApplyButton({
         className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
       >
         <Send className="w-5 h-5" />
-        Apply Now
+        Indicate Interest
       </button>
     );
   }
@@ -172,7 +172,7 @@ export function ApplyButton({
           ) : (
             <>
               <Send className="w-4 h-4" />
-              Submit Application
+              Indicate Interest
             </>
           )}
         </button>

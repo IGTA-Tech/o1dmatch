@@ -132,7 +132,7 @@ function buildEmployerHtml(jobTitle: string, applicationRef: string, appliedOn: 
                   <td width="50%" style="padding-bottom:0;vertical-align:top;">
                     <p style="margin:0 0 4px;font-size:10px;color:#9CA3AF;font-weight:700;
                                text-transform:uppercase;letter-spacing:0.09em;">
-                      Application Ref
+                      Interest inquiry Ref
                     </p>
                     <p style="margin:0;font-size:14px;color:#1E293B;font-weight:600;">
                       #${applicationRef}
@@ -235,7 +235,7 @@ function buildTalentHtml(jobTitle: string, applicationRef: string) {
         </h1>
         <p style="margin:12px 0 0;font-size:14px;
                    color:rgba(255,255,255,0.58);line-height:1.5;">
-          Great news — an employer has shortlisted your application.
+          Great news — an employer has shortlisted your interest inquiry.
         </p>
       </td>
     </tr>
@@ -248,7 +248,7 @@ function buildTalentHtml(jobTitle: string, applicationRef: string) {
           Hi there,
         </p>
         <p style="margin:0 0 28px;font-size:15px;color:#374151;line-height:1.7;">
-          Exciting news! An employer has reviewed your application for
+          Exciting news! An employer has reviewed your interest inquiry for
           <strong style="color:#0B1D35;">${jobTitle}</strong> and has moved you
           to the shortlist. This means your profile and O-1 evidence stood out.
         </p>
@@ -261,7 +261,7 @@ function buildTalentHtml(jobTitle: string, applicationRef: string) {
             <td style="padding:24px 28px;">
               <p style="margin:0 0 4px;font-size:10px;font-weight:700;
                          letter-spacing:0.12em;text-transform:uppercase;color:#D4A84B;">
-                Application Status
+                Interest inquiry Status
               </p>
               <h2 style="margin:0 0 20px;font-size:19px;font-weight:700;
                          color:#0B1D35;line-height:1.25;">${jobTitle}</h2>
@@ -271,7 +271,7 @@ function buildTalentHtml(jobTitle: string, applicationRef: string) {
                   <td width="50%" style="vertical-align:top;">
                     <p style="margin:0 0 4px;font-size:10px;color:#9CA3AF;font-weight:700;
                                text-transform:uppercase;letter-spacing:0.09em;">
-                      Application Ref
+                      Interest inquiry Ref
                     </p>
                     <p style="margin:0;font-size:14px;color:#1E293B;font-weight:600;">
                       #${applicationRef}
@@ -343,7 +343,7 @@ function buildTalentHtml(jobTitle: string, applicationRef: string) {
                  style="display:inline-block;padding:14px 36px;background:#D4A84B;
                         color:#0B1D35;font-size:15px;font-weight:700;
                         text-decoration:none;border-radius:10px;">
-                View My Applications &#8594;
+                View My Interest inquiry &#8594;
               </a>
             </td>
           </tr>
@@ -395,7 +395,7 @@ export async function POST(request: NextRequest) {
 
     if (appErr || !application) {
       console.error('[send-shortlist-notification] Application lookup failed:', appErr);
-      return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Interest inquiry not found' }, { status: 404 });
     }
 
     const talentUserIdRaw = Array.isArray(application.talent)

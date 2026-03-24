@@ -210,7 +210,7 @@ export default function PrivacyPolicyPage() {
                 connects individuals with extraordinary ability (&quot;Talent&quot;) with employers
                 seeking to sponsor O-1 visas (&quot;Employers&quot;). This Privacy Policy describes how
                 we collect, use, disclose, and protect your personal information when you access or use
-                our website, applications, and services (collectively, the &quot;Platform&quot;).
+                our website, interest inquirys, and services (collectively, the &quot;Platform&quot;).
               </p>
               <p>
                 By using the Platform, you agree to the collection and use of information in accordance

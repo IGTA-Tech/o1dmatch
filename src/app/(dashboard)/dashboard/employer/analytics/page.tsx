@@ -80,7 +80,7 @@ export default async function EmployerAnalyticsPage() {
             <h2 className="text-lg font-semibold text-gray-900">Analytics requires Growth plan or above</h2>
             <p className="text-gray-600 text-sm">
               Upgrade to Growth, Business, or Enterprise to access detailed analytics on your jobs,
-              applications, talent browsing activity, and interest letter performance.
+              interest inquiry, talent browsing activity, and interest letter performance.
             </p>
             <Link
               href="/dashboard/employer/billing"
@@ -219,7 +219,7 @@ export default async function EmployerAnalyticsPage() {
         {[
           { label: 'Total Jobs', value: totalJobs, sub: `${activeJobs} active`, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Total Views', value: totalViews, sub: 'across all jobs', icon: Eye, color: 'text-purple-600', bg: 'bg-purple-50' },
-          { label: 'Applications', value: totalApps, sub: `${conversionRate}% view→apply`, icon: Users, color: 'text-green-600', bg: 'bg-green-50' },
+          { label: 'Interest inquiry', value: totalApps, sub: `${conversionRate}% view→apply`, icon: Users, color: 'text-green-600', bg: 'bg-green-50' },
           { label: 'Letters Sent', value: totalLettersSent, sub: `${lettersThisMonth} this month`, icon: Mail, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map(kpi => (
           <Card key={kpi.label}>
@@ -243,13 +243,13 @@ export default async function EmployerAnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-blue-600" />
-              Applications — Last 6 Months
+              Interest inquiry — Last 6 Months
             </CardTitle>
           </CardHeader>
           <CardContent>
             {totalApps === 0 ? (
               <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
-                No applications yet
+                No interest inquiry yet
               </div>
             ) : (
               <div className="flex items-end gap-3 h-48 pt-4">
@@ -273,7 +273,7 @@ export default async function EmployerAnalyticsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {totalApps === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-8">No applications yet</p>
+              <p className="text-gray-400 text-sm text-center py-8">No interest inquiry yet</p>
             ) : (
               <>
                 {statusBreakdown.map(s => (
@@ -340,7 +340,7 @@ export default async function EmployerAnalyticsPage() {
                     <th className="text-left py-2 pr-4 font-semibold text-gray-500 text-xs uppercase tracking-wide">Job Title</th>
                     <th className="text-center py-2 px-3 font-semibold text-gray-500 text-xs uppercase tracking-wide">Status</th>
                     <th className="text-center py-2 px-3 font-semibold text-gray-500 text-xs uppercase tracking-wide">Views</th>
-                    <th className="text-center py-2 px-3 font-semibold text-gray-500 text-xs uppercase tracking-wide">Applications</th>
+                    <th className="text-center py-2 px-3 font-semibold text-gray-500 text-xs uppercase tracking-wide">Interest inquiry</th>
                     <th className="text-center py-2 px-3 font-semibold text-gray-500 text-xs uppercase tracking-wide">Avg Score</th>
                     <th className="text-center py-2 pl-3 font-semibold text-gray-500 text-xs uppercase tracking-wide">View→Apply %</th>
                   </tr>

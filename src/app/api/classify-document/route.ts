@@ -61,7 +61,7 @@ async function classifyWithOpenAI(content: string): Promise<ClassificationResult
     messages: [
       {
         role: 'system',
-        content: 'You are an expert immigration document classifier specializing in O-1 visa applications. Respond only with valid JSON.',
+        content: 'You are an expert immigration document classifier specializing in O-1 visa interest inquirys. Respond only with valid JSON.',
       },
       {
         role: 'user',

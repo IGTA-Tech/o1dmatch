@@ -91,7 +91,7 @@ export default async function AgencyDashboardPage() {
       bgColor: 'bg-green-50',
     },
     {
-      label: 'Total Applicants',
+      label: 'Total Interested Candidates',
       value: applicantsCount || 0,
       icon: FolderOpen,
       href: '/dashboard/agency/applicants',
@@ -185,9 +185,9 @@ export default async function AgencyDashboardPage() {
                 <FolderOpen className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">Review Applicants</h3>
+                <h3 className="font-medium text-gray-900">Review Interested Candidates</h3>
                 <p className="text-sm text-gray-500">
-                  Review applications for your jobs
+                  Review interest inquiry for your jobs
                 </p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
@@ -261,7 +261,7 @@ export default async function AgencyDashboardPage() {
               </div>
               <h4 className="font-medium text-gray-900">Match & Place</h4>
               <p className="text-sm text-gray-500 mt-1">
-                Review applicants and send interest letters
+                Review interested Candidates and send interest letters
               </p>
             </div>
           </div>

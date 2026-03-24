@@ -125,8 +125,8 @@ export default async function AgencyApplicantsPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Applicants</h1>
-        <p className="text-sm text-gray-600 mt-0.5">Manage all applications across your client jobs</p>
+        <h1 className="text-2xl font-bold text-gray-900">Interested Candidates</h1>
+        <p className="text-sm text-gray-600 mt-0.5">Manage all interest inquiry across your client jobs</p>
       </div>
 
       {/* Stats */}
@@ -162,7 +162,7 @@ export default async function AgencyApplicantsPage() {
         <Card>
           <CardContent className="text-center py-12">
             <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No applications yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No interest inquiry yet</h3>
             <p className="text-sm text-gray-500">
               When candidates apply to your job listings, they&apos;ll appear here.
             </p>

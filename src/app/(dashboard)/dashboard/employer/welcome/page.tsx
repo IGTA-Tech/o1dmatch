@@ -40,7 +40,7 @@ const steps = [
     content: {
       heading: 'A strong profile attracts top O-1 talent',
       description:
-        'Your company profile is the first thing candidates see. A complete, professional profile significantly increases candidate acceptance rates for interest letters and job applications.',
+        'Your company profile is the first thing candidates see. A complete, professional profile significantly increases candidate acceptance rates for interest letters and job interest inquiry.',
       items: [
         {
           icon: Building2,
@@ -92,12 +92,12 @@ const steps = [
         {
           icon: Target,
           title: 'Minimum O-1 Score',
-          text: 'Set a minimum score threshold for applicants. Higher thresholds mean fewer but stronger candidates. We recommend starting at 40-60% for most roles.',
+          text: 'Set a minimum score threshold for interested candidates. Higher thresholds mean fewer but stronger candidates. We recommend starting at 40-60% for most roles.',
         },
         {
           icon: Zap,
           title: 'Sponsorship Details',
-          text: 'Clearly state your willingness to sponsor O-1 visas, estimated timeline, and any relocation support you offer. Transparency drives applications.',
+          text: 'Clearly state your willingness to sponsor O-1 visas, estimated timeline, and any relocation support you offer. Transparency drives interest inquiry.',
         },
         {
           icon: Star,
@@ -106,7 +106,7 @@ const steps = [
         },
       ],
       tips: [
-        'Jobs with clear O-1 sponsorship details receive 3x more applications',
+        'Jobs with clear O-1 sponsorship details receive 3x more interest inquiry',
         'Include salary ranges — listings without them get 50% fewer views',
         'Keep requirements focused on extraordinary ability, not years of experience',
         'Update job status promptly when roles are filled to maintain platform trust',
@@ -124,7 +124,7 @@ const steps = [
     content: {
       heading: 'Find extraordinary talent proactively',
       description:
-        'Don\'t just wait for applications — browse our talent pool of pre-screened O-1 candidates. Filter by field, score, expertise, and availability to find the perfect match for your team.',
+        'Don\'t just wait for interest inquiry — browse our talent pool of pre-screened O-1 candidates. Filter by field, score, expertise, and availability to find the perfect match for your team.',
       items: [
         {
           icon: Search,

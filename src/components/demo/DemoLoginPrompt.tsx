@@ -42,7 +42,7 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
       'Post job listings with O-1 requirements',
       'Browse anonymized talent profiles',
       'Send interest letters to candidates',
-      'Manage applications and hiring pipeline',
+      'Manage interest inquirys and hiring pipeline',
     ],
   },
   {

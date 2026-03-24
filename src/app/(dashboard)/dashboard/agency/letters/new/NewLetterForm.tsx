@@ -470,7 +470,7 @@ export default function NewLetterForm({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Link to Job Posting (Optional)
+              Link to Job Posting (Encouraged)
             </label>
             <select
               value={selectedJobId}
@@ -701,7 +701,7 @@ export default function NewLetterForm({
       {/* Personal Message */}
       <Card>
         <CardHeader>
-          <CardTitle>Personal Message (Optional)</CardTitle>
+          <CardTitle>Personal Message (Encouraged)</CardTitle>
         </CardHeader>
         <CardContent>
           <textarea
@@ -719,7 +719,7 @@ export default function NewLetterForm({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Paperclip className="w-5 h-5" />
-            Attachment (Optional)
+            Attachment (Encouraged)
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -32,11 +32,18 @@ export interface UploadResult {
 
 // Returned by the classify-only call (pre-upload, on file drop)
 export interface ClassifyResult {
-  criterion:           string;
-  confidence:          number;  // 0–100
-  reasoning:           string;
-  criterion_name:      string;
+  criterion:           string;   // top suggestion — backward compat
+  confidence:          number;   // top suggestion confidence — 0–100
+  reasoning:           string;   // top suggestion reasoning
+  criterion_name:      string;   // top suggestion human-readable name
   extraction_keywords: string[];
+  // All ranked suggestions (top 3) returned by AI
+  suggestions: {
+    criterion:      string;
+    criterion_name: string;
+    confidence:     number;
+    reasoning:      string;
+  }[];
 }
 
 export function useDocumentUpload() {
@@ -74,6 +81,7 @@ export function useDocumentUpload() {
         reasoning:           data.reasoning,
         criterion_name:      data.criterion_name,
         extraction_keywords: data.extraction_keywords || [],
+        suggestions:         data.suggestions        || [],
       };
     } catch {
       return null;

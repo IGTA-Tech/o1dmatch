@@ -349,7 +349,7 @@ export default function CareersPage() {
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-base transition-all hover:-translate-y-0.5"
                 style={{ background: '#D4A84B', color: '#0B1D35' }}
               >
-                Apply Now
+                Indicate Interest
                 <ArrowRight className="w-5 h-5" />
               </a>
               <Link

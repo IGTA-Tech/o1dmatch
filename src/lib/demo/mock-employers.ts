@@ -82,7 +82,7 @@ export const DEMO_EMPLOYER_PROFILES: EmployerProfile[] = [
     industry: 'Quantum Computing',
     company_size: '100-500',
     year_founded: 2020,
-    company_description: 'Building practical quantum computers for enterprise applications. We\'re solving the hardest problems in quantum error correction and scalable qubit systems.',
+    company_description: 'Building practical quantum computers for enterprise interest inquiries. We\'re solving the hardest problems in quantum error correction and scalable qubit systems.',
     street_address: '50 Quantum Way',
     city: 'Seattle',
     state: 'WA',

@@ -342,7 +342,7 @@ export default async function JobDetailPage({
                     href="/dashboard/talent/applications"
                     className="text-blue-600 hover:underline text-sm mt-3 inline-block"
                   >
-                    View My Applications
+                    View My Interest inquiry
                   </Link>
                 </div>
               ) : (

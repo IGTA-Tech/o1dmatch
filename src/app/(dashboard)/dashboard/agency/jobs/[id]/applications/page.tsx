@@ -179,16 +179,16 @@ export default async function JobApplicationsPage({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            Applicants ({total})
+            Interested Candidates ({total})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {!applications || applications.length === 0 ? (
             <div className="text-center py-12">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-1">No applications yet</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">No interest inquiry yet</h3>
               <p className="text-sm text-gray-500">
-                Applications will appear here once candidates apply for this job.
+                interest inquiry will appear here once candidates apply for this job.
               </p>
             </div>
           ) : (

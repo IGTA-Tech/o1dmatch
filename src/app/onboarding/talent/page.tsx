@@ -10,7 +10,7 @@ const VIDEOS = [
     num: '1',
     label: 'Getting Started',
     title: 'Dashboard Overview',
-    desc: 'Get a full walkthrough of your O-1 talent dashboard — track your eligibility score, monitor application progress, and manage everything from one place.',
+    desc: 'Get a full walkthrough of your O-1 talent dashboard — track your eligibility score, monitor interest inquiry progress, and manage everything from one place.',
     embedId: '1ptcmD00vC40xiKekAJOdG9GS44RKrj1W',
   },
   {

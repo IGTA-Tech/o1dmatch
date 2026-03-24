@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     if (job.status !== 'active') {
       return NextResponse.json(
-        { error: 'This job is no longer accepting applications' },
+        { error: 'This job is no longer accepting interest inquirys' },
         { status: 400 }
       );
     }
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (emailError) {
-      console.error('Failed to send application received email:', emailError);
+      console.error('Failed to send interest inquiry received email:', emailError);
       // Don't fail the request if email fails
     }
 
@@ -139,9 +139,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Application submission error:', error);
+    console.error('Interest inquiry submission error:', error);
     return NextResponse.json(
-      { error: 'Failed to submit application' },
+      { error: 'Failed to submit interest inquiry' },
       { status: 500 }
     );
   }
@@ -265,9 +265,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
   } catch (error) {
-    console.error('Applications fetch error:', error);
+    console.error('Interest inquiry fetch error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch applications' },
+      { error: 'Failed to fetch Interest inquiry' },
       { status: 500 }
     );
   }
@@ -315,7 +315,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!application) {
       return NextResponse.json(
-        { error: 'Application not found' },
+        { error: 'Interest inquiry not found' },
         { status: 404 }
       );
     }
@@ -398,9 +398,9 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   } catch (error) {
-    console.error('Application update error:', error);
+    console.error('Interest inquiry update error:', error);
     return NextResponse.json(
-      { error: 'Failed to update application' },
+      { error: 'Failed to update interest inquiry' },
       { status: 500 }
     );
   }

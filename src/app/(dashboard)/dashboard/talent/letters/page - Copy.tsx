@@ -126,7 +126,7 @@ export default async function TalentLettersPage() {
             <p className="font-medium text-blue-900">What are Interest Letters?</p>
             <p className="text-sm text-blue-700 mt-1">
               Interest letters are formal expressions of intent from employers to sponsor your
-              O-1 visa. These letters can be used as part of your visa application to demonstrate
+              O-1 visa. These letters can be used as part of your visa interest inquiry to demonstrate
               employer interest. Your personal information is only revealed after you accept a letter.
             </p>
           </div>

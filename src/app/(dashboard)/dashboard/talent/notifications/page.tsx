@@ -122,7 +122,7 @@ export default async function TalentNotificationsPage() {
               <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <h3 className="font-medium text-gray-900 mb-1">No notifications</h3>
               <p className="text-gray-500 text-sm">
-                When you receive interest letters or application updates, they&apos;ll appear here.
+                When you receive interest letters or interest inquiry updates, they&apos;ll appear here.
               </p>
             </div>
           )}

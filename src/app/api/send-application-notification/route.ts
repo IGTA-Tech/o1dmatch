@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>New Job Application – O1DMatch</title>
+  <title>New Job Interest inquiry – O1DMatch</title>
 </head>
 <body style="margin:0;padding:0;background:#F1EDE4;
              font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
               </p>
               <h1 style="margin:0;font-size:26px;font-weight:700;
                          color:#FFFFFF;line-height:1.2;">
-                New Application Received &#128203;
+                New Interest inquiry Received &#128203;
               </h1>
               <p style="margin:12px 0 0;font-size:14px;
                          color:rgba(255,255,255,0.58);line-height:1.5;">
@@ -357,7 +357,7 @@ export async function POST(request: NextRequest) {
           email: 'noreply@o1dmatch.com',
           name: 'O1DMatch Support Team',
         },
-        subject: `New application for "${jobTitle}" on O1DMatch`,
+        subject: `New interest inquiry for "${jobTitle}" on O1DMatch`,
         content: [{ type: 'text/html', value: html }],
       }),
     });

@@ -133,7 +133,7 @@ console.log(isFirstLogin);
       bgColor: 'bg-blue-50',
     },
     {
-      label: 'Applications',
+      label: 'Interest inquiry',
       value: applicationsCount || 0,
       icon: Send,
       href: '/dashboard/talent/applications',

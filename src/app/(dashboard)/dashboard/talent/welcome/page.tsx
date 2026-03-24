@@ -21,6 +21,7 @@ import {
   Globe,
   Lightbulb,
   Rocket,
+  PlayCircle,
 } from 'lucide-react';
 
 const steps = [
@@ -32,6 +33,10 @@ const steps = [
     color: '#3B82F6',
     bgColor: 'rgba(59,130,246,0.08)',
     cta: { label: 'Complete Profile', href: '/dashboard/talent/profile' },
+    videos: [
+      { id: '1ptcmD00vC40xiKekAJOdG9GS44RKrj1W', title: 'Building Your Profile' },
+      { id: '13h8Qeu2Km7jylHv16qrLCLNuSRh00wwh', title: 'Message To Employer' },
+    ],
     content: {
       heading: 'Your profile is your first impression',
       description:
@@ -73,6 +78,10 @@ const steps = [
     color: '#10B981',
     bgColor: 'rgba(16,185,129,0.08)',
     cta: { label: 'Upload Evidence', href: '/dashboard/talent/evidence' },
+    videos: [
+      { id: '1Ekd2Yj1cqTohDblrGdihhsgUx9omNX4l', title: 'Uploading Your Evidence' },
+      { id: '1fGLdCjuTnQCPMhekQdjvk38pAad6vKA4', title: 'Evidence Tips & Criteria' },
+    ],
     content: {
       heading: 'Evidence is the backbone of your O-1 petition',
       description:
@@ -115,6 +124,10 @@ const steps = [
     color: '#8B5CF6',
     bgColor: 'rgba(139,92,246,0.08)',
     cta: { label: 'Go to Dashboard', href: '/dashboard/talent' },
+    videos: [
+      { id: '1Dtg_GFUX9TfYWk8X4TXXJA3olNYJDfZz', title: 'Understanding Your O-1 Score' },
+      { id: '1ngy80LG4EpVvJOyK5e2DIE_fmcMmDifB', title: 'Matching with Employers' },
+    ],
     content: {
       heading: 'Your score reflects your petition strength',
       description:
@@ -290,6 +303,62 @@ export default function WelcomePage() {
               ))}
             </ul>
           </div>
+
+          {/* Step Videos */}
+          {step.videos && step.videos.length > 0 && (
+            <div className="mb-8">
+              <p
+                className="font-semibold text-sm mb-4 flex items-center gap-2"
+                style={{ color: '#0B1D35' }}
+              >
+                <PlayCircle className="w-4 h-4" style={{ color: '#D4A84B' }} />
+                Watch &amp; Learn
+                <span
+                  className="ml-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                  style={{ background: 'rgba(212,168,75,0.12)', color: '#D4A84B' }}
+                >
+                  {step.videos.length} videos
+                </span>
+              </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                {step.videos.map((video) => (
+                  <div
+                    key={video.id}
+                    className="rounded-xl overflow-hidden"
+                    style={{ border: '1px solid #E8ECF1', background: '#0B1D35' }}
+                  >
+                    {/* Video label bar */}
+                    <div
+                      className="flex items-center gap-2 px-3 py-2"
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+                    >
+                      <PlayCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#D4A84B' }} />
+                      <span className="text-xs font-medium truncate" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                        {video.title}
+                      </span>
+                    </div>
+                    {/* Embed */}
+                    <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+                      <iframe
+                        src={`https://drive.google.com/file/d/${video.id}/preview`}
+                        allow="autoplay"
+                        allowFullScreen
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          border: 'none',
+                        }}
+                        title={video.title}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Navigation */}
           <div className="flex items-center justify-between">

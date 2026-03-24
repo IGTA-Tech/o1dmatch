@@ -55,7 +55,7 @@ export default function HowItWorksEmployersPage() {
             </h1>
 
             <p className="el-hero-sub">
-              O1DMatch connects O-1 visa holders and applicants with US employers
+              O1DMatch connects O-1 visa holders and interested candidates with US employers
               actively seeking exceptional international talent. Built by an
               immigration attorney who has seen the gap firsthand.
             </p>

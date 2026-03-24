@@ -139,6 +139,87 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({ success: true, promoCode: data });
 }
 
+// PUT — update an existing promo code
+export async function PUT(req: NextRequest) {
+  const auth = await getAdminUser();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json();
+
+  const {
+    id,
+    code,
+    type,
+    description,
+    trial_days,
+    discount_percent,
+    grants_igta_member,
+    applicable_tier,
+    applicable_user_type,
+    max_uses,
+    max_uses_per_user,
+    valid_from,
+    valid_until,
+    is_active,
+  } = body;
+
+  // Validate required fields
+  if (!id) {
+    return NextResponse.json({ error: "ID is required" }, { status: 400 });
+  }
+  if (!code || !type) {
+    return NextResponse.json(
+      { error: "Code and type are required" },
+      { status: 400 }
+    );
+  }
+
+  // Validate code format — alphanumeric + hyphens/underscores, uppercase
+  const codeRegex = /^[A-Z0-9_-]{2,50}$/;
+  if (!codeRegex.test(code)) {
+    return NextResponse.json(
+      { error: "Code must be 2-50 characters, uppercase alphanumeric with hyphens/underscores only" },
+      { status: 400 }
+    );
+  }
+
+  const updateData: Record<string, unknown> = {
+    code: code.toUpperCase(),
+    type,
+    description: description || null,
+    trial_days: type === "trial" ? (trial_days || 14) : 0,
+    discount_percent: type === "discount" ? (discount_percent || 0) : 0,
+    grants_igta_member: type === "igta_verification" ? true : (grants_igta_member || false),
+    applicable_tier: applicable_tier || null,
+    applicable_user_type: applicable_user_type || "both",
+    max_uses: max_uses || null,
+    max_uses_per_user: max_uses_per_user || 1,
+    valid_from: valid_from || new Date().toISOString(),
+    valid_until: valid_until || null,
+    is_active: is_active !== undefined ? is_active : true,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await auth.supabase
+    .from("promo_codes")
+    .update(updateData)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      return NextResponse.json(
+        { error: `Promo code "${code}" already exists` },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, promoCode: data });
+}
+
 // DELETE — delete a promo code
 export async function DELETE(req: NextRequest) {
   const auth = await getAdminUser();

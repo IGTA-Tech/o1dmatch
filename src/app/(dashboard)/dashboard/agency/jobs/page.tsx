@@ -193,7 +193,7 @@ export default async function AgencyJobsPage() {
                         <Users className="w-5 h-5 text-gray-400" />
                         {appCount}
                       </div>
-                      <p className="text-xs text-gray-500">Applications</p>
+                      <p className="text-xs text-gray-500">Interest inquiry</p>
                     </Link>
 
                     {/* Actions */}

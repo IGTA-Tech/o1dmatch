@@ -85,8 +85,8 @@ export default async function TalentApplicationsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Applications</h1>
-        <p className="text-gray-600">Track the status of your job applications</p>
+        <h1 className="text-2xl font-bold text-gray-900">My Interest inquiry</h1>
+        <p className="text-gray-600">Track the status of your job interest inquiry</p>
       </div>
 
       {/* Stats */}
@@ -94,7 +94,7 @@ export default async function TalentApplicationsPage() {
         <Card padding="sm">
           <CardContent>
             <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            <p className="text-sm text-gray-600">Total Applications</p>
+            <p className="text-sm text-gray-600">Total Interest inquiry</p>
           </CardContent>
         </Card>
         <Card padding="sm">
@@ -122,7 +122,7 @@ export default async function TalentApplicationsPage() {
         <Card>
           <CardContent className="text-center py-12">
             <Send className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No applications yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No interest inquiry yet</h3>
             <p className="text-gray-600 mb-4">
               Start applying to jobs that match your profile.
             </p>
@@ -138,7 +138,7 @@ export default async function TalentApplicationsPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Application History</CardTitle>
+            <CardTitle>Interest Inquiries History</CardTitle>
           </CardHeader>
           <CardContent className="divide-y divide-gray-100">
             {applications.map((application) => {

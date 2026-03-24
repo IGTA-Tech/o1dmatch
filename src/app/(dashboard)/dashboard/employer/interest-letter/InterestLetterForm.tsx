@@ -1101,7 +1101,7 @@ export function InterestLetterForm({
                         {jobs.length > 0 && (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Link to Existing Job (Optional)
+                                    Link to Existing Job (Encouraged)
                                 </label>
                                 <select
                                     value={selectedJob}
@@ -1389,7 +1389,7 @@ export function InterestLetterForm({
                 {/* Personal Message */}
                 <Card className="mb-6">
                     <CardHeader>
-                        <CardTitle>Personal Message (Optional)</CardTitle>
+                        <CardTitle>Personal Message (Encouraged)</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
@@ -1408,7 +1408,7 @@ export function InterestLetterForm({
                         {/* Attachment */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Attachment (Optional)
+                                Attachment (Encouraged)
                             </label>
 
                             {attachment ? (

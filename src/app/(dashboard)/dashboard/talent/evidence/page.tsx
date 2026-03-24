@@ -17,6 +17,7 @@ import {
   Clock,
   XCircle,
   AlertCircle,
+  AlertTriangle,
   X,
   Sparkles,
 } from 'lucide-react';
@@ -33,6 +34,14 @@ export default function EvidencePage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [preselectedCriterion, setPreselectedCriterion] = useState<O1Criterion | null>(null);
   const [autoApproving, setAutoApproving] = useState(false);
+
+  // Delete confirmation modal state
+  const [deleteModal, setDeleteModal] = useState<{
+    open: boolean;
+    doc: TalentDocument | null;
+    deleting: boolean;
+    error: string | null;
+  }>({ open: false, doc: null, deleting: false, error: null });
 
   // Auth state
   const [authData, setAuthData] = useState<{ userId: string; accessToken: string } | null>(null);
@@ -261,9 +270,17 @@ export default function EvidencePage() {
     setLoading(false);
   }, [supabaseUrl, supabaseAnonKey, autoApproveNewDocuments, loadData]);
 
-  const handleDelete = async (doc: TalentDocument) => {
-    if (!confirm('Are you sure you want to delete this document?')) return;
-    if (!authData) return;
+  // Step 1 — open confirmation modal
+  const handleDelete = (doc: TalentDocument) => {
+    setDeleteModal({ open: true, doc, deleting: false, error: null });
+  };
+
+  // Step 2 — confirmed: run the actual delete
+  const confirmDelete = async () => {
+    const doc = deleteModal.doc;
+    if (!doc || !authData) return;
+
+    setDeleteModal(prev => ({ ...prev, deleting: true, error: null }));
 
     try {
       const response = await fetch(
@@ -279,13 +296,14 @@ export default function EvidencePage() {
       );
 
       if (!response.ok) {
-        alert('Failed to delete document.');
+        setDeleteModal(prev => ({ ...prev, deleting: false, error: 'Failed to delete document. Please try again.' }));
       } else {
         setDocuments(documents.filter((d) => d.id !== doc.id));
+        setDeleteModal({ open: false, doc: null, deleting: false, error: null });
       }
     } catch (error) {
       console.error('Delete error:', error);
-      alert('Failed to delete document.');
+      setDeleteModal(prev => ({ ...prev, deleting: false, error: 'Something went wrong. Please try again.' }));
     }
   };
 
@@ -582,6 +600,104 @@ export default function EvidencePage() {
         )}
       </div>
 
+      {/* ── Delete Confirmation Modal ── */}
+      {deleteModal.open && deleteModal.doc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => !deleteModal.deleting && setDeleteModal({ open: false, doc: null, deleting: false, error: null })}
+          />
+
+          {/* Modal card */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+
+            {/* Red header bar */}
+            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 pt-6 pb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <Trash2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Delete Document</h3>
+                  <p className="text-red-100 text-xs mt-0.5">This action cannot be undone</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              {/* Document preview */}
+              <div className="flex items-start gap-3 p-3.5 rounded-xl bg-gray-50 border border-gray-200">
+                <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm truncate">
+                    {deleteModal.doc.title}
+                  </p>
+                  {deleteModal.doc.criterion && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {O1_CRITERIA[deleteModal.doc.criterion]?.name}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(deleteModal.doc.created_at).toLocaleDateString('en-US', {
+                      month: 'short', day: 'numeric', year: 'numeric',
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Warning notice */}
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  Deleting this document will remove it from your evidence portfolio and may
+                  affect your <span className="font-semibold">O-1 readiness score</span>.
+                  Any verified status will be lost.
+                </p>
+              </div>
+
+              {/* Error message */}
+              {deleteModal.error && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <p className="text-xs text-red-600">{deleteModal.error}</p>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => setDeleteModal({ open: false, doc: null, deleting: false, error: null })}
+                  disabled={deleteModal.deleting}
+                  className="flex-1 py-2.5 px-4 border border-gray-300 rounded-xl text-sm font-semibold
+                    text-gray-700 hover:bg-gray-50 transition-colors
+                    disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Keep Document
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleteModal.deleting}
+                  className="flex-1 py-2.5 px-4 bg-red-600 rounded-xl text-sm font-semibold
+                    text-white hover:bg-red-700 transition-colors
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    flex items-center justify-center gap-2"
+                >
+                  {deleteModal.deleting ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Deleting…</>
+                  ) : (
+                    <><Trash2 className="w-4 h-4" /> Yes, Delete</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Upload Modal with Criterion Selection */}
       {showUploadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -592,7 +708,7 @@ export default function EvidencePage() {
               setPreselectedCriterion(null);
             }}
           />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">Upload Document</h2>
@@ -623,12 +739,7 @@ export default function EvidencePage() {
               preselectedCriterion={preselectedCriterion}
             />
 
-            <div className="flex items-start gap-2 p-3 bg-green-50 rounded-lg mt-4">
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-green-700">
-                Documents are automatically verified upon upload.
-              </p>
-            </div>
+
           </div>
         </div>
       )}

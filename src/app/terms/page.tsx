@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import {
   FileText, Shield, Users, CreditCard, AlertTriangle,
   Scale, Ban, RefreshCw, Mail, ChevronRight,
-  BookOpen, Gavel, UserCheck, ScrollText,
+  BookOpen, Gavel, UserCheck, ScrollText, DollarSign,
 } from "lucide-react";
 import "@/app/theme.css";
 
@@ -61,6 +61,7 @@ const tocItems = [
   { id: "user-obligations",      label: "User Obligations" },
   { id: "prohibited",            label: "Prohibited Activities" },
   { id: "payment",               label: "Payment & Subscriptions" },
+  { id: "placement-fees",         label: "Employer Placement Fees" },
   { id: "intellectual-property", label: "Intellectual Property" },
   { id: "user-content",          label: "User Content" },
   { id: "disclaimers",           label: "Disclaimers" },
@@ -214,7 +215,7 @@ export default function TermsOfServicePage() {
                 These Terms of Service (&quot;Terms&quot;) constitute a legally binding agreement between
                 you and O1DMatch (&quot;Company,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;)
                 governing your access to and use of the O1DMatch platform, including our website,
-                applications, APIs, and all related services (collectively, the &quot;Platform&quot;).
+                interest inquirys, APIs, and all related services (collectively, the &quot;Platform&quot;).
               </p>
               <p>
                 By creating an account, accessing, or using the Platform, you acknowledge that you have
@@ -352,6 +353,106 @@ export default function TermsOfServicePage() {
                 evaluated on a case-by-case basis.
               </p>
             </Section>
+
+            {/* 7.5 / Placement Fees — standalone highlighted section */}
+            <section id="placement-fees" style={{ scrollMarginTop: "6rem" }}>
+              <div style={{
+                background: "linear-gradient(135deg, #0B1D35 0%, #112640 100%)",
+                border: "1.5px solid rgba(212,168,75,0.4)",
+                borderRadius: 16,
+                padding: "1.75rem 1.75rem 1.6rem",
+                position: "relative",
+                overflow: "hidden",
+              }}>
+                {/* Decorative glow */}
+                <div style={{
+                  position: "absolute", top: "-30%", right: "-10%",
+                  width: 320, height: 320, pointerEvents: "none",
+                  background: "radial-gradient(circle, rgba(212,168,75,0.1) 0%, transparent 70%)",
+                }} />
+
+                {/* Header */}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1.1rem", position: "relative", zIndex: 1 }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                    background: "rgba(212,168,75,0.18)", border: "1px solid rgba(212,168,75,0.35)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <DollarSign size={20} style={{ color: "#D4A84B" }} />
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: "0.65rem", fontWeight: 700, color: "#D4A84B", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                      Important Notice — Section 7.5
+                    </p>
+                    <h2 style={{
+                      margin: 0, fontFamily: "'Playfair Display', serif",
+                      fontSize: "1.15rem", fontWeight: 700, color: "#FFFFFF",
+                    }}>
+                      Employer Placement Fees
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                  <p style={{ margin: 0, fontSize: "0.93rem", color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
+                    In addition to platform subscription fees, <strong style={{ color: "#FFFFFF" }}>employers
+                    may be subject to placement fees</strong> upon successfully hiring a talent candidate
+                    introduced through the O1DMatch platform. These fees are separate from and in addition
+                    to any subscription charges.
+                  </p>
+
+                  {/* Three-point grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem", marginTop: "0.25rem" }}>
+                    {[
+                      {
+                        title: "Fee Disclosure",
+                        body: "Applicable placement fees will be disclosed to employers prior to any hire. By proceeding with a hire, the employer acknowledges and agrees to the stated placement fee.",
+                      },
+                      {
+                        title: "Separate Agreement",
+                        body: "Placement fee terms, amounts, and payment schedules are governed by a separate written agreement between O1DMatch and the employer at the time of hire.",
+                      },
+                      {
+                        title: "Non-Circumvention",
+                        body: "Employers agree not to circumvent the platform by engaging talent introduced through O1DMatch outside of the platform to avoid applicable placement fees.",
+                      },
+                    ].map(({ title, body }) => (
+                      <div key={title} style={{
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(212,168,75,0.2)",
+                        borderRadius: 10,
+                        padding: "1rem 1.1rem",
+                      }}>
+                        <p style={{ margin: "0 0 0.4rem", fontWeight: 700, fontSize: "0.83rem", color: "#D4A84B" }}>
+                          {title}
+                        </p>
+                        <p style={{ margin: 0, fontSize: "0.82rem", color: "rgba(255,255,255,0.72)", lineHeight: 1.65 }}>
+                          {body}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer callout */}
+                  <div style={{
+                    display: "flex", alignItems: "flex-start", gap: "0.6rem",
+                    background: "rgba(212,168,75,0.1)", border: "1px solid rgba(212,168,75,0.25)",
+                    borderRadius: 10, padding: "0.85rem 1rem", marginTop: "0.25rem",
+                  }}>
+                    <AlertTriangle size={15} style={{ color: "#D4A84B", flexShrink: 0, marginTop: 2 }} />
+                    <p style={{ margin: 0, fontSize: "0.82rem", color: "rgba(255,255,255,0.8)", lineHeight: 1.65 }}>
+                      <strong style={{ color: "#E8C97A" }}>Questions about placement fees?</strong>{" "}
+                      Contact us at{" "}
+                      <a href="mailto:legal@o1dmatch.com" style={{ color: "#D4A84B", textDecoration: "none" }}>
+                        legal@o1dmatch.com
+                      </a>{" "}
+                      before proceeding with any hire initiated through the platform.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
 
             {/* 8. Intellectual Property */}
             <Section id="intellectual-property" icon={FileText} title="8. Intellectual Property">

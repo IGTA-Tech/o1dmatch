@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { code, userType, userId } = await req.json();
+    const { code, userType, userId, tier } = await req.json();
 
     if (!code) {
       return NextResponse.json({ valid: false, error: 'Promo code is required' });
@@ -73,10 +73,37 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Parse applicable tiers — stored as comma-separated string e.g. "starter,active_match"
+    // Empty / null means the code applies to ALL plans
+    const applicableTiers: string[] = promo.applicable_tier
+      ? promo.applicable_tier.split(',').map((t: string) => t.trim()).filter(Boolean)
+      : [];
+
+    // If a specific tier was requested (e.g. user clicked Upgrade on a plan card),
+    // validate that this promo is allowed on that tier
+    if (tier && applicableTiers.length > 0 && !applicableTiers.includes(tier)) {
+      const tierLabels: Record<string, string> = {
+        profile_only: 'Free Profile',
+        starter: 'Starter',
+        active_match: 'Active Match',
+        free: 'Free',
+        growth: 'Growth',
+        business: 'Business',
+        enterprise: 'Enterprise',
+      };
+      const planNames = applicableTiers.map((t) => tierLabels[t] || t).join(', ');
+      return NextResponse.json({
+        valid: false,
+        error: `This promo code only applies to: ${planNames}`,
+      });
+    }
+
     // Build response
     const promoInfo: Record<string, unknown> = {
       type: promo.type,
       code: promo.code,
+      // Always return which tiers this applies to so UI can show/hide per-card
+      applicableTiers,
     };
 
     if (promo.type === 'trial' && promo.trial_days) {
@@ -88,24 +115,10 @@ export async function POST(req: NextRequest) {
     if (promo.grants_igta_member) {
       promoInfo.grantsIGTAMember = true;
     }
-    if (promo.applicable_tier) {
-      promoInfo.applicableTier = promo.applicable_tier;
-    }
 
-    // Record usage so the same user can't redeem again beyond limit
-    if (userId) {
-      await supabase.from('promo_code_usage').insert({
-        promo_code_id: promo.id,
-        user_id: userId,
-        context: 'billing',
-      });
-
-      // Increment global current_uses counter
-      await supabase
-        .from('promo_codes')
-        .update({ current_uses: (promo.current_uses || 0) + 1 })
-        .eq('id', promo.id);
-    }
+    // NOTE: Usage is NOT recorded here — that happens in /api/promo/apply
+    // when the user actually completes the action. Recording here would
+    // consume uses for users who validate but never subscribe.
 
     return NextResponse.json({ valid: true, promo: promoInfo });
   } catch (error) {
