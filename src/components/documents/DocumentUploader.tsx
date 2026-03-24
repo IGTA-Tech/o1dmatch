@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useDocumentUpload, ClassifyResult } from '@/hooks/useDocumentUpload';
 import type { UploadResult } from '@/hooks/useDocumentUpload';
-import { ConfidenceIndicator } from './ConfidenceIndicator';
+// import { ConfidenceIndicator } from './ConfidenceIndicator';
 import { O1Criterion, O1_CRITERIA } from '@/types/enums';
 
 // ── Types ──────────────────────────────────────────────────────────────────
