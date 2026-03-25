@@ -5,6 +5,7 @@ import {
   FileText, Shield, Users, CreditCard, AlertTriangle,
   Scale, Ban, RefreshCw, Mail, ChevronRight,
   BookOpen, Gavel, UserCheck, ScrollText, DollarSign,
+  Info, Lock, List,
 } from "lucide-react";
 import "@/app/theme.css";
 
@@ -54,23 +55,24 @@ function Section({
    TOC
 ───────────────────────────────────────────────────────── */
 const tocItems = [
-  { id: "acceptance",            label: "Acceptance of Terms" },
-  { id: "eligibility",           label: "Eligibility" },
-  { id: "accounts",              label: "User Accounts" },
-  { id: "platform-services",     label: "Platform Services" },
-  { id: "user-obligations",      label: "User Obligations" },
-  { id: "prohibited",            label: "Prohibited Activities" },
-  { id: "payment",               label: "Payment & Subscriptions" },
-  { id: "placement-fees",         label: "Employer Placement Fees" },
-  { id: "intellectual-property", label: "Intellectual Property" },
-  { id: "user-content",          label: "User Content" },
-  { id: "disclaimers",           label: "Disclaimers" },
-  { id: "liability",             label: "Limitation of Liability" },
-  { id: "indemnification",       label: "Indemnification" },
-  { id: "termination",           label: "Termination" },
-  { id: "governing-law",         label: "Governing Law" },
-  { id: "changes",               label: "Changes to Terms" },
-  { id: "contact",               label: "Contact Us" },
+  { id: "parties-definitions",   label: "1. Parties And Definitions" },
+  { id: "acceptance",            label: "2. Acceptance And Eligibility" },
+  { id: "user-accuracy",         label: "3. User Responsibility for Accuracy" },
+  { id: "no-legal-advice",       label: "4. No Legal Advice" },
+  { id: "no-guarantees",         label: "5. No Guaranteed Outcomes" },
+  { id: "interest-letters",      label: "6. Interest Letters" },
+  { id: "placement-fees",        label: "7. Placement Fees" },
+  { id: "subscriptions",         label: "8. Subscription, Billing And Payment" },
+  { id: "intellectual-property", label: "9. Intellectual Property" },
+  { id: "user-content",          label: "10. User Content And Conduct" },
+  { id: "liability",             label: "11. Limitation of Liability" },
+  { id: "indemnification",       label: "12. Indemnification" },
+  { id: "arbitration",           label: "13. Arbitration And Class Action Waiver" },
+  { id: "user-types",            label: "14. User-Type Provisions" },
+  { id: "termination",           label: "15. Account Termination" },
+  { id: "modifications",         label: "16. Modifications to Terms" },
+  { id: "general",               label: "17. General Provisions" },
+  { id: "contact",               label: "18. Contact Us" },
 ];
 
 /* ─────────────────────────────────────────────────────────
@@ -142,7 +144,7 @@ export default function TermsOfServicePage() {
             fontSize: "0.8rem", color: "#E8C97A", fontWeight: 500,
           }}>
             <RefreshCw size={13} />
-            Last updated: February 17, 2026
+            Last updated: March 25, 2026
           </div>
         </div>
       </section>
@@ -209,152 +211,274 @@ export default function TermsOfServicePage() {
           {/* ── Main content ── */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2.5rem" }}>
 
-            {/* 1. Acceptance */}
-            <Section id="acceptance" icon={BookOpen} title="1. Acceptance of Terms">
+            {/* Preamble Alert */}
+            <div className="terms-alert terms-alert-red" style={{ marginBottom: 0 }}>
+              <p style={{ fontWeight: 600, margin: 0, fontSize: "0.88rem", lineHeight: 1.65 }}>
+                PLEASE READ THESE TERMS OF SERVICE CAREFULLY BEFORE USING THE O1DMATCH PLATFORM.
+                BY ACCESSING OR USING O1DMATCH.COM, APP.O1DMATCH.COM, OR ANY RELATED SERVICES,
+                YOU AGREE TO BE BOUND BY THESE TERMS. THESE TERMS CONTAIN A MANDATORY BINDING
+                ARBITRATION PROVISION AND A CLASS ACTION WAIVER IN SECTION 13.
+              </p>
+            </div>
+
+            {/* 1. Parties & Definitions */}
+            <Section id="parties-definitions" icon={List} title="1. Parties And Definitions">
               <p>
-                These Terms of Service (&quot;Terms&quot;) constitute a legally binding agreement between
-                you and O1DMatch (&quot;Company,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;)
-                governing your access to and use of the O1DMatch platform, including our website,
-                interest inquirys, APIs, and all related services (collectively, the &quot;Platform&quot;).
+                <strong>&quot;O1DMatch,&quot; &quot;we,&quot; &quot;us,&quot;</strong> or <strong>&quot;our&quot;</strong> refers
+                to O1D Match LLC, a Florida limited liability company operating within the Innovative
+                Global Talent Agency (IGTA) network.
               </p>
               <p>
-                By creating an account, accessing, or using the Platform, you acknowledge that you have
-                read, understood, and agree to be bound by these Terms and our{" "}
-                <Link href="/privacy" className="terms-link">Privacy Policy</Link>.
-                If you are using the Platform on behalf of an organization, you represent and warrant that
-                you have the authority to bind that organization to these Terms.
+                <strong>&quot;User,&quot; &quot;you,&quot;</strong> or <strong>&quot;your&quot;</strong> refers to any individual
+                or entity that accesses or uses the Platform, including:
+              </p>
+              <ul>
+                <li>
+                  <strong>Talent</strong> — Individuals seeking O-1 visa classification or other
+                  immigration benefits who create profiles, upload evidence, and engage with employers
+                  through the Platform.
+                </li>
+                <li>
+                  <strong>Employer</strong> — Companies, organizations, or their authorized
+                  representatives who post job opportunities, browse talent profiles, and issue interest
+                  letters through the Platform.
+                </li>
+                <li>
+                  <strong>Staffing Agency (&quot;Agency&quot;)</strong> — Third-party staffing or recruitment
+                  agencies that post job opportunities and facilitate connections on behalf of employer
+                  clients.
+                </li>
+                <li>
+                  <strong>Immigration Attorney (&quot;Attorney&quot;)</strong> — Licensed attorneys who list
+                  themselves in the Platform&apos;s attorney directory and may interact with talent or
+                  employers through the Platform.
+                </li>
+              </ul>
+              <p>
+                <strong>&quot;Platform&quot;</strong> means the websites located at o1dmatch.com and
+                app.o1dmatch.com, all associated subdomains, mobile applications (if any), APIs, and
+                all features, tools, content, and services made available through them.
+              </p>
+              <p>
+                <strong>&quot;AI Tools&quot;</strong> means O1DMatch&apos;s artificial intelligence-powered
+                features, including but not limited to evidence scoring across the eight (8) USCIS O-1
+                extraordinary ability criteria, interest letter generation, profile matching, and any
+                other automated assessment or generation features.
+              </p>
+              <p>
+                <strong>&quot;Interest Letter&quot;</strong> means a letter generated through the Platform
+                that expresses a potential employer&apos;s or organization&apos;s non-binding interest
+                in an O-1 visa candidate.
+              </p>
+              <p>
+                <strong>&quot;Content&quot;</strong> means all text, data, documents, images, files,
+                profiles, communications, and other materials uploaded, submitted, posted, or transmitted
+                through the Platform by Users.
               </p>
             </Section>
 
-            {/* 2. Eligibility */}
-            <Section id="eligibility" icon={UserCheck} title="2. Eligibility">
-              <p>To use the Platform, you must:</p>
+            {/* 2. Acceptance & Eligibility */}
+            <Section id="acceptance" icon={BookOpen} title="2. Acceptance of Terms And Eligibility">
+              <p>
+                By creating an account, accessing, or using the Platform in any manner, you represent
+                and warrant that:
+              </p>
               <ul>
-                <li>Be at least 18 years of age.</li>
-                <li>Have the legal capacity to enter into a binding agreement.</li>
-                <li>Not be prohibited from using the Platform under any applicable law or regulation.</li>
-                <li>Provide accurate, current, and complete registration information.</li>
+                <li>You are at least eighteen (18) years of age.</li>
+                <li>You have the legal capacity and authority to enter into these Terms.</li>
+                <li>You are not prohibited from using the Platform under any applicable law.</li>
+                <li>
+                  If you are acting on behalf of an entity, you have the authority to bind that entity
+                  to these Terms.
+                </li>
               </ul>
-              <p>Employer accounts must be registered by authorized representatives of legitimate business entities.</p>
+              <p>
+                O1DMatch reserves the right to refuse service, terminate accounts, or restrict access
+                to any person or entity for any reason or no reason, at our sole discretion.
+              </p>
             </Section>
 
-            {/* 3. Accounts */}
-            <Section id="accounts" icon={Users} title="3. User Accounts">
-              <h3 className="terms-sub">3.1 Account Types</h3>
-              <p>The Platform supports multiple account types:</p>
+            {/* 3. User Responsibility for Accuracy */}
+            <Section id="user-accuracy" icon={UserCheck} title="3. User Responsibility for Accuracy of Information">
+              <h3 className="terms-sub">3.1 Certification of Accuracy</h3>
+              <p>
+                By using the Platform, you certify that <strong>ALL</strong> information you submit,
+                upload, post, or otherwise provide through the Platform is true, accurate, complete,
+                and not misleading. This includes, without limitation, your profile information,
+                employment history, educational credentials, evidence of extraordinary ability,
+                professional achievements, job postings, company information, licensing credentials,
+                and any other representations made through the Platform.
+              </p>
+
+              <h3 className="terms-sub">3.2 Sole Responsibility</h3>
+              <p>
+                You are solely and exclusively responsible for the accuracy, completeness, and legality
+                of all information and Content you provide through the Platform. You acknowledge that
+                O1DMatch relies on the accuracy of User-submitted information to operate the Platform
+                and that inaccurate information may adversely affect other Users, the integrity of the
+                Platform, and immigration proceedings.
+              </p>
+
+              <h3 className="terms-sub">3.3 No Verification Obligation</h3>
+              <p>
+                O1DMatch is under no obligation to verify, validate, authenticate, or confirm the
+                accuracy or truthfulness of any information submitted by Users. While O1DMatch may, in
+                its sole discretion, take steps to review or screen certain Content, such actions do
+                not create any duty, obligation, or liability on the part of O1DMatch regarding the
+                accuracy of User-submitted information.
+              </p>
+
+              <h3 className="terms-sub">3.4 Consequences of Inaccuracy</h3>
+              <p>You acknowledge that submitting false, misleading, or inaccurate information may result in:</p>
               <ul>
-                <li><strong>Talent:</strong> Individuals seeking O-1 visa sponsorship opportunities.</li>
-                <li><strong>Employer:</strong> Companies and organizations looking to sponsor O-1 visa candidates.</li>
-                <li><strong>Agency:</strong> Immigration agencies and consulting firms managing cases.</li>
-                <li><strong>Lawyer:</strong> Immigration attorneys providing legal services.</li>
+                <li>Immediate termination of your account.</li>
+                <li>
+                  Adverse consequences in immigration proceedings, including but not limited to petition
+                  denial, revocation, or findings of fraud by USCIS.
+                </li>
+                <li>
+                  Civil or criminal liability under applicable federal and state laws, including
+                  immigration fraud statutes.
+                </li>
+                <li>Liability to other Users or third parties harmed by your inaccurate information.</li>
               </ul>
-              <h3 className="terms-sub">3.2 Account Security</h3>
-              <p>You are responsible for:</p>
-              <ul>
-                <li>Maintaining the confidentiality of your login credentials.</li>
-                <li>All activities that occur under your account.</li>
-                <li>Notifying us immediately of any unauthorized access or use of your account.</li>
-              </ul>
-              <p>We reserve the right to suspend or terminate accounts that we reasonably believe have been compromised.</p>
+              <p>O1DMatch bears no responsibility for any such consequences.</p>
+
+              <h3 className="terms-sub">3.5 Duty to Update</h3>
+              <p>
+                You agree to promptly update your information whenever it changes to ensure continued
+                accuracy.
+              </p>
             </Section>
 
-            {/* 4. Platform Services */}
-            <Section id="platform-services" icon={ScrollText} title="4. Platform Services">
-              <p>The Platform provides the following services:</p>
-              <h3 className="terms-sub">4.1 Talent Matching</h3>
-              <p>
-                We connect Talent with Employers seeking to sponsor O-1 visas. Matching is based on skills,
-                experience, and eligibility criteria. We do not guarantee any match will result in employment,
-                sponsorship, or visa approval.
-              </p>
-              <h3 className="terms-sub">4.2 Petition Scoring</h3>
-              <p>
-                Our AI-powered scoring tool evaluates petition documents against USCIS officer criteria to
-                provide an estimated score, approval probability, and recommendations. Scoring results are
-                informational only and do not constitute legal advice or guarantee any immigration outcome.
-              </p>
-              <h3 className="terms-sub">4.3 Document Generation</h3>
-              <p>
-                The Platform provides tools for generating exhibit packets, interest letters, and other
-                immigration-related documents. Users are responsible for reviewing all generated documents
-                for accuracy before submission to any government agency.
-              </p>
-              <h3 className="terms-sub">4.4 Case Management</h3>
-              <p>
-                Employers, agencies, and lawyers may use the Platform to manage visa cases, track progress,
-                and collaborate on petition preparation.
-              </p>
+            {/* 4. No Legal Advice */}
+            <Section id="no-legal-advice" icon={Info} title="4. No Legal Advice — Critical Disclaimer">
               <div className="terms-alert terms-alert-gold">
                 <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
                 <div>
-                  <strong>Important Notice:</strong> O1DMatch is not a law firm and does not provide legal
-                  advice. Our scoring tools, document generators, and platform features are informational
-                  tools only. For legal advice regarding immigration matters, please consult a qualified
-                  immigration attorney.
+                  <strong>O1DMatch Is Not a Law Firm.</strong> O1DMATCH IS NOT A LAW FIRM, DOES NOT
+                  PROVIDE LEGAL ADVICE, AND DOES NOT PROVIDE LEGAL REPRESENTATION. Nothing on the
+                  Platform constitutes legal advice, a legal opinion, or an attorney-client relationship
+                  between you and O1DMatch.
                 </div>
               </div>
-            </Section>
 
-            {/* 5. User Obligations */}
-            <Section id="user-obligations" icon={UserCheck} title="5. User Obligations">
-              <p>By using the Platform, you agree to:</p>
-              <ul>
-                <li>Provide accurate, truthful, and complete information in your profile, documents, and communications.</li>
-                <li>Only upload documents that you have the right to share and that do not infringe on any third-party rights.</li>
-                <li>Use the Platform only for its intended purposes related to O-1 visa talent matching and immigration case support.</li>
-                <li>Comply with all applicable laws, including U.S. immigration laws and regulations.</li>
-                <li>Respect the intellectual property rights of O1DMatch and other users.</li>
-                <li>Not misrepresent your qualifications, credentials, or immigration status.</li>
-              </ul>
-            </Section>
-
-            {/* 6. Prohibited */}
-            <Section id="prohibited" icon={Ban} title="6. Prohibited Activities">
-              <p>You may not:</p>
-              <ul>
-                <li>Use the Platform for any fraudulent, deceptive, or unlawful purpose, including immigration fraud.</li>
-                <li>Submit false, misleading, or fabricated documents for scoring or petition preparation.</li>
-                <li>Attempt to reverse-engineer, scrape, or extract data from our AI scoring algorithms or proprietary systems.</li>
-                <li>Interfere with, disrupt, or compromise the security or integrity of the Platform.</li>
-                <li>Create multiple accounts to circumvent credit limits, subscription restrictions, or bans.</li>
-                <li>Harass, abuse, or send unsolicited communications to other users.</li>
-                <li>Use automated tools (bots, crawlers, scrapers) to access the Platform without written permission.</li>
-                <li>Resell, sublicense, or commercially exploit Platform services without authorization.</li>
-                <li>Upload malware, viruses, or other harmful content.</li>
-              </ul>
-              <p>Violation of these prohibitions may result in immediate account suspension or termination without refund.</p>
-            </Section>
-
-            {/* 7. Payment */}
-            <Section id="payment" icon={CreditCard} title="7. Payment & Subscriptions">
-              <h3 className="terms-sub">7.1 Subscription Plans</h3>
+              <h3 className="terms-sub">4.2 AI Tools Are Assessment Tools, Not Legal Opinions</h3>
               <p>
-                Certain features require a paid subscription. Subscription plans, pricing, and included
-                features are described on our pricing page. We reserve the right to modify pricing with
-                30 days&apos; notice.
+                The AI-powered scoring, evidence assessment, and all other AI Tools provided through
+                the Platform are informational and analytical tools designed to help Users evaluate
+                potential O-1 visa eligibility. AI scores, assessments, recommendations, and any other
+                outputs generated by the AI Tools are <strong>NOT</strong> legal opinions, legal advice,
+                or predictions of USCIS outcomes. They are computational assessments based on publicly
+                available criteria and User-submitted data.
               </p>
-              <h3 className="terms-sub">7.2 Billing & Payment</h3>
-              <ul>
-                <li>Payments are processed securely through Stripe. By providing payment information, you authorize us to charge your payment method for all fees incurred.</li>
-                <li>Subscriptions renew automatically unless cancelled before the renewal date.</li>
-                <li>All fees are quoted in U.S. dollars unless stated otherwise.</li>
-              </ul>
-              <h3 className="terms-sub">7.3 Credits System</h3>
+
+              <h3 className="terms-sub">4.3 Consult Qualified Legal Counsel</h3>
               <p>
-                Certain features, such as re-scoring petitions, operate on a credit-based system. Credits
-                are allocated monthly based on your subscription tier (e.g., 10 re-score credits per month
-                for Employer accounts). Unused credits expire at the end of each calendar month and do not
-                roll over. Credits are non-transferable and non-refundable.
+                O1DMatch strongly recommends that all Users consult with a qualified, licensed
+                immigration attorney before making any decisions regarding immigration petitions, visa
+                applications, or related legal matters. The information provided through the Platform
+                is not a substitute for professional legal advice tailored to your specific
+                circumstances.
               </p>
-              <h3 className="terms-sub">7.4 Refund Policy</h3>
+
+              <h3 className="terms-sub">4.4 Attorney Directory Disclaimer</h3>
               <p>
-                Subscription fees are generally non-refundable. If you believe you are entitled to a refund
-                due to a service issue, please contact us within 14 days of the charge. Refund requests are
-                evaluated on a case-by-case basis.
+                The presence of attorneys in the O1DMatch attorney directory does not constitute legal
+                advice from O1DMatch. Any attorney-client relationships formed through connections made
+                on the Platform are exclusively between the attorney and the client. O1DMatch is not a
+                party to, and assumes no responsibility or liability for, any such relationships.
+              </p>
+
+              <h3 className="terms-sub">4.5 Interest Letter Language</h3>
+              <p>
+                Interest letters generated through the Platform use templates and AI-assisted language
+                formatted for USCIS requirements. The generation of such letters does not constitute
+                the practice of law by O1DMatch. Users and their attorneys are solely responsible for
+                reviewing, editing, and determining the appropriateness of any interest letter before
+                submission to USCIS or any other party.
               </p>
             </Section>
 
-            {/* 7.5 / Placement Fees — standalone highlighted section */}
+            {/* 5. No Guaranteed Outcomes */}
+            <Section id="no-guarantees" icon={AlertTriangle} title="5. No Guaranteed Outcomes">
+              <div className="terms-alert terms-alert-red">
+                <p style={{ fontWeight: 600, margin: 0 }}>
+                  O1DMATCH DOES NOT GUARANTEE, WARRANT, OR PROMISE ANY PARTICULAR OUTCOME.
+                </p>
+              </div>
+              <p>This expressly includes, but is not limited to:</p>
+              <ul>
+                <li>Approval of any O-1 visa petition or any other immigration benefit by USCIS or any government agency.</li>
+                <li>Employment, job placement, hiring, or any particular employment outcome.</li>
+                <li>The accuracy, reliability, or predictive value of any AI score, assessment, or recommendation.</li>
+                <li>The quality, suitability, or availability of any talent, employer, job opportunity, or attorney listed on the Platform.</li>
+                <li>The acceptance or effectiveness of any interest letter generated through the Platform.</li>
+                <li>Any specific return on investment from use of the Platform or its subscription plans.</li>
+              </ul>
+              <h3 className="terms-sub">5.2 Facilitator, Not Guarantor</h3>
+              <p>
+                O1DMatch is a technology platform that facilitates connections between Users and
+                provides AI-powered tools. Actual outcomes depend entirely on factors beyond
+                O1DMatch&apos;s control, including but not limited to USCIS adjudication decisions,
+                employer hiring decisions, individual qualifications, the quality of evidence presented,
+                legal representation, and applicable laws and regulations.
+              </p>
+              <h3 className="terms-sub">5.3 Acknowledgment of Risk</h3>
+              <p>
+                You acknowledge and accept that immigration processes are inherently uncertain, that
+                USCIS decisions are discretionary, and that use of the Platform does not increase the
+                likelihood of any particular outcome. You assume all risk associated with reliance on
+                the Platform&apos;s tools and features.
+              </p>
+            </Section>
+
+            {/* 6. Interest Letters */}
+            <Section id="interest-letters" icon={ScrollText} title="6. Interest Letters">
+              <div className="terms-alert terms-alert-gold">
+                <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <strong>Non-Binding Nature.</strong> Interest letters generated through the Platform
+                  are non-binding expressions of interest only.
+                </div>
+              </div>
+
+              <h3 className="terms-sub">6.1 An Interest Letter Is NOT:</h3>
+              <ul>
+                <li>An employment contract or agreement.</li>
+                <li>A job offer, whether conditional or unconditional.</li>
+                <li>A commitment to hire, employ, or engage the talent in any capacity.</li>
+                <li>A visa sponsorship commitment or agreement.</li>
+                <li>A guarantee that the employer will petition for or support an O-1 visa application.</li>
+                <li>A binding obligation of any kind on either the talent or the employer.</li>
+              </ul>
+
+              <h3 className="terms-sub">6.2 No Obligation Created</h3>
+              <p>
+                Neither the talent nor the employer (nor any agency acting on an employer&apos;s
+                behalf) is legally bound by an interest letter issued through the Platform. Either
+                party may decline to proceed at any time, for any reason, without liability to the
+                other party or to O1DMatch.
+              </p>
+
+              <h3 className="terms-sub">6.3 USCIS Acceptance Not Guaranteed</h3>
+              <p>
+                O1DMatch generates interest letters formatted to meet general USCIS requirements for
+                O-1 visa petitions. However, O1DMatch does not guarantee that any interest letter will
+                be accepted, deemed sufficient, or given any particular weight by USCIS or any other
+                adjudicating body. The sufficiency of an interest letter is determined solely by USCIS
+                in its discretion.
+              </p>
+
+              <h3 className="terms-sub">6.4 User Review Required</h3>
+              <p>
+                All interest letters generated through the Platform should be reviewed by the involved
+                parties and, where appropriate, qualified legal counsel before use in any immigration
+                proceeding.
+              </p>
+            </Section>
+
+            {/* 7. Placement Fees — standalone highlighted section */}
             <section id="placement-fees" style={{ scrollMarginTop: "6rem" }}>
               <div style={{
                 background: "linear-gradient(135deg, #0B1D35 0%, #112640 100%)",
@@ -382,13 +506,13 @@ export default function TermsOfServicePage() {
                   </div>
                   <div>
                     <p style={{ margin: 0, fontSize: "0.65rem", fontWeight: 700, color: "#D4A84B", textTransform: "uppercase", letterSpacing: "0.12em" }}>
-                      Important Notice — Section 7.5
+                      Important Notice — Section 7
                     </p>
                     <h2 style={{
                       margin: 0, fontFamily: "'Playfair Display', serif",
                       fontSize: "1.15rem", fontWeight: 700, color: "#FFFFFF",
                     }}>
-                      Employer Placement Fees
+                      Placement Fees
                     </h2>
                   </div>
                 </div>
@@ -396,26 +520,25 @@ export default function TermsOfServicePage() {
                 {/* Body */}
                 <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: "0.85rem" }}>
                   <p style={{ margin: 0, fontSize: "0.93rem", color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
-                    In addition to platform subscription fees, <strong style={{ color: "#FFFFFF" }}>employers
-                    may be subject to placement fees</strong> upon successfully hiring a talent candidate
-                    introduced through the O1DMatch platform. These fees are separate from and in addition
-                    to any subscription charges.
+                    O1DMatch reserves the right to charge placement fees when talent is successfully
+                    matched with an employer through the Platform, resulting in employment, engagement,
+                    or a contractual relationship of any kind.
                   </p>
 
                   {/* Three-point grid */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem", marginTop: "0.25rem" }}>
                     {[
                       {
-                        title: "Fee Disclosure",
-                        body: "Applicable placement fees will be disclosed to employers prior to any hire. By proceeding with a hire, the employer acknowledges and agrees to the stated placement fee.",
+                        title: "Fee Structure",
+                        body: "Placement fees may be structured as a percentage of the talent's first-year total compensation, a flat fee, a combination thereof, or any other arrangement as determined by O1DMatch in its sole discretion.",
                       },
                       {
-                        title: "Separate Agreement",
-                        body: "Placement fee terms, amounts, and payment schedules are governed by a separate written agreement between O1DMatch and the employer at the time of hire.",
+                        title: "Acknowledgment",
+                        body: "By using the Platform, all Users acknowledge that placement fees may apply to successful matches. Specific fee structures and rates will be communicated before they take effect.",
                       },
                       {
                         title: "Non-Circumvention",
-                        body: "Employers agree not to circumvent the platform by engaging talent introduced through O1DMatch outside of the platform to avoid applicable placement fees.",
+                        body: "Users shall not circumvent O1DMatch's placement fee structure by completing transactions outside the Platform after an initial introduction was made through it. Violation entitles O1DMatch to the full placement fee plus collection costs.",
                       },
                     ].map(({ title, body }) => (
                       <div key={title} style={{
@@ -434,7 +557,7 @@ export default function TermsOfServicePage() {
                     ))}
                   </div>
 
-                  {/* Footer callout */}
+                  {/* Survival notice */}
                   <div style={{
                     display: "flex", alignItems: "flex-start", gap: "0.6rem",
                     background: "rgba(212,168,75,0.1)", border: "1px solid rgba(212,168,75,0.25)",
@@ -442,179 +565,520 @@ export default function TermsOfServicePage() {
                   }}>
                     <AlertTriangle size={15} style={{ color: "#D4A84B", flexShrink: 0, marginTop: 2 }} />
                     <p style={{ margin: 0, fontSize: "0.82rem", color: "rgba(255,255,255,0.8)", lineHeight: 1.65 }}>
-                      <strong style={{ color: "#E8C97A" }}>Questions about placement fees?</strong>{" "}
+                      <strong style={{ color: "#E8C97A" }}>Survival of Placement Fee Obligations:</strong>{" "}
+                      The obligation to pay placement fees survives termination or expiration of a
+                      User&apos;s account. If an employment or engagement relationship results from a
+                      connection made through the Platform within twelve (12) months of either
+                      party&apos;s last use of the Platform, the placement fee shall apply. Questions?
                       Contact us at{" "}
-                      <a href="mailto:legal@o1dmatch.com" style={{ color: "#D4A84B", textDecoration: "none" }}>
-                        legal@o1dmatch.com
-                      </a>{" "}
-                      before proceeding with any hire initiated through the platform.
+                      <a href="mailto:info@o1dmatch.com" style={{ color: "#D4A84B", textDecoration: "none" }}>
+                        info@o1dmatch.com
+                      </a>.
                     </p>
                   </div>
                 </div>
               </div>
             </section>
 
-            {/* 8. Intellectual Property */}
-            <Section id="intellectual-property" icon={FileText} title="8. Intellectual Property">
+            {/* 8. Subscription, Billing & Payment */}
+            <Section id="subscriptions" icon={CreditCard} title="8. Subscription, Billing And Payment">
+              <h3 className="terms-sub">8.1 Subscription Plans</h3>
               <p>
-                The Platform, including its design, code, algorithms, scoring methodologies, text, graphics,
-                logos, and all other content created by O1DMatch, is our intellectual property and is
-                protected by copyright, trademark, and other applicable laws.
+                O1DMatch offers various subscription plans, including free and paid tiers. Current
+                subscription plans and pricing are available on the Platform. Plans may include,
+                without limitation, the Talent Starter plan and various Employer plans, each with
+                different features and pricing.
               </p>
+
+              <h3 className="terms-sub">8.2 Auto-Renewal</h3>
               <p>
-                We grant you a limited, non-exclusive, non-transferable, revocable license to access and
-                use the Platform for its intended purpose during your active subscription or account.
+                <strong>ALL PAID SUBSCRIPTION PLANS AUTOMATICALLY RENEW</strong> at the end of each
+                billing cycle (monthly or annually, as applicable) unless you cancel your subscription
+                before the renewal date. By subscribing to a paid plan, you authorize O1DMatch to
+                charge your designated payment method for each renewal period.
               </p>
+
+              <h3 className="terms-sub">8.3 No Refunds</h3>
               <p>
-                You may not copy, modify, distribute, sell, or create derivative works based on the Platform
-                or its content without our explicit written consent.
+                All subscription fees are non-refundable. No refunds or credits will be issued for
+                partial months, partial subscription periods, unused features, or account termination
+                (whether by you or by O1DMatch). If you cancel your subscription, you will retain
+                access to paid features through the end of your current billing period.
+              </p>
+
+              <h3 className="terms-sub">8.4 Payment Processing</h3>
+              <p>
+                All payment processing is handled by Stripe, Inc. (&quot;Stripe&quot;). By providing
+                payment information, you agree to Stripe&apos;s terms of service and privacy policy.
+                O1DMatch does not store your full payment card details.
+              </p>
+
+              <h3 className="terms-sub">8.5 Promotional Codes</h3>
+              <p>
+                O1DMatch may offer promotional codes (&quot;Promo Codes&quot;) from time to time.
+                Promo Codes are non-transferable, may not be combined with other offers, have no cash
+                value, may be limited in quantity or duration, and may be revoked or modified by
+                O1DMatch at any time for any reason. Abuse of Promo Codes may result in account
+                termination.
+              </p>
+
+              <h3 className="terms-sub">8.6 Pricing Changes</h3>
+              <p>
+                O1DMatch reserves the right to change subscription pricing at any time. For existing
+                subscribers, pricing changes will take effect at the start of the next billing cycle
+                following at least thirty (30) days&apos; advance notice via email or Platform
+                notification. Continued use of the Platform after a price change takes effect
+                constitutes acceptance of the new pricing.
+              </p>
+
+              <h3 className="terms-sub">8.7 Failed Payments</h3>
+              <p>
+                If a payment fails, O1DMatch may retry the charge, suspend or downgrade your account,
+                or terminate your account. O1DMatch is not liable for any consequences of account
+                suspension or termination due to failed payments.
               </p>
             </Section>
 
-            {/* 9. User Content */}
-            <Section id="user-content" icon={Users} title="9. User Content">
+            {/* 9. Intellectual Property */}
+            <Section id="intellectual-property" icon={FileText} title="9. Intellectual Property">
+              <h3 className="terms-sub">9.1 O1DMatch Property</h3>
               <p>
-                You retain ownership of all documents, profiles, and other content you upload to the
-                Platform (&quot;User Content&quot;). By uploading User Content, you grant us a limited,
-                non-exclusive license to process, store, and display your content as necessary to provide
-                the Platform services, including sending your documents to our AI scoring service for
-                analysis.
+                The Platform, including all software, code, AI models, machine learning algorithms,
+                scoring methodologies, letter templates, user interface designs, graphics, logos,
+                trademarks, trade names, data compilations, and all other content and materials created
+                by or on behalf of O1DMatch (collectively, &quot;O1DMatch IP&quot;), is the exclusive
+                property of O1D Match LLC and/or its licensors, protected by United States and
+                international intellectual property laws.
               </p>
+
+              <h3 className="terms-sub">9.2 Limited License to Users</h3>
               <p>
-                You represent and warrant that you have the rights to upload all User Content and that it
-                does not violate any third-party rights or applicable laws.
+                Subject to these Terms, O1DMatch grants you a limited, non-exclusive, non-transferable,
+                non-sublicensable, revocable license to access and use the Platform solely for its
+                intended purposes. This license does not include the right to:
               </p>
+              <ul>
+                <li>Copy, modify, distribute, sell, lease, or create derivative works based on the Platform or O1DMatch IP.</li>
+                <li>Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code or algorithms of any part of the Platform.</li>
+                <li>Use any data mining, scraping, robots, or similar automated data gathering or extraction methods on the Platform.</li>
+                <li>Remove, alter, or obscure any proprietary notices on the Platform.</li>
+              </ul>
+
+              <h3 className="terms-sub">9.3 User Content License</h3>
               <p>
-                We do not claim ownership of your User Content and will not use it for purposes other than
-                providing Platform services without your explicit consent.
+                Users retain ownership of the Content they upload to the Platform. However, by
+                uploading Content you grant O1DMatch a worldwide, non-exclusive, royalty-free,
+                sublicensable, transferable license to use, reproduce, process, analyze, store, display,
+                distribute, and create derivative works from your Content for the purposes of: (a)
+                operating and providing the Platform; (b) AI model training, improvement, and
+                development; (c) generating anonymized or aggregated data and analytics; (d) complying
+                with legal obligations; and (e) any other purpose related to the operation, improvement,
+                or promotion of the Platform. This license survives termination of your account.
+              </p>
+
+              <h3 className="terms-sub">9.4 Feedback</h3>
+              <p>
+                Any feedback, suggestions, ideas, or recommendations you provide regarding the Platform
+                shall become the exclusive property of O1DMatch. You hereby assign all rights in
+                Feedback to O1DMatch and agree that O1DMatch may use Feedback for any purpose without
+                compensation or attribution.
               </p>
             </Section>
 
-            {/* 10. Disclaimers */}
-            <Section id="disclaimers" icon={AlertTriangle} title="10. Disclaimers">
+            {/* 10. User Content & Conduct */}
+            <Section id="user-content" icon={Users} title="10. User-Generated Content And Conduct">
+              <h3 className="terms-sub">10.1 User Responsibility</h3>
+              <p>
+                You are solely responsible for all Content you upload, post, transmit, or otherwise
+                make available through the Platform. O1DMatch does not pre-screen Content and assumes
+                no responsibility or liability for User-generated Content.
+              </p>
+
+              <h3 className="terms-sub">10.2 Prohibited Content and Conduct</h3>
+              <p>You agree not to use the Platform to:</p>
+              <ul>
+                <li>Submit false, fraudulent, misleading, or deceptive information.</li>
+                <li>Impersonate any person or entity, or misrepresent your affiliation with any person or entity.</li>
+                <li>Upload Content that infringes any intellectual property rights, privacy rights, or other rights of any third party.</li>
+                <li>Upload Content that is defamatory, obscene, harassing, threatening, or otherwise objectionable.</li>
+                <li>Engage in any activity that violates any applicable federal, state, local, or international law or regulation, including immigration laws.</li>
+                <li>Transmit viruses, malware, or other harmful code.</li>
+                <li>Interfere with the operation of the Platform or any other User&apos;s use of the Platform.</li>
+                <li>Use the Platform for any purpose other than its intended use.</li>
+                <li>Collect or harvest information about other Users without their consent.</li>
+                <li>Use the Platform to send unsolicited communications or spam.</li>
+                <li>Attempt to gain unauthorized access to any part of the Platform, other Users&apos; accounts, or any systems or networks connected to the Platform.</li>
+              </ul>
+
+              <h3 className="terms-sub">10.3 Right to Remove Content</h3>
+              <p>
+                O1DMatch reserves the right, but has no obligation, to monitor, review, edit, or
+                remove any Content at any time, for any reason, without notice. O1DMatch shall have
+                no liability for any action taken or not taken with respect to User Content.
+              </p>
+            </Section>
+
+            {/* 11. Limitation of Liability */}
+            <Section id="liability" icon={Shield} title="11. Limitation of Liability">
+              <h3 className="terms-sub">11.1 Liability Cap</h3>
+              <p>
+                TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, O1DMATCH&apos;S TOTAL AGGREGATE
+                LIABILITY TO YOU FOR ALL CLAIMS ARISING OUT OF OR RELATING TO THESE TERMS OR YOUR
+                USE OF THE PLATFORM SHALL NOT EXCEED THE TOTAL AMOUNT OF FEES ACTUALLY PAID BY YOU
+                TO O1DMATCH DURING THE TWELVE (12) MONTH PERIOD IMMEDIATELY PRECEDING THE EVENT
+                GIVING RISE TO THE CLAIM. IF YOU HAVE NOT PAID ANY FEES TO O1DMATCH, O1DMATCH&apos;S
+                TOTAL LIABILITY SHALL NOT EXCEED FIFTY DOLLARS ($50.00).
+              </p>
+
+              <h3 className="terms-sub">11.2 Exclusion of Damages</h3>
+              <p>
+                TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE O1DMATCH PARTIES SHALL NOT
+                BE LIABLE FOR ANY:
+              </p>
+              <ul>
+                <li>Indirect, incidental, special, consequential, punitive, or exemplary damages.</li>
+                <li>Loss of profits, revenue, data, business opportunities, or goodwill.</li>
+                <li>Cost of procurement of substitute services.</li>
+                <li>Damages arising from or related to any USCIS decision, including petition denial, revocation, or request for evidence.</li>
+                <li>Damages arising from or related to any employer&apos;s hiring decision or failure to hire.</li>
+                <li>Damages arising from the accuracy or inaccuracy of AI scoring, assessments, or recommendations.</li>
+                <li>Damages arising from the actions, omissions, or Content of third parties, including other Users.</li>
+                <li>Damages arising from Platform downtime, errors, interruptions, or data loss.</li>
+                <li>Damages arising from unauthorized access to or alteration of your data.</li>
+                <li>Damages arising from any attorney-client relationship formed through the Platform.</li>
+              </ul>
+
+              <h3 className="terms-sub">11.3 Disclaimer of Warranties</h3>
               <div className="terms-alert terms-alert-red">
                 <p style={{ fontWeight: 600, margin: 0 }}>
-                  THE PLATFORM IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT
-                  WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+                  THE PLATFORM AND ALL CONTENT, TOOLS, FEATURES, AND SERVICES ARE PROVIDED ON AN
+                  &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; BASIS WITHOUT WARRANTIES OF ANY KIND,
+                  EITHER EXPRESS OR IMPLIED. O1DMATCH DISCLAIMS ALL WARRANTIES, INCLUDING IMPLIED
+                  WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+                  NON-INFRINGEMENT.
                 </p>
               </div>
-              <p>We specifically disclaim any warranties regarding:</p>
-              <ul>
-                <li><strong>Immigration Outcomes:</strong> We do not guarantee O-1 visa approval, RFE avoidance, or any specific immigration result. Scoring results are estimates and not predictions of USCIS decisions.</li>
-                <li><strong>Employment Results:</strong> We do not guarantee that Talent will find employment or that Employers will find suitable candidates through the Platform.</li>
-                <li><strong>Scoring Accuracy:</strong> AI-generated scores and recommendations are informational and may not reflect actual USCIS officer assessments.</li>
-                <li><strong>Document Accuracy:</strong> Auto-generated documents (exhibits, interest letters) require user review and should not be submitted without verification by a qualified professional.</li>
-                <li><strong>Uptime &amp; Availability:</strong> While we strive for continuous availability, we do not guarantee uninterrupted or error-free service.</li>
-              </ul>
-            </Section>
-
-            {/* 11. Liability */}
-            <Section id="liability" icon={Shield} title="11. Limitation of Liability">
-              <p>
-                To the maximum extent permitted by applicable law, O1DMatch and its officers, directors,
-                employees, agents, and affiliates shall not be liable for:
-              </p>
-              <ul>
-                <li>Any indirect, incidental, special, consequential, or punitive damages arising from your use of or inability to use the Platform.</li>
-                <li>Loss of data, revenue, profits, or business opportunities.</li>
-                <li>Adverse immigration outcomes, including visa denials, RFEs, or processing delays.</li>
-                <li>Actions or omissions of other users, employers, lawyers, or agencies on the Platform.</li>
-                <li>Errors or inaccuracies in AI-generated scores, documents, or recommendations.</li>
-              </ul>
-              <p>
-                Our total aggregate liability for any claims arising from or related to these Terms or the
-                Platform shall not exceed the amount you paid to us in the twelve (12) months preceding
-                the claim.
-              </p>
             </Section>
 
             {/* 12. Indemnification */}
             <Section id="indemnification" icon={Shield} title="12. Indemnification">
               <p>
-                You agree to indemnify, defend, and hold harmless O1DMatch and its officers, directors,
-                employees, and agents from and against any claims, liabilities, damages, losses, and
-                expenses (including reasonable attorneys&apos; fees) arising out of or related to:
+                You agree to indemnify, defend, and hold harmless O1DMatch and all O1DMatch Parties
+                from and against any and all claims, actions, demands, liabilities, damages, losses,
+                costs, and expenses (including reasonable attorneys&apos; fees) arising out of or
+                relating to:
               </p>
               <ul>
-                <li>Your use or misuse of the Platform.</li>
+                <li>Your use of or access to the Platform.</li>
                 <li>Your violation of these Terms.</li>
-                <li>Your violation of any applicable law or regulation.</li>
-                <li>Any content you upload that infringes on third-party rights.</li>
-                <li>Any false or misleading information you provide through the Platform.</li>
+                <li>Any Content you upload, submit, or transmit through the Platform.</li>
+                <li>Any inaccurate, false, or misleading information you provide through the Platform.</li>
+                <li>Your violation of any applicable law, regulation, or third-party right.</li>
+                <li>Any dispute between you and another User of the Platform.</li>
+                <li>Any claim by a third party related to your use of the Platform or Content you provided.</li>
+                <li>Any immigration proceeding, petition, or application in which information or materials from the Platform were used.</li>
+                <li>Your circumvention or attempted circumvention of placement fees.</li>
+              </ul>
+              <p>
+                O1DMatch reserves the right, at your expense, to assume the exclusive defense and
+                control of any matter subject to indemnification by you. You agree not to settle any
+                such claim without O1DMatch&apos;s prior written consent.
+              </p>
+            </Section>
+
+            {/* 13. Arbitration */}
+            <section id="arbitration" style={{ scrollMarginTop: "6rem" }}>
+              <div style={{
+                background: "linear-gradient(135deg, #0B1D35 0%, #112640 100%)",
+                border: "1.5px solid rgba(212,168,75,0.4)",
+                borderRadius: 16,
+                padding: "1.75rem 1.75rem 1.6rem",
+                position: "relative",
+                overflow: "hidden",
+              }}>
+                <div style={{
+                  position: "absolute", top: "-30%", right: "-10%",
+                  width: 320, height: 320, pointerEvents: "none",
+                  background: "radial-gradient(circle, rgba(212,168,75,0.1) 0%, transparent 70%)",
+                }} />
+
+                <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1.1rem", position: "relative", zIndex: 1 }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                    background: "rgba(212,168,75,0.18)", border: "1px solid rgba(212,168,75,0.35)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Gavel size={20} style={{ color: "#D4A84B" }} />
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: "0.65rem", fontWeight: 700, color: "#D4A84B", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                      Important — Section 13
+                    </p>
+                    <h2 style={{
+                      margin: 0, fontFamily: "'Playfair Display', serif",
+                      fontSize: "1.15rem", fontWeight: 700, color: "#FFFFFF",
+                    }}>
+                      Mandatory Binding Arbitration And Class Action Waiver
+                    </h2>
+                  </div>
+                </div>
+
+                <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                  <p style={{ margin: 0, fontSize: "0.93rem", color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
+                    YOU AND O1DMATCH AGREE THAT ANY DISPUTE, CLAIM, OR CONTROVERSY ARISING OUT OF
+                    OR RELATING TO THESE TERMS, THE PLATFORM, OR YOUR USE OF THE PLATFORM SHALL BE
+                    RESOLVED EXCLUSIVELY THROUGH FINAL AND BINDING INDIVIDUAL ARBITRATION, RATHER
+                    THAN IN COURT, except that either party may bring an individual action in small
+                    claims court if the claim qualifies.
+                  </p>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem", marginTop: "0.25rem" }}>
+                    {[
+                      {
+                        title: "Arbitration Administration",
+                        body: "Arbitration shall be administered by the American Arbitration Association (AAA) or JAMS under their respective rules then in effect.",
+                      },
+                      {
+                        title: "Venue",
+                        body: "All arbitration proceedings shall take place in Charlotte, North Carolina (Mecklenburg County), unless the parties mutually agree otherwise in writing.",
+                      },
+                      {
+                        title: "Class Action Waiver",
+                        body: "EACH PARTY MAY BRING DISPUTES ONLY IN AN INDIVIDUAL CAPACITY. NO CLASS, COLLECTIVE, CONSOLIDATED, OR REPRESENTATIVE ACTIONS ARE PERMITTED.",
+                      },
+                    ].map(({ title, body }) => (
+                      <div key={title} style={{
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(212,168,75,0.2)",
+                        borderRadius: 10,
+                        padding: "1rem 1.1rem",
+                      }}>
+                        <p style={{ margin: "0 0 0.4rem", fontWeight: 700, fontSize: "0.83rem", color: "#D4A84B" }}>
+                          {title}
+                        </p>
+                        <p style={{ margin: 0, fontSize: "0.82rem", color: "rgba(255,255,255,0.72)", lineHeight: 1.65 }}>
+                          {body}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{
+                    display: "flex", alignItems: "flex-start", gap: "0.6rem",
+                    background: "rgba(212,168,75,0.1)", border: "1px solid rgba(212,168,75,0.25)",
+                    borderRadius: 10, padding: "0.85rem 1rem", marginTop: "0.25rem",
+                  }}>
+                    <AlertTriangle size={15} style={{ color: "#D4A84B", flexShrink: 0, marginTop: 2 }} />
+                    <p style={{ margin: 0, fontSize: "0.82rem", color: "rgba(255,255,255,0.8)", lineHeight: 1.65 }}>
+                      <strong style={{ color: "#E8C97A" }}>Opt-Out Right:</strong>{" "}
+                      You may opt out of this arbitration provision by sending written notice to{" "}
+                      <a href="mailto:info@o1dmatch.com" style={{ color: "#D4A84B", textDecoration: "none" }}>
+                        info@o1dmatch.com
+                      </a>{" "}
+                      within thirty (30) days of your first use of the Platform. The notice must
+                      include your name, address, email, and a clear statement that you wish to opt
+                      out of arbitration. If you opt out, disputes shall be submitted to the exclusive
+                      jurisdiction of the state and federal courts in Mecklenburg County, North
+                      Carolina. YOU AND O1DMATCH HEREBY WAIVE ANY RIGHT TO A JURY TRIAL.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 14. User-Type-Specific Provisions */}
+            <Section id="user-types" icon={Users} title="14. User-Type-Specific Provisions">
+              <h3 className="terms-sub">14.1 Talent Users</h3>
+              <ul>
+                <li>By creating a Talent profile, you certify that all claims of extraordinary ability, achievements, awards, publications, memberships, and other evidence submitted through the Platform are truthful and accurately represent your qualifications.</li>
+                <li>You acknowledge that the AI score and evidence assessment provided by the Platform is an informational tool and is NOT a legal assessment or prediction of O-1 visa eligibility. You should not rely solely on the AI score when making immigration decisions.</li>
+                <li>You consent to your profile being made visible to Employers and Agencies in an anonymized format. Your identity will not be revealed until you affirmatively choose to accept an interest letter or otherwise consent to identity disclosure.</li>
+                <li>You acknowledge that placement fees may apply if you are successfully matched with an employer through the Platform.</li>
+              </ul>
+
+              <h3 className="terms-sub">14.2 Employer Users</h3>
+              <ul>
+                <li>By issuing an interest letter through the Platform, you acknowledge that it is a non-binding expression of interest and does not constitute a job offer, employment contract, visa sponsorship commitment, or any binding obligation.</li>
+                <li>You are not committing to hire, sponsor, or petition for any talent by sending an interest letter. Either party may decline to proceed at any stage.</li>
+                <li>You acknowledge and agree that placement fees may be charged for successful hires resulting from connections made through the Platform, as set forth in Section 7.</li>
+                <li>You are responsible for the accuracy of all job postings, company information, and other Content you submit to the Platform.</li>
+              </ul>
+
+              <h3 className="terms-sub">14.3 Agency Users</h3>
+              <ul>
+                <li>By using the Platform on behalf of employer clients, you represent and warrant that you have the full legal authority to act on behalf of each employer client.</li>
+                <li>You are responsible for the accuracy of all jobs posted on behalf of your employer clients.</li>
+                <li>You acknowledge that placement fees may apply to successful matches for your employer clients, and that you may be jointly and severally liable with your employer client for such fees.</li>
+                <li>You agree to ensure that your employer clients are aware of and comply with these Terms.</li>
+              </ul>
+
+              <h3 className="terms-sub">14.4 Attorney Users</h3>
+              <ul>
+                <li>By listing yourself in the O1DMatch attorney directory, you represent and warrant that you are a licensed attorney in good standing in at least one U.S. jurisdiction and that you are authorized to practice immigration law.</li>
+                <li>Listing in the directory does NOT constitute an endorsement, recommendation, or referral by O1DMatch. O1DMatch does not evaluate, verify, or vouch for the qualifications or competence of any listed attorney.</li>
+                <li>You are solely responsible for your own legal advice, legal opinions, legal representation, and client relationships.</li>
+                <li>You agree to comply with all applicable rules of professional conduct and bar requirements in connection with your use of the Platform.</li>
+                <li>You are responsible for ensuring that your directory listing, including credentials and practice areas, is accurate and current.</li>
               </ul>
             </Section>
 
-            {/* 13. Termination */}
-            <Section id="termination" icon={Ban} title="13. Termination">
+            {/* 15. Account Termination */}
+            <Section id="termination" icon={Ban} title="15. Account Termination">
+              <h3 className="terms-sub">15.1 Termination by O1DMatch</h3>
               <p>
-                <strong>By You:</strong> You may terminate your account at any time through your account
-                settings or by contacting us. Upon termination, your right to access the Platform ceases
-                immediately. Pre-paid subscription fees are non-refundable.
+                O1DMatch may suspend, restrict, or terminate your account and access to the Platform
+                at any time, for any reason or no reason, with or without notice, at our sole
+                discretion. Reasons for termination may include violation of these Terms, fraudulent
+                activity, inactivity, failure to pay fees, legal requirements, or operational
+                considerations.
               </p>
+
+              <h3 className="terms-sub">15.2 Termination by User</h3>
               <p>
-                <strong>By Us:</strong> We may suspend or terminate your account at any time, with or
-                without notice, for conduct that we determine, in our sole discretion, violates these
-                Terms, is harmful to other users or the Platform, or is otherwise objectionable.
+                You may delete your account at any time through the Platform&apos;s account settings
+                or by contacting us at{" "}
+                <a href="mailto:info@o1dmatch.com" className="terms-link">info@o1dmatch.com</a>.
+                Deletion of your account does not entitle you to any refund of fees paid.
               </p>
+
+              <h3 className="terms-sub">15.3 Effect of Termination</h3>
+              <p>Upon termination:</p>
+              <ul>
+                <li>Your license to use the Platform immediately terminates.</li>
+                <li>You must cease all use of the Platform.</li>
+                <li>O1DMatch may delete or retain your Content and data in accordance with our <Link href="/privacy" className="terms-link">Privacy Policy</Link>.</li>
+                <li>Sections that by their nature should survive termination shall survive, including but not limited to Sections 3, 4, 5, 7, 9, 10, 11, 12, 13, and 17.</li>
+              </ul>
+
+              <h3 className="terms-sub">15.4 Data Retention After Termination</h3>
               <p>
-                Upon termination, we will retain your data in accordance with our{" "}
-                <Link href="/privacy" className="terms-link">Privacy Policy</Link>.
-                Sections regarding disclaimers, limitation of liability, indemnification, and governing
-                law survive termination.
+                O1DMatch retains the right to retain your data following account termination as
+                described in our{" "}
+                <Link href="/privacy" className="terms-link">Privacy Policy</Link>, including for
+                legal compliance, dispute resolution, fraud prevention, and enforcement of these Terms.
               </p>
             </Section>
 
-            {/* 14. Governing Law */}
-            <Section id="governing-law" icon={Gavel} title="14. Governing Law">
+            {/* 16. Modifications to Terms */}
+            <Section id="modifications" icon={RefreshCw} title="16. Modifications to Terms">
+              <h3 className="terms-sub">16.1 Right to Modify</h3>
               <p>
-                These Terms shall be governed by and construed in accordance with the laws of the State
-                of Delaware, United States, without regard to its conflict of law provisions.
+                O1DMatch reserves the right to modify, amend, or update these Terms at any time, at
+                our sole discretion.
               </p>
+
+              <h3 className="terms-sub">16.2 Notice of Material Changes</h3>
               <p>
-                Any disputes arising under these Terms shall be resolved through binding arbitration
-                administered by the American Arbitration Association (AAA) in accordance with its rules.
-                The arbitration shall take place in Delaware, and the arbitrator&apos;s decision shall
-                be final and binding.
+                For material changes to these Terms, O1DMatch will provide at least thirty (30) days&apos;
+                advance notice via email to the address associated with your account and/or through a
+                prominent notice on the Platform.
               </p>
+
+              <h3 className="terms-sub">16.3 Acceptance Through Continued Use</h3>
               <p>
-                You agree that any dispute resolution proceedings will be conducted only on an individual
-                basis and not in a class, consolidated, or representative action.
+                Your continued use of the Platform after the effective date of any modifications
+                constitutes your acceptance of the modified Terms. If you do not agree to the modified
+                Terms, you must stop using the Platform and close your account before the modifications
+                take effect.
+              </p>
+
+              <h3 className="terms-sub">16.4 Non-Material Changes</h3>
+              <p>
+                O1DMatch may make non-material changes to these Terms (such as formatting, typographical
+                corrections, or clarifications) at any time without advance notice.
               </p>
             </Section>
 
-            {/* 15. Changes */}
-            <Section id="changes" icon={RefreshCw} title="15. Changes to Terms">
+            {/* 17. General Provisions */}
+            <Section id="general" icon={Lock} title="17. General Provisions">
+              <h3 className="terms-sub">17.1 Governing Law</h3>
               <p>
-                We reserve the right to modify these Terms at any time. We will provide notice of material
-                changes by posting the updated Terms on this page with a revised &quot;Last updated&quot;
-                date and, for significant changes, by notifying you via email or in-platform notification.
+                These Terms shall be governed by and construed in accordance with the laws of the
+                State of Florida, without regard to its conflict of law provisions.
               </p>
+
+              <h3 className="terms-sub">17.2 Severability</h3>
               <p>
-                Your continued use of the Platform after the revised Terms take effect constitutes your
-                acceptance of the changes. If you do not agree to the modified Terms, you must stop using
-                the Platform and close your account.
+                If any provision of these Terms is found to be invalid, illegal, or unenforceable,
+                such provision shall be modified to the minimum extent necessary to make it
+                enforceable, and the remaining provisions shall continue in full force and effect.
+              </p>
+
+              <h3 className="terms-sub">17.3 Entire Agreement</h3>
+              <p>
+                These Terms, together with the Privacy Policy and any other policies or agreements
+                referenced herein, constitute the entire agreement between you and O1DMatch regarding
+                the Platform and supersede all prior and contemporaneous agreements.
+              </p>
+
+              <h3 className="terms-sub">17.4 Waiver</h3>
+              <p>
+                The failure of O1DMatch to enforce any right or provision of these Terms shall not
+                constitute a waiver of such right or provision. Any waiver must be in writing and
+                signed by O1DMatch.
+              </p>
+
+              <h3 className="terms-sub">17.5 Assignment</h3>
+              <p>
+                You may not assign or transfer these Terms or any rights or obligations hereunder
+                without O1DMatch&apos;s prior written consent. O1DMatch may freely assign or transfer
+                these Terms without restriction, including in connection with a merger, acquisition,
+                reorganization, or sale of assets.
+              </p>
+
+              <h3 className="terms-sub">17.6 Force Majeure</h3>
+              <p>
+                O1DMatch shall not be liable for any failure or delay in performance resulting from
+                causes beyond its reasonable control, including but not limited to acts of God, natural
+                disasters, pandemic, war, terrorism, government actions, internet or telecommunications
+                failures, power failures, or third-party service provider failures.
+              </p>
+
+              <h3 className="terms-sub">17.7 Notices</h3>
+              <p>
+                All notices to O1DMatch must be sent to{" "}
+                <a href="mailto:info@o1dmatch.com" className="terms-link">info@o1dmatch.com</a>.
+                Notices to Users will be sent to the email address associated with the User&apos;s account.
+              </p>
+
+              <h3 className="terms-sub">17.8 No Third-Party Beneficiaries</h3>
+              <p>
+                These Terms do not create any third-party beneficiary rights in any individual or
+                entity that is not a party to these Terms.
+              </p>
+
+              <h3 className="terms-sub">17.9 Relationship of Parties</h3>
+              <p>
+                Nothing in these Terms creates a partnership, joint venture, agency, or employment
+                relationship between you and O1DMatch.
               </p>
             </Section>
 
-            {/* 16. Contact */}
-            <Section id="contact" icon={Mail} title="16. Contact Us">
+            {/* 18. Contact */}
+            <Section id="contact" icon={Mail} title="18. Contact Us">
               <p>If you have questions or concerns about these Terms, please contact us:</p>
               <div style={{
                 background: "#0B1D35", borderRadius: 14,
                 padding: "1.4rem 1.6rem",
                 display: "flex", flexDirection: "column", gap: "0.5rem",
               }}>
-                <p style={{ fontWeight: 700, color: "#FFFFFF", fontSize: "0.95rem", margin: 0 }}>O1DMatch</p>
+                <p style={{ fontWeight: 700, color: "#FFFFFF", fontSize: "0.95rem", margin: 0 }}>O1D Match LLC</p>
                 <p style={{ margin: 0, fontSize: "0.88rem", color: "rgba(255,255,255,0.6)" }}>
                   Email:{" "}
-                  <a href="mailto:legal@o1dmatch.com" style={{ color: "#D4A84B", textDecoration: "none" }}>
-                    legal@o1dmatch.com
+                  <a href="mailto:info@o1dmatch.com" style={{ color: "#D4A84B", textDecoration: "none" }}>
+                    info@o1dmatch.com
                   </a>
                 </p>
                 <p style={{ margin: 0, fontSize: "0.88rem", color: "rgba(255,255,255,0.6)" }}>
-                  Contact Page:{" "}
-                  <Link href="/contact" style={{ color: "#D4A84B", textDecoration: "none" }}>
-                    o1dmatch.com/contact
+                  Phone:{" "}
+                  <a href="tel:+15617944621" style={{ color: "#D4A84B", textDecoration: "none" }}>
+                    (561) 794-4621
+                  </a>
+                </p>
+                <p style={{ margin: 0, fontSize: "0.88rem", color: "rgba(255,255,255,0.6)" }}>
+                  Website:{" "}
+                  <Link href="/" style={{ color: "#D4A84B", textDecoration: "none" }}>
+                    o1dmatch.com
                   </Link>
                 </p>
               </div>
