@@ -1,54 +1,49 @@
 'use client';
-// src/app/(dashboard)/dashboard/agency/AgencySidebar.tsx
+// src/app/(dashboard)/dashboard/lawyer/LawyerSidebar.tsx
 
 import { ReactNode, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  Briefcase,
+  User,
   Users,
+  BarChart3,
   Mail,
-  Building2,
   Menu,
-  Plus,
   Bell,
   HelpCircle,
-  MessageSquare,
-  FolderOpen,
-  Search,
+  Star,
   Layers,
 } from 'lucide-react';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 
-interface AgencySidebarProps {
-  agencyName: string;
-  agencyInitials: string;
-  children: ReactNode;
+interface LawyerSidebarProps {
+  lawyerName:     string;
+  lawyerInitials: string;
+  isPartner:      boolean;
+  children:       ReactNode;
 }
 
 const navSections = [
   {
     label: 'Main',
     items: [
-      { href: '/dashboard/agency',          label: 'Dashboard',      icon: LayoutDashboard },
-      { href: '/dashboard/agency/clients',  label: 'Clients',        icon: Building2 },
-      { href: '/dashboard/agency/jobs',     label: 'Jobs',           icon: Briefcase },
-      { href: '/dashboard/agency/browse',   label: 'Browse Talent',  icon: Search },
+      { href: '/dashboard/lawyer',        label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/dashboard/lawyer/leads',  label: 'Leads',     icon: Users },
     ],
   },
   {
-    label: 'Engagement',
+    label: 'Profile',
     items: [
-      { href: '/dashboard/agency/applicants', label: 'Applicants',   icon: FolderOpen },
-      { href: '/dashboard/agency/letters',    label: 'Letters',      icon: Mail },
-      { href: '/dashboard/agency/messages',   label: 'Messages',     icon: MessageSquare },
+      { href: '/dashboard/lawyer/profile', label: 'Edit Profile', icon: User },
+      { href: '/dashboard/lawyer/stats',   label: 'Analytics',    icon: BarChart3 },
     ],
   },
   {
-    label: 'Settings',
+    label: 'Communications',
     items: [
-      { href: '/dashboard/agency/profile', label: 'Agency Profile', icon: Users },
+      { href: '/dashboard/lawyer/messages', label: 'Messages', icon: Mail },
     ],
   },
   {
@@ -59,16 +54,17 @@ const navSections = [
   },
 ];
 
-export default function AgencySidebar({
-  agencyName,
-  agencyInitials,
+export default function LawyerSidebar({
+  lawyerName,
+  lawyerInitials,
+  isPartner,
   children,
-}: AgencySidebarProps) {
-  const pathname = usePathname();
+}: LawyerSidebarProps) {
+  const pathname    = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isActive = (href: string) => {
-    if (href === '/dashboard/agency') return pathname === href;
+    if (href === '/dashboard/lawyer') return pathname === href;
     return pathname.startsWith(href);
   };
 
@@ -91,6 +87,23 @@ export default function AgencySidebar({
           </span>
         </Link>
       </div>
+
+      {/* Partner badge */}
+      {isPartner && (
+        <div style={{
+          margin: '0.75rem 1rem 0',
+          padding: '0.5rem 0.85rem',
+          background: 'rgba(212,168,75,0.12)',
+          border: '1px solid rgba(212,168,75,0.25)',
+          borderRadius: 10,
+          display: 'flex', alignItems: 'center', gap: '0.5rem',
+        }}>
+          <Star size={13} style={{ color: '#D4A84B', fill: '#D4A84B', flexShrink: 0 }} />
+          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#E8C97A', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            O1DMatch Partner
+          </span>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 py-5 overflow-y-auto">
@@ -127,7 +140,7 @@ export default function AgencySidebar({
         <SignOutButton variant="sidebar" />
       </div>
 
-      {/* Footer */}
+      {/* Footer — lawyer identity */}
       <div className="px-6 py-4 border-t border-white/[0.06]">
         <div className="flex items-center gap-2.5">
           <div
@@ -137,13 +150,15 @@ export default function AgencySidebar({
               color: '#0B1D35',
             }}
           >
-            {agencyInitials}
+            {lawyerInitials}
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold text-white truncate">
-              {agencyName}
+              {lawyerName}
             </div>
-            <div className="text-[0.7rem] text-white/40">Agency Account</div>
+            <div className="text-[0.7rem] text-white/40">
+              {isPartner ? 'Partner Attorney' : 'Attorney Account'}
+            </div>
           </div>
         </div>
       </div>
@@ -152,6 +167,7 @@ export default function AgencySidebar({
 
   return (
     <div className="flex min-h-screen" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+
       {/* Desktop Sidebar */}
       <aside
         className="hidden lg:flex fixed top-0 left-0 bottom-0 w-[260px] flex-col z-50"
@@ -160,7 +176,7 @@ export default function AgencySidebar({
         {sidebarContent}
       </aside>
 
-      {/* Mobile Sidebar Overlay */}
+      {/* Mobile overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-50 lg:hidden"
@@ -178,12 +194,12 @@ export default function AgencySidebar({
         {sidebarContent}
       </aside>
 
-      {/* Main Area */}
+      {/* Main area */}
       <div className="flex-1 lg:ml-[260px] min-h-screen" style={{ background: '#FAFAF7' }}>
-        {/* Top Bar */}
+
+        {/* Top bar */}
         <div className="sticky top-0 z-40 bg-white border-b border-[#E8ECF1] px-4 lg:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
@@ -191,33 +207,25 @@ export default function AgencySidebar({
               <Menu className="w-5 h-5 text-gray-600" />
             </button>
             <span className="text-sm text-[#64748B]">
-              Agency / <strong className="text-[#1E293B]">Dashboard</strong>
+              Attorney / <strong className="text-[#1E293B]">Dashboard</strong>
             </span>
           </div>
+
           <div className="flex items-center gap-3">
             <button className="w-9 h-9 rounded-[10px] border border-[#E8ECF1] bg-white flex items-center justify-center hover:border-[#D4A84B] transition-colors relative">
               <Bell className="w-4 h-4 text-gray-500" />
-              <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2 border-white" style={{ background: '#D4A84B' }} />
+              <div
+                className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2 border-white"
+                style={{ background: '#D4A84B' }}
+              />
             </button>
             <button className="w-9 h-9 rounded-[10px] border border-[#E8ECF1] bg-white flex items-center justify-center hover:border-[#D4A84B] transition-colors">
               <HelpCircle className="w-4 h-4 text-gray-500" />
             </button>
-            <Link
-              href="/dashboard/agency/jobs/new"
-              className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-[10px] font-semibold text-sm transition-all hover:-translate-y-0.5"
-              style={{
-                background: '#D4A84B',
-                color: '#0B1D35',
-                fontFamily: "'DM Sans', sans-serif",
-              }}
-            >
-              <Plus className="w-4 h-4" />
-              Post a Job
-            </Link>
           </div>
         </div>
 
-        {/* Content */}
+        {/* Page content */}
         <div className="p-4 lg:p-8 max-w-[1200px]">
           {children}
         </div>

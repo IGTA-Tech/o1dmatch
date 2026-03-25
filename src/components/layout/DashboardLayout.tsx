@@ -22,6 +22,7 @@ import {
   Scale,
   BarChart2,
   MessageSquare,
+  Layers,
 } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SignOutButton } from '@/components/auth/SignOutButton';
@@ -64,6 +65,7 @@ const navigationItems = {
     { href: '/dashboard/admin/conversations', label: 'Conversations', icon: MessageSquare },
     { href: '/dashboard/admin/settings', label: 'Settings', icon: Settings },
     { href: '/dashboard/admin/reports', label: 'Reports', icon: BarChart2 },
+    { href: '/dashboard/admin/enterprise-tiers', label: 'Enterprise Tiers', icon: Layers },
     { href: '/dashboard/admin/articles', label: 'Articles', icon: FileText },
   ],
   agency: [
