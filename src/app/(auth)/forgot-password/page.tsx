@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { forgotPasswordSchema, ForgotPasswordFormData } from '@/types/forms';
 import { createClient } from '@/lib/supabase/client';
+import Footer from "@/components/Footer";
 import {
   Loader2, Mail, AlertCircle, Check, ArrowLeft,
   ArrowRight, Shield, X, KeyRound,
@@ -319,36 +320,7 @@ export default function ForgotPasswordPage() {
       </div>{/* end panels row */}
 
       {/* ── Footer ── */}
-      <footer className="o1d-footer">
-        <div className="o1d-footer-inner">
-          <div className="o1d-footer-grid">
-            <div>
-              <span className="o1d-footer-logo">O1DMatch</span>
-              <p className="o1d-footer-tagline">Connecting exceptional talent with opportunities for O-1 visa sponsorship.</p>
-            </div>
-            <div className="o1d-footer-col">
-              <h4>Platform</h4>
-              <Link href="/how-it-works/candidates">For Candidates</Link>
-              <Link href="/how-it-works/employers">For Employers</Link>
-              <Link href="/pricing">Pricing</Link>
-            </div>
-            <div className="o1d-footer-col">
-              <h4>Company</h4>
-              <Link href="/about">About</Link>
-              <Link href="/contact">Contact</Link>
-            </div>
-            <div className="o1d-footer-col">
-              <h4>Legal</h4>
-              <Link href="/terms">Terms of Service</Link>
-              <Link href="/privacy">Privacy Policy</Link>
-            </div>
-          </div>
-          <div className="o1d-footer-bottom">
-            <span>© 2026 O1DMatch. All rights reserved.</span>
-            <span>Built by a licensed immigration attorney.</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

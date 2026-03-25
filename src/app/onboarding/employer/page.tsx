@@ -3,7 +3,9 @@
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import '../onboarding.css';
+import '@/app/theme.css';
 import Navbar from '@/components/Navbar';
+import Footer from "@/components/Footer";
 
 const VIDEOS = [
   {
@@ -147,40 +149,7 @@ export default function EmployerOnboardingPage() {
       </section>
 
       {/* ─── FOOTER ─── */}
-      <footer className="ob-footer">
-        <div className="ob-footer-inner">
-          <div className="ob-footer-grid">
-            <div className="ob-footer-brand">
-              <span className="ob-footer-logo">O1DMatch</span>
-              <p>
-                Connecting exceptional talent with opportunities for O-1 visa sponsorship.
-              </p>
-            </div>
-            <div className="ob-footer-col">
-              <h4>Platform</h4>
-              <Link href="/how-it-works/talent">For Candidates</Link>
-              <Link href="/how-it-works/employers">For Employers</Link>
-              <Link href="/pricing">Pricing</Link>
-              <Link href="/blog">Blog</Link>
-            </div>
-            <div className="ob-footer-col">
-              <h4>Company</h4>
-              <Link href="/about">About</Link>
-              <Link href="/contact">Contact</Link>
-              <Link href="/careers">Careers</Link>
-            </div>
-            <div className="ob-footer-col">
-              <h4>Legal</h4>
-              <Link href="/terms">Terms of Service</Link>
-              <Link href="/privacy">Privacy Policy</Link>
-            </div>
-          </div>
-          <div className="ob-footer-bottom">
-            <span>© 2026 O1DMatch. All rights reserved.</span>
-            <span>Built by a licensed immigration attorney.</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import { useO1DAnimations } from '@/hooks/useO1DAnimations';
 import '@/app/theme.css';
 import './home.css';
+import Footer from "@/components/Footer";
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
@@ -559,38 +560,7 @@ export default function Home() {
       </section>
 
       {/* ─── FOOTER ─── */}
-      <footer className="hl-footer">
-        <div className="hl-footer-inner">
-          <div className="hl-footer-grid">
-            <div className="hl-footer-brand">
-              <span className="hl-footer-logo">O1DMatch</span>
-              <p>Connecting exceptional talent with opportunities for O-1 visa sponsorship.</p>
-            </div>
-            <div className="hl-footer-col">
-              <h4>Platform</h4>
-              <Link href="/how-it-works/talent">For Candidates</Link>
-              <Link href="/how-it-works/employers">For Employers</Link>
-              <Link href="/pricing">Pricing</Link>
-              <Link href="/blog">Blog</Link>
-            </div>
-            <div className="hl-footer-col">
-              <h4>Company</h4>
-              <Link href="/about">About</Link>
-              <Link href="/contact">Contact</Link>
-              <Link href="/careers">Careers</Link>
-            </div>
-            <div className="hl-footer-col">
-              <h4>Legal</h4>
-              <Link href="/terms">Terms of Service</Link>
-              <Link href="/privacy">Privacy Policy</Link>
-            </div>
-          </div>
-          <div className="hl-footer-bottom">
-            <span>© {new Date().getFullYear()} O1DMatch. All rights reserved.</span>
-            <span>Built by a licensed immigration attorney.</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

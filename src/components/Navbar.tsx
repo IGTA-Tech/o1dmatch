@@ -237,6 +237,12 @@ export default function Navbar() {
               Pricing
             </Link>
             <Link
+              href="/enterprise"
+              className={`py-2 hover:text-gray-900 ${pathname === "/enterprise" ? "text-blue-600" : "text-gray-600"}`}
+            >
+              Enterprise
+            </Link>
+            <Link
               href="/about"
               className={`py-2 hover:text-gray-900 ${pathname === "/about" ? "text-blue-600" : "text-gray-600"}`}
             >
@@ -523,6 +529,13 @@ export default function Navbar() {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Pricing
+              </Link>
+              <Link
+                href="/enterprise"
+                className={`text-gray-600 hover:text-gray-900 py-2 ${pathname === "/enterprise" ? "text-blue-600 font-medium" : ""}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Enterprise
               </Link>
               <Link
                 href="/about"
