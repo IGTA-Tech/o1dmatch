@@ -71,7 +71,7 @@ export async function GET() {
     if (!batchMap.has(bid)) {
       batchMap.set(bid, {
         batch_id:            bid,
-        partner:             code.partner as Record<string, unknown> | null,
+        partner:             code.partner as unknown as Record<string, unknown> | null,
         purchase_price:      code.purchase_price,
         created_at:          code.created_at,
         type:                code.type,
