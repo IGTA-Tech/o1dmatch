@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import {
   Building2, Users, Scale, Search, CheckCircle2,
   XCircle, Loader2, ChevronDown, X, Star,
-  MessageSquare, Check, Filter,
+  MessageSquare, Check,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import type { UserRow } from './types';
