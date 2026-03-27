@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import type { UserRow } from './types';
 import type { Tier, TierKey } from '@/lib/tiers';
 
-type RoleFilter = 'all' | 'employer' | 'agency' | 'lawyer';
+type RoleFilter = 'all' | 'employer' | 'agency' | 'lawyer' | 'assigned';
 
 const ROLE_ICON: Record<string, React.ElementType> = {
   employer: Building2,
@@ -357,7 +357,9 @@ export default function AssignTierClient({
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
-      const matchRole   = roleFilter === 'all' || u.role === roleFilter;
+      const matchRole = roleFilter === 'all'      ? true
+                      : roleFilter === 'assigned' ? (u.assigned_tiers ?? []).length > 0
+                      : u.role === roleFilter;
       const matchSearch = !search || [u.full_name, u.email, u.company_name, u.law_firm]
         .some((v) => v?.toLowerCase().includes(search.toLowerCase()));
       return matchRole && matchSearch;
@@ -397,7 +399,7 @@ export default function AssignTierClient({
           { label: 'Employers',      value: counts.employer, icon: Building2,   color: 'text-blue-600',   bg: 'bg-blue-50',   filter: 'employer' as RoleFilter },
           { label: 'Agencies',       value: counts.agency,   icon: Users,       color: 'text-purple-600', bg: 'bg-purple-50', filter: 'agency'   as RoleFilter },
           { label: 'Attorneys',      value: counts.lawyer,   icon: Scale,       color: 'text-indigo-600', bg: 'bg-indigo-50', filter: 'lawyer'   as RoleFilter },
-          { label: 'Tiers Assigned', value: counts.assigned, icon: CheckCircle2,color: 'text-green-600',  bg: 'bg-green-50',  filter: 'all'      as RoleFilter },
+          { label: 'Tiers Assigned', value: counts.assigned, icon: CheckCircle2,color: 'text-green-600',  bg: 'bg-green-50',  filter: 'assigned' as RoleFilter },
         ].map(({ label, value, icon: Icon, color, bg, filter }) => (
           <button
             key={label}
@@ -456,6 +458,7 @@ export default function AssignTierClient({
                   <option value="employer">Employers</option>
                   <option value="agency">Agencies</option>
                   <option value="lawyer">Attorneys</option>
+                  <option value="assigned">Tiers Assigned</option>
                 </select>
                 <ChevronDown size={13} style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
               </div>

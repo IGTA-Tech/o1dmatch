@@ -41,6 +41,16 @@ export default async function AgencyDashboardLayout({
     .slice(0, 2)
     .toUpperCase();
 
+  // ── AFFILIATE: check if this agency is an active partner ──
+  const { data: affiliatePartner } = await supabase
+    .from('affiliate_partners')
+    .select('status')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const isPartner = affiliatePartner?.status === 'active';
+  // ── END AFFILIATE ─────────────────────────────────────────
+
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
@@ -51,6 +61,7 @@ export default async function AgencyDashboardLayout({
       <AgencySidebar
         agencyName={agencyName}
         agencyInitials={agencyInitials}
+        isPartner={isPartner}
       >
         {children}
       </AgencySidebar>

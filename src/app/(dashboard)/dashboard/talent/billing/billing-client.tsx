@@ -1,5 +1,7 @@
 'use client';
 
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, Badge } from '@/components/ui';
@@ -85,6 +87,8 @@ interface TalentBillingClientProps {
   showSuccess: boolean;
   showCanceled: boolean;
   showPromoApplied?: boolean;
+  affiliateCodeFromDb: string | null;
+  sessionId?: string | null;  // ── Stripe session ID from ?session_id= param ──
 }
 
 const DEFAULT_SUBSCRIPTION: Subscription = {
@@ -95,7 +99,7 @@ const DEFAULT_SUBSCRIPTION: Subscription = {
   current_period_end: null,
 };
 
-export function TalentBillingClient({ subscription: initialSubscription, userId, showSuccess, showCanceled, showPromoApplied }: TalentBillingClientProps) {
+export function TalentBillingClient({ subscription: initialSubscription, userId, showSuccess, showCanceled, showPromoApplied, affiliateCodeFromDb, sessionId }: TalentBillingClientProps) {
   const router = useRouter();
   const [subscription, setSubscription] = useState<Subscription>(initialSubscription || DEFAULT_SUBSCRIPTION);
   const [upgrading, setUpgrading] = useState<string | null>(null);
@@ -112,11 +116,42 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
       trialDays?: number;
       discountPercent?: number;
       grantsIGTAMember?: boolean;
-      applicableTiers?: string[]; // empty = applies to all plans
+      applicableTiers?: string[];
     };
   } | null>(null);
   const [validatingPromo, setValidatingPromo] = useState(false);
   const [showPromoInput, setShowPromoInput] = useState(false);
+
+  // ── AFFILIATE: DB value is primary source of truth ────────
+  // profiles.affiliate_code_used is set during signup attribution
+  // and persists permanently — unlike localStorage which is cleared
+  // when the user closes the browser or uses a different device.
+  const [affiliateCode, setAffiliateCode] = useState<string | null>(affiliateCodeFromDb);
+
+  useEffect(() => {
+    if (affiliateCodeFromDb) {
+      // DB has the value — also sync it back to localStorage so
+      // it's available if the user upgrades in the same session
+      try {
+        localStorage.setItem('affiliate_ref', affiliateCodeFromDb);
+        console.log('[Billing] Affiliate code from DB:', affiliateCodeFromDb);
+      } catch {}
+    } else {
+      // No DB value — check localStorage as fallback
+      // (covers the case where signup happened without email confirmation
+      //  and attribution hasn't been saved to DB yet)
+      try {
+        const fromStorage = localStorage.getItem('affiliate_ref') ?? null;
+        if (fromStorage) {
+          setAffiliateCode(fromStorage);
+          console.log('[Billing] Affiliate code from localStorage (fallback):', fromStorage);
+        } else {
+          console.log('[Billing] No affiliate code found in DB or localStorage');
+        }
+      } catch {}
+    }
+  }, [affiliateCodeFromDb]);
+  // ── END AFFILIATE ─────────────────────────────────────────
 
   // Handle success/canceled and sync subscription
   useEffect(() => {
@@ -142,6 +177,22 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
 
       // Call sync function
       syncSubscription();
+
+      // ── AFFILIATE: create commission (webhook fallback) ──
+      // The Stripe webhook should do this, but it often doesn't fire
+      // in local dev. This call is idempotent — safe to call even if
+      // the webhook already ran (duplicate check inside the API).
+      const currentSessionId = sessionId ?? new URLSearchParams(window.location.search).get('session_id');
+      console.log('[Billing] Triggering affiliate commission — sessionId:', currentSessionId ?? 'none');
+      fetch('/api/affiliate/commission', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ sessionId: currentSessionId }),
+      })
+        .then(r => r.json())
+        .then(data => console.log('[Billing] Affiliate commission result:', data))
+        .catch(err => console.error('[Billing] Affiliate commission error:', err));
+      // ── END AFFILIATE ──
     }
   }, []); // Only run once on mount
 
@@ -306,6 +357,7 @@ export function TalentBillingClient({ subscription: initialSubscription, userId,
           userType: 'talent',
           tier,
           promoCode: promoStatus?.valid ? promoCode : undefined,
+          affiliateCode: affiliateCode ?? undefined, // ── AFFILIATE ──
         }),
       });
 

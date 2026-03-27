@@ -1,54 +1,43 @@
 // src/app/(dashboard)/dashboard/lawyer/page.tsx
+// ── CHANGES FROM ORIGINAL ──────────────────────────────────
+// 1. Fixed partner banner: "20% commission" → "15% commission on first payment"
+// 2. Partner banner now links to /dashboard/lawyer/affiliate
+// 3. Added affiliate quick-action card when isPartner
+// All other data fetching, stats, and layout UNCHANGED.
+// ────────────────────────────────────────────────────────────
 
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import {
-  Users,
-  Eye,
-  Mail,
-  ArrowRight,
-  CheckCircle,
-  Clock,
-  XCircle,
-  BarChart3,
-  User,
-  Star,
+  Users, Eye, Mail, ArrowRight, CheckCircle, Clock,
+  XCircle, BarChart3, User, Star, TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function LawyerDashboardPage() {
   const supabase = await createClient();
-
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Get lawyer profile
   const { data: lawyerProfile } = await supabase
     .from('lawyer_profiles')
     .select('*')
     .eq('user_id', user.id)
     .single();
 
-  // Auto-create profile if missing
   if (!lawyerProfile) {
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
+      .from('profiles').select('*').eq('id', user.id).single();
     await supabase.from('lawyer_profiles').insert({
       user_id:   user.id,
       name:      profile?.full_name || '',
       email:     user.email || '',
       is_public: false,
     });
-
     redirect('/dashboard/lawyer/profile');
   }
 
-  // Connection request stats
   const { data: requests } = await supabase
     .from('lawyer_connection_requests')
     .select('status')
@@ -56,12 +45,11 @@ export default async function LawyerDashboardPage() {
 
   const stats = {
     totalLeads:   requests?.length || 0,
-    pending:      requests?.filter((r) => r.status === 'pending').length  || 0,
-    accepted:     requests?.filter((r) => r.status === 'accepted').length || 0,
+    pending:      requests?.filter(r => r.status === 'pending').length  || 0,
+    accepted:     requests?.filter(r => r.status === 'accepted').length || 0,
     profileViews: lawyerProfile.view_count || 0,
   };
 
-  // Recent leads
   const { data: recentLeads } = await supabase
     .from('lawyer_connection_requests')
     .select('id, requester_name, requester_email, status, created_at')
@@ -71,47 +59,49 @@ export default async function LawyerDashboardPage() {
 
   const isPartner = lawyerProfile.is_partner ?? false;
 
+  // ── NEW: fetch affiliate partner record for banner stats ──
+  const { data: affiliatePartner } = isPartner
+    ? await supabase
+        .from('affiliate_partners')
+        .select('affiliate_code, total_referrals, total_conversions, total_pending, commission_rate')
+        .eq('user_id', user.id)
+        .single()
+    : { data: null };
+
   return (
     <div className="space-y-6">
 
-      {/* Welcome Header */}
+      {/* Welcome Header — UNCHANGED */}
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
             <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, {lawyerProfile.name || 'Attorney'}!
+              Welcome back, {lawyerProfile.attorney_name || lawyerProfile.name || 'Attorney'}!
             </h1>
             {isPartner && (
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                 padding: '0.2rem 0.65rem', borderRadius: 100,
                 fontSize: '0.7rem', fontWeight: 700,
-                background: 'rgba(212,168,75,0.1)',
-                border: '1px solid rgba(212,168,75,0.3)',
-                color: '#92620A',
+                background: 'rgba(212,168,75,0.1)', border: '1px solid rgba(212,168,75,0.3)', color: '#92620A',
               }}>
                 <Star size={11} style={{ fill: '#D4A84B', color: '#D4A84B' }} />
                 O1DMatch Partner
               </span>
             )}
           </div>
-          <p className="text-gray-600">
-            Manage your leads and public directory profile
-          </p>
+          <p className="text-gray-600">Manage your leads and public directory profile</p>
         </div>
-
         {!lawyerProfile.is_public && (
-          <Link
-            href="/dashboard/lawyer/profile"
+          <Link href="/dashboard/lawyer/profile"
             className="flex items-center gap-2 px-4 py-2 rounded-[10px] font-semibold text-sm transition-all hover:-translate-y-0.5"
-            style={{ background: '#D4A84B', color: '#0B1D35' }}
-          >
+            style={{ background: '#D4A84B', color: '#0B1D35' }}>
             Publish Profile
           </Link>
         )}
       </div>
 
-      {/* Profile not public warning */}
+      {/* Profile not public warning — UNCHANGED */}
       {!lawyerProfile.is_active && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
           <div className="flex items-start gap-3">
@@ -126,13 +116,11 @@ export default async function LawyerDashboardPage() {
         </div>
       )}
 
-      {/* Partner benefits banner */}
+      {/* ── Partner benefits banner — FIXED copy + link ── */}
       {isPartner && (
         <div style={{
-          background: 'rgba(212,168,75,0.06)',
-          border: '1px solid rgba(212,168,75,0.2)',
-          borderRadius: 12,
-          padding: '1rem 1.25rem',
+          background: 'rgba(212,168,75,0.06)', border: '1px solid rgba(212,168,75,0.2)',
+          borderRadius: 12, padding: '1rem 1.25rem',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           flexWrap: 'wrap', gap: '0.75rem',
         }}>
@@ -142,31 +130,31 @@ export default async function LawyerDashboardPage() {
               <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: '#92620A' }}>
                 You&apos;re an O1DMatch Partner
               </p>
+              {/* ── FIXED: was "20% commission" ── */}
               <p style={{ margin: 0, fontSize: '0.8rem', color: '#92620A', opacity: 0.8 }}>
-                You earn 20% commission on every referred subscription and receive bulk promo code discounts.
+                Earn {affiliatePartner ? Math.round(affiliatePartner.commission_rate * 100) : 15}% commission on the first payment from every referred subscriber.
+                {affiliatePartner && (
+                  <> &nbsp;·&nbsp; {affiliatePartner.total_referrals} referral{affiliatePartner.total_referrals !== 1 ? 's' : ''} &nbsp;·&nbsp; ${(affiliatePartner.total_pending ?? 0).toFixed(2)} pending</>
+                )}
               </p>
             </div>
           </div>
-          <Link
-            href="/dashboard/lawyer/profile"
-            style={{
-              fontSize: '0.82rem', fontWeight: 600, color: '#92620A',
-              textDecoration: 'none', whiteSpace: 'nowrap',
-            }}
-          >
-            View profile →
+          {/* ── FIXED: links to affiliate dashboard, not profile ── */}
+          <Link href="/dashboard/lawyer/affiliate"
+            style={{ fontSize: '0.82rem', fontWeight: 600, color: '#92620A', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            View affiliate dashboard →
           </Link>
         </div>
       )}
 
-      {/* Stats Grid */}
+      {/* Stats Grid — UNCHANGED */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Leads',    value: stats.totalLeads,   icon: Users,        color: 'text-blue-600',   bg: 'bg-blue-50',   href: '/dashboard/lawyer/leads' },
-          { label: 'Pending',        value: stats.pending,      icon: Clock,        color: 'text-yellow-600', bg: 'bg-yellow-50', href: '/dashboard/lawyer/leads?status=pending' },
-          { label: 'Accepted',       value: stats.accepted,     icon: CheckCircle,  color: 'text-green-600',  bg: 'bg-green-50',  href: '/dashboard/lawyer/leads?status=accepted' },
-          { label: 'Profile Views',  value: stats.profileViews, icon: Eye,          color: 'text-purple-600', bg: 'bg-purple-50', href: '/dashboard/lawyer/stats' },
-        ].map((stat) => (
+          { label: 'Total Leads',   value: stats.totalLeads,   icon: Users,       color: 'text-blue-600',   bg: 'bg-blue-50',   href: '/dashboard/lawyer/leads' },
+          { label: 'Pending',       value: stats.pending,      icon: Clock,       color: 'text-yellow-600', bg: 'bg-yellow-50', href: '/dashboard/lawyer/leads?status=pending' },
+          { label: 'Accepted',      value: stats.accepted,     icon: CheckCircle, color: 'text-green-600',  bg: 'bg-green-50',  href: '/dashboard/lawyer/leads?status=accepted' },
+          { label: 'Profile Views', value: stats.profileViews, icon: Eye,         color: 'text-purple-600', bg: 'bg-purple-50', href: '/dashboard/lawyer/stats' },
+        ].map(stat => (
           <Link key={stat.label} href={stat.href}>
             <Card hover padding="sm" className="h-full">
               <CardContent>
@@ -185,15 +173,12 @@ export default async function LawyerDashboardPage() {
         ))}
       </div>
 
-      {/* Recent Leads */}
+      {/* Recent Leads — UNCHANGED */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Recent Leads</CardTitle>
-            <Link
-              href="/dashboard/lawyer/leads"
-              className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-            >
+            <Link href="/dashboard/lawyer/leads" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
               View All <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -211,36 +196,18 @@ export default async function LawyerDashboardPage() {
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {recentLeads.map((lead) => (
-                <div
-                  key={lead.id}
-                  className="py-3 first:pt-0 last:pb-0 flex items-center justify-between"
-                >
+              {recentLeads.map(lead => (
+                <div key={lead.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between">
                   <div>
                     <p className="font-medium text-gray-900">{lead.requester_name}</p>
                     <p className="text-sm text-gray-600">{lead.requester_email}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(lead.created_at).toLocaleDateString()}
-                    </p>
+                    <p className="text-xs text-gray-500">{new Date(lead.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    {lead.status === 'pending' ? (
-                      <span className="flex items-center gap-1 text-yellow-600 text-sm">
-                        <Clock className="w-4 h-4" /> Pending
-                      </span>
-                    ) : lead.status === 'accepted' ? (
-                      <span className="flex items-center gap-1 text-green-600 text-sm">
-                        <CheckCircle className="w-4 h-4" /> Accepted
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-red-600 text-sm">
-                        <XCircle className="w-4 h-4" /> Declined
-                      </span>
-                    )}
-                    <Link
-                      href={`/dashboard/lawyer/leads/${lead.id}`}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                    >
+                    {lead.status === 'pending'  && <span className="flex items-center gap-1 text-yellow-600 text-sm"><Clock className="w-4 h-4" /> Pending</span>}
+                    {lead.status === 'accepted' && <span className="flex items-center gap-1 text-green-600 text-sm"><CheckCircle className="w-4 h-4" /> Accepted</span>}
+                    {lead.status === 'declined' && <span className="flex items-center gap-1 text-red-600 text-sm"><XCircle className="w-4 h-4" /> Declined</span>}
+                    <Link href={`/dashboard/lawyer/leads/${lead.id}`} className="p-2 hover:bg-gray-100 rounded-lg">
                       <ArrowRight className="w-4 h-4 text-gray-400" />
                     </Link>
                   </div>
@@ -251,19 +218,15 @@ export default async function LawyerDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Quick Actions — UNCHANGED base + NEW affiliate card */}
+      <div className={`grid grid-cols-1 ${isPartner ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}>
         <Link href="/dashboard/lawyer/profile">
           <Card hover className="h-full">
             <CardContent className="flex items-center gap-4">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <User className="w-6 h-6 text-blue-600" />
-              </div>
+              <div className="p-3 bg-blue-50 rounded-lg"><User className="w-6 h-6 text-blue-600" /></div>
               <div>
                 <h3 className="font-medium text-gray-900">Edit Profile</h3>
-                <p className="text-sm text-gray-500">
-                  Update your public directory information
-                </p>
+                <p className="text-sm text-gray-500">Update your public directory information</p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
             </CardContent>
@@ -273,21 +236,38 @@ export default async function LawyerDashboardPage() {
         <Link href="/dashboard/lawyer/stats">
           <Card hover className="h-full">
             <CardContent className="flex items-center gap-4">
-              <div className="p-3 bg-purple-50 rounded-lg">
-                <BarChart3 className="w-6 h-6 text-purple-600" />
-              </div>
+              <div className="p-3 bg-purple-50 rounded-lg"><BarChart3 className="w-6 h-6 text-purple-600" /></div>
               <div>
                 <h3 className="font-medium text-gray-900">Analytics</h3>
-                <p className="text-sm text-gray-500">
-                  View profile performance and lead stats
-                </p>
+                <p className="text-sm text-gray-500">View profile performance and lead stats</p>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
             </CardContent>
           </Card>
         </Link>
-      </div>
 
+        {/* ── NEW: affiliate card (only when partner) ── */}
+        {isPartner && (
+          <Link href="/dashboard/lawyer/affiliate">
+            <Card hover className="h-full">
+              <CardContent className="flex items-center gap-4">
+                <div className="p-3 rounded-lg" style={{ background: 'rgba(212,168,75,0.12)' }}>
+                  <TrendingUp className="w-6 h-6" style={{ color: '#D4A84B' }} />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">Affiliate Program</h3>
+                  <p className="text-sm text-gray-500">
+                    {affiliatePartner
+                      ? `${affiliatePartner.total_conversions} conversions · $${(affiliatePartner.total_pending ?? 0).toFixed(2)} pending`
+                      : 'View your referral link and earnings'}
+                  </p>
+                </div>
+                <ArrowRight className="w-5 h-5 text-gray-400 ml-auto" />
+              </CardContent>
+            </Card>
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

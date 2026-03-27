@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { EMPLOYER_TIERS, EmployerTier } from '@/lib/subscriptions/tiers';
 
+
 interface Subscription {
   tier: EmployerTier;
   status: string;
@@ -44,6 +45,8 @@ interface BillingClientProps {
   showSuccess: boolean;
   showCanceled: boolean;
   showPromoApplied?: boolean;
+  affiliateCodeFromDb: string | null;  // ── AFFILIATE: from profiles.affiliate_code_used ──
+  sessionId?: string | null;           // ── AFFILIATE: Stripe session ID from ?session_id= ──
 }
 
 const DEFAULT_SUBSCRIPTION: Subscription = {
@@ -55,7 +58,7 @@ const DEFAULT_SUBSCRIPTION: Subscription = {
   letters_sent_this_month: 0,
 };
 
-export function BillingClient({ subscription: initialSubscription, userId, showSuccess, showCanceled, showPromoApplied }: BillingClientProps) {
+export function BillingClient({ subscription: initialSubscription, userId, showSuccess, showCanceled, showPromoApplied, affiliateCodeFromDb, sessionId }: BillingClientProps) {
   const router = useRouter();
   const [subscription, setSubscription] = useState<Subscription>(initialSubscription || DEFAULT_SUBSCRIPTION);
   const [upgrading, setUpgrading] = useState<string | null>(null);
@@ -72,6 +75,33 @@ export function BillingClient({ subscription: initialSubscription, userId, showS
   const [validatingPromo, setValidatingPromo] = useState(false);
   const [showPromoInput, setShowPromoInput] = useState(false);
 
+  // ── AFFILIATE: DB value is primary source of truth ────────
+  // profiles.affiliate_code_used persists permanently — unlike
+  // localStorage which is cleared when the browser is closed.
+  const [affiliateCode, setAffiliateCode] = useState<string | null>(affiliateCodeFromDb);
+
+  useEffect(() => {
+    if (affiliateCodeFromDb) {
+      // Sync DB value back to localStorage for same-session use
+      try {
+        localStorage.setItem('affiliate_ref', affiliateCodeFromDb);
+        console.log('[Billing] Affiliate code from DB:', affiliateCodeFromDb);
+      } catch {}
+    } else {
+      // No DB value — check localStorage as fallback
+      try {
+        const fromStorage = localStorage.getItem('affiliate_ref') ?? null;
+        if (fromStorage) {
+          setAffiliateCode(fromStorage);
+          console.log('[Billing] Affiliate code from localStorage (fallback):', fromStorage);
+        } else {
+          console.log('[Billing] No affiliate code found in DB or localStorage');
+        }
+      } catch {}
+    }
+  }, [affiliateCodeFromDb]);
+  // ── END AFFILIATE ─────────────────────────────────────────
+
   // Handle success/canceled and sync subscription
   useEffect(() => {
     if (showPromoApplied) {
@@ -87,15 +117,26 @@ export function BillingClient({ subscription: initialSubscription, userId, showS
         message: 'Payment was canceled. You can try again when you\'re ready.',
       });
     } else if (showSuccess) {
-      // Start syncing
       setIsSyncing(true);
       setStatusMessage({
         type: 'success',
         message: 'Payment successful! Syncing your subscription...',
       });
 
-      // Call sync function
       syncSubscription();
+
+      // ── AFFILIATE: create commission (webhook fallback) ──
+      const currentSessionId = sessionId ?? new URLSearchParams(window.location.search).get('session_id');
+      console.log('[Billing] Triggering affiliate commission — sessionId:', currentSessionId ?? 'none');
+      fetch('/api/affiliate/commission', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ sessionId: currentSessionId }),
+      })
+        .then(r => r.json())
+        .then(data => console.log('[Billing] Affiliate commission result:', data))
+        .catch(err => console.error('[Billing] Affiliate commission error:', err));
+      // ── END AFFILIATE ──
     }
   }, []); // Only run once on mount
 
@@ -245,6 +286,7 @@ export function BillingClient({ subscription: initialSubscription, userId, showS
           userType: 'employer',
           tier,
           promoCode: promoStatus?.valid ? promoCode : undefined,
+          affiliateCode: affiliateCode ?? undefined, // ── AFFILIATE ──
         }),
       });
 

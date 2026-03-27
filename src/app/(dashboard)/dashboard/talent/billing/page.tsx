@@ -5,7 +5,7 @@ import { TalentBillingClient } from './billing-client';
 export default async function TalentBillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string; canceled?: string; promo_applied?: string }>;
+  searchParams: Promise<{ success?: string; canceled?: string; promo_applied?: string; session_id?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -21,11 +21,21 @@ export default async function TalentBillingPage({
     .eq('talent_id', user.id)
     .single();
 
+  // ── AFFILIATE: read affiliate_code_used from profile (server-side) ──
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('affiliate_code_used')
+    .eq('id', user.id)
+    .single();
+
+  const affiliateCodeFromDb = profile?.affiliate_code_used ?? null;
+
   // Get URL params
-  const params = await searchParams;
-  const showSuccess = params.success === 'true';
-  const showCanceled = params.canceled === 'true';
+  const params           = await searchParams;
+  const showSuccess      = params.success === 'true';
+  const showCanceled     = params.canceled === 'true';
   const showPromoApplied = params.promo_applied === 'true';
+  const sessionId        = params.session_id ?? null;  // ← Stripe passes this automatically
 
   return (
     <TalentBillingClient 
@@ -34,6 +44,8 @@ export default async function TalentBillingPage({
       showSuccess={showSuccess}
       showCanceled={showCanceled}
       showPromoApplied={showPromoApplied}
+      affiliateCodeFromDb={affiliateCodeFromDb}
+      sessionId={sessionId}
     />
   );
 }

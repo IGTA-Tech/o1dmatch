@@ -6,10 +6,21 @@ import { createClient } from '@/lib/supabase/server';
 import { TIERS, TierKey } from '@/lib/tiers';
 import { Check, X, ArrowRight, Building2, Users, Scale, Sparkles, Star, Mail } from 'lucide-react';
 import '@/app/theme.css';
+import PlanCTAButton from './PlanCTAButton';
 
 export const metadata = {
   title: 'My Enterprise Plan | O1DMatch',
   description: 'Your assigned O1DMatch enterprise plan and included features.',
+};
+
+/* ─────────────────────────────────────────────────────────
+   Stripe Price IDs per tier — set in .env
+───────────────────────────────────────────────────────── */
+const TIER_PRICE_IDS: Partial<Record<TierKey, string>> = {
+  managed_enterprise:  process.env.STRIPE_PRICE_ENTERPRISE_EMPLOYER   ?? '',
+  agency_professional: process.env.STRIPE_PRICE_ENTERPRISE_AGENCY_PRO ?? '',
+  agency_enterprise:   process.env.STRIPE_PRICE_ENTERPRISE_AGENCY_ENT ?? '',
+  attorney_partner:    null as unknown as string, // free — no Stripe checkout
 };
 
 /* ─────────────────────────────────────────────────────────
@@ -89,7 +100,7 @@ function FeatureList({ features }: { features: { text: string; included: boolean
 /* ─────────────────────────────────────────────────────────
    Single plan card
 ───────────────────────────────────────────────────────── */
-function PlanCard({ tierKey, isPartner }: { tierKey: TierKey; isPartner: boolean }) {
+function PlanCard({ tierKey, isPartner, priceId }: { tierKey: TierKey; isPartner: boolean; priceId: string | null }) {
   const tier       = TIERS[tierKey];
   const Icon       = TIER_ICON[tierKey];
   const features   = TIER_FEATURES[tierKey];
@@ -143,12 +154,7 @@ function PlanCard({ tierKey, isPartner }: { tierKey: TierKey; isPartner: boolean
       </div>
 
       <div className="o1d-price-btn-wrap">
-        <Link
-          href="/contact"
-          className={isFeatured ? 'o1d-price-btn-featured' : 'o1d-price-btn-default'}
-        >
-          Contact Your Account Manager <ArrowRight size={14} />
-        </Link>
+        <PlanCTAButton priceId={priceId} tierKey={tierKey} isFeatured={isFeatured} />
       </div>
     </div>
   );
@@ -281,15 +287,15 @@ export default async function EnterpriseTierPage() {
               gap: '1.25rem',
             }}>
               {assignedTierKeys.map((key) => (
-                <PlanCard key={key} tierKey={key} isPartner={isPartner} />
+                <PlanCard key={key} tierKey={key} isPartner={isPartner} priceId={TIER_PRICE_IDS[key] ?? null} />
               ))}
             </div>
 
             <p className="o1d-pricing-note" style={{ marginTop: '1.25rem' }}>
               Need to make changes to your plan?{' '}
-              <Link href="/contact" style={{ color: '#D4A84B', fontWeight: 600, textDecoration: 'none' }}>
+              <a href="mailto:enterprise@o1dmatch.com" style={{ color: '#D4A84B', fontWeight: 600, textDecoration: 'none' }}>
                 Contact us
-              </Link>
+              </a>
             </p>
           </div>
         )}

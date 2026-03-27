@@ -1,28 +1,18 @@
-// src/components/layout/DashboardLayout.tsx
-
 'use client';
+// src/components/layout/DashboardLayout.tsx
+// ── CHANGES FROM ORIGINAL ──────────────────────────────────
+// 1. Added { href: '/dashboard/admin/affiliates', label: 'Affiliates', icon: Handshake }
+//    to admin navigation items
+// All other layout, styling, and role logic UNCHANGED.
+// ────────────────────────────────────────────────────────────
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
-  User,
-  FileText,
-  Briefcase,
-  Mail,
-  Send,
-  Users,
-  Settings,
-  Building2,
-  Files,
-  CreditCard,
-  FolderOpen,
-  Ticket,
-  Scale,
-  BarChart2,
-  MessageSquare,
-  Layers,
+  LayoutDashboard, User, FileText, Briefcase, Mail, Send,
+  Users, Settings, Building2, Files, CreditCard, FolderOpen,
+  Ticket, Scale, BarChart2, MessageSquare, Layers, Handshake,
 } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { SignOutButton } from '@/components/auth/SignOutButton';
@@ -32,41 +22,41 @@ interface DashboardLayoutProps {
   role: 'talent' | 'employer' | 'admin' | 'agency' | 'lawyer';
 }
 
-// Define navigation items for each role
 const navigationItems = {
   talent: [
-    { href: '/dashboard/talent', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/dashboard/talent/profile', label: 'Profile', icon: User },
-    { href: '/dashboard/talent/evidence', label: 'Evidence', icon: FileText },
-    { href: '/dashboard/talent/jobs', label: 'Jobs', icon: Briefcase },
+    { href: '/dashboard/talent',              label: 'Dashboard',       icon: LayoutDashboard },
+    { href: '/dashboard/talent/profile',      label: 'Profile',         icon: User },
+    { href: '/dashboard/talent/evidence',     label: 'Evidence',        icon: FileText },
+    { href: '/dashboard/talent/jobs',         label: 'Jobs',            icon: Briefcase },
     { href: '/dashboard/talent/applications', label: 'Interest inquiry', icon: Send },
-    { href: '/dashboard/talent/letters', label: 'Letters', icon: Mail },
-    { href: '/dashboard/talent/messages', label: 'Messages', icon: MessageSquare },
-    { href: '/dashboard/talent/billing', label: 'Billing', icon: CreditCard },
-    { href: '/dashboard/talent/petitioner', label: 'Seek a Petitioner', icon: Scale },
+    { href: '/dashboard/talent/letters',      label: 'Letters',         icon: Mail },
+    { href: '/dashboard/talent/messages',     label: 'Messages',        icon: MessageSquare },
+    { href: '/dashboard/talent/billing',      label: 'Billing',         icon: CreditCard },
+    { href: '/dashboard/talent/petitioner',   label: 'Seek a Petitioner', icon: Scale },
   ],
   employer: [
-    { href: '/dashboard/employer', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/dashboard/employer/profile', label: 'Company Profile', icon: Building2 },
-    { href: '/dashboard/employer/jobs', label: 'Jobs', icon: Briefcase },
-    { href: '/dashboard/employer/browse', label: 'Browse Talent', icon: Users },
-    { href: '/dashboard/employer/letters', label: 'Letters', icon: Mail },
-    { href: '/dashboard/employer/messages', label: 'Messages', icon: MessageSquare },
+    { href: '/dashboard/employer',              label: 'Dashboard',       icon: LayoutDashboard },
+    { href: '/dashboard/employer/profile',      label: 'Company Profile', icon: Building2 },
+    { href: '/dashboard/employer/jobs',         label: 'Jobs',            icon: Briefcase },
+    { href: '/dashboard/employer/browse',       label: 'Browse Talent',   icon: Users },
+    { href: '/dashboard/employer/letters',      label: 'Letters',         icon: Mail },
+    { href: '/dashboard/employer/messages',     label: 'Messages',        icon: MessageSquare },
     { href: '/dashboard/employer/applications', label: 'Interest inquiry', icon: Send },
-    { href: '/dashboard/employer/exhibits', label: 'Exhibits', icon: FolderOpen },
-    { href: '/dashboard/employer/billing', label: 'Billing', icon: CreditCard },
+    { href: '/dashboard/employer/exhibits',     label: 'Exhibits',        icon: FolderOpen },
+    { href: '/dashboard/employer/billing',      label: 'Billing',         icon: CreditCard },
   ],
   admin: [
-    { href: '/dashboard/admin', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/dashboard/admin/letters', label: 'Letters', icon: Mail },
-    { href: '/dashboard/admin/users', label: 'Users', icon: Users },
-    { href: '/dashboard/admin/documents', label: 'Documents', icon: Files },
-    { href: '/dashboard/admin/promo-codes', label: 'Promo Codes', icon: Ticket },
-    { href: '/dashboard/admin/conversations', label: 'Conversations', icon: MessageSquare },
-    { href: '/dashboard/admin/settings', label: 'Settings', icon: Settings },
-    { href: '/dashboard/admin/reports', label: 'Reports', icon: BarChart2 },
-    { href: '/dashboard/admin/enterprise-tiers', label: 'Enterprise Tiers', icon: Layers },
-    { href: '/dashboard/admin/articles', label: 'Articles', icon: FileText },
+    { href: '/dashboard/admin',                   label: 'Dashboard',        icon: LayoutDashboard },
+    { href: '/dashboard/admin/letters',           label: 'Letters',          icon: Mail },
+    { href: '/dashboard/admin/users',             label: 'Users',            icon: Users },
+    { href: '/dashboard/admin/documents',         label: 'Documents',        icon: Files },
+    { href: '/dashboard/admin/promo-codes',       label: 'Promo Codes',      icon: Ticket },
+    { href: '/dashboard/admin/affiliates',        label: 'Affiliates',       icon: Handshake },  // ← NEW
+    { href: '/dashboard/admin/conversations',     label: 'Conversations',    icon: MessageSquare },
+    { href: '/dashboard/admin/settings',          label: 'Settings',         icon: Settings },
+    { href: '/dashboard/admin/reports',           label: 'Reports',          icon: BarChart2 },
+    { href: '/dashboard/admin/enterprise-tiers',  label: 'Enterprise Tiers', icon: Layers },
+    { href: '/dashboard/admin/articles',          label: 'Articles',         icon: FileText },
   ],
   agency: [
     { href: '/dashboard/agency', label: 'Dashboard', icon: LayoutDashboard },
@@ -82,52 +72,37 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Bar */}
+      {/* Top Bar — UNCHANGED */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-40">
         <div className="h-full px-4 flex items-center justify-between">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">O1</span>
             </div>
             <span className="font-semibold text-gray-900">O1DMatch</span>
           </Link>
-
-          {/* Right Side Actions */}
           <div className="flex items-center gap-4">
-            {/* Show NotificationBell only for talent users */}
             {role === 'talent' && <NotificationBell />}
-            
-            {/* Settings Link */}
-            <Link
-              href={`/dashboard/${role}/settings`}
-              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-            >
+            <Link href={`/dashboard/${role}/settings`} className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
               <Settings className="w-5 h-5" />
             </Link>
-
-            {/* Sign Out Button in Header */}
             <SignOutButton variant="header" />
           </div>
         </div>
       </header>
 
-      {/* Sidebar */}
+      {/* Sidebar — UNCHANGED */}
       <aside className="fixed top-16 left-0 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto flex flex-col">
-        {/* Navigation Links */}
         <nav className="p-4 space-y-1 flex-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || 
+            const isActive = pathname === item.href ||
               (item.href !== `/dashboard/${role}` && pathname.startsWith(item.href));
-            
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
                 <item.icon className="w-5 h-5" />
@@ -136,18 +111,14 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
             );
           })}
         </nav>
-
-        {/* Sign Out Button at Bottom of Sidebar */}
         <div className="p-4 border-t border-gray-200">
           <SignOutButton variant="sidebar" />
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content — UNCHANGED */}
       <main className="pt-16 pl-64">
-        <div className="p-6">
-          {children}
-        </div>
+        <div className="p-6">{children}</div>
       </main>
     </div>
   );

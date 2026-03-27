@@ -1,58 +1,46 @@
 // src/app/(dashboard)/dashboard/lawyer/layout.tsx
-
+// ============================================================
+// Wraps every page under /dashboard/lawyer/
+// Fetches is_partner from lawyer_profiles and passes it to
+// LawyerSidebar so the Affiliate Program nav link shows up
+// for partner attorneys.
+// ============================================================
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { ReactNode } from 'react';
 import LawyerSidebar from './LawyerSidebar';
 
-export default async function LawyerDashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function LawyerLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, full_name')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'lawyer') redirect('/dashboard');
-
-  // Fetch lawyer profile for sidebar (is_partner badge + display name)
+  // Fetch lawyer profile — need attorney_name and is_partner
   const { data: lawyerProfile } = await supabase
     .from('lawyer_profiles')
-    .select('name, is_partner')
+    .select('attorney_name, is_partner')
     .eq('user_id', user.id)
     .single();
 
-  const lawyerName = lawyerProfile?.name || profile?.full_name || 'Attorney';
-  const isPartner  = lawyerProfile?.is_partner ?? false;
-
-  const lawyerInitials = lawyerName
+  // Build display name + initials
+  const name     = lawyerProfile?.attorney_name || user.email?.split('@')[0] || 'Attorney';
+  const initials = name
     .split(' ')
     .map((w: string) => w[0])
-    .join('')
     .slice(0, 2)
+    .join('')
     .toUpperCase();
 
+  const isPartner = lawyerProfile?.is_partner ?? false;
+
   return (
-    <>
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@600;700&display=swap"
-        rel="stylesheet"
-      />
-      <LawyerSidebar
-        lawyerName={lawyerName}
-        lawyerInitials={lawyerInitials}
-        isPartner={isPartner}
-      >
-        {children}
-      </LawyerSidebar>
-    </>
+    <LawyerSidebar
+      lawyerName={name}
+      lawyerInitials={initials}
+      isPartner={isPartner}
+    >
+      {children}
+    </LawyerSidebar>
   );
 }

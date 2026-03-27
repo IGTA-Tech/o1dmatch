@@ -21,6 +21,7 @@ import {
   Plus,
   CreditCard,
   CalendarDays,
+  TrendingUp,
   // AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -443,11 +444,35 @@ export function EditableUserForm({ profile: initialProfile, additionalData: init
   const [companyLogoUrl, setCompanyLogoUrl] = useState((initialAdditional?.company_logo_url as string) || '');
   const [companyDescription, setCompanyDescription] = useState((initialAdditional?.company_description as string) || '');
 
-  // ── Lawyer state ──
-  const [lawFirm, setLawFirm] = useState((initialAdditional?.law_firm as string) || '');
-  const [barNumber, setBarNumber] = useState((initialAdditional?.bar_number as string) || '');
-  const [lawyerYearsExp, setLawyerYearsExp] = useState(String(initialAdditional?.years_experience || ''));
-  const [practiceAreas, setPracticeAreas] = useState<string[]>((initialAdditional?.practice_areas as string[]) || []);
+  // ── Agency state — mapped to actual agency_profiles columns ──
+  const [agencyName, setAgencyName]               = useState((initialAdditional?.agency_name as string) || '');
+  const [agencyContactName, setAgencyContactName] = useState((initialAdditional?.contact_name as string) || '');
+  const [agencyContactEmail, setAgencyContactEmail] = useState((initialAdditional?.contact_email as string) || '');
+  const [agencyContactPhone, setAgencyContactPhone] = useState((initialAdditional?.contact_phone as string) || '');
+  const [agencyWebsite, setAgencyWebsite]         = useState((initialAdditional?.agency_website as string) || '');
+  const [agencyDescription, setAgencyDescription] = useState((initialAdditional?.agency_description as string) || '');
+  const [agencyLogoUrl, setAgencyLogoUrl]         = useState((initialAdditional?.agency_logo_url as string) || '');
+  const [agencyLegalName, setAgencyLegalName]     = useState((initialAdditional?.legal_name as string) || '');
+
+  // ── Lawyer state — mapped to actual lawyer_profiles columns ──
+  const [attorneyName, setAttorneyName]     = useState((initialAdditional?.attorney_name as string) || '');
+  const [attorneyTitle, setAttorneyTitle]   = useState((initialAdditional?.attorney_title as string) || '');
+  const [firmName, setFirmName]             = useState((initialAdditional?.firm_name as string) || '');
+  const [firmSize, setFirmSize]             = useState((initialAdditional?.firm_size as string) || '');
+  const [officeLocation, setOfficeLocation] = useState((initialAdditional?.office_location as string) || '');
+  const [websiteUrl, setWebsiteUrl]         = useState((initialAdditional?.website_url as string) || '');
+  const [contactEmail, setContactEmail]     = useState((initialAdditional?.contact_email as string) || '');
+  const [contactPhone, setContactPhone]     = useState((initialAdditional?.contact_phone as string) || '');
+  const [specializations, setSpecializations] = useState<string[]>((initialAdditional?.specializations as string[]) || []);
+  const [visaTypes, setVisaTypes]           = useState<string[]>((initialAdditional?.visa_types as string[]) || []);
+
+  // ── Affiliate partner state (lawyer + agency) ──
+  const [isPartner, setIsPartner] = useState<boolean>(
+    !!(initialAdditional?.is_partner as boolean)
+  );
+  // Track initial value for warning messages (agency_profiles has no is_partner column,
+  // so we use the affiliate_partners status passed via initialAdditional or default false)
+  const isPartnerInitial = !!(initialAdditional?.is_partner as boolean);
 
   // ── UI state ──
   const [saving, setSaving] = useState(false);
@@ -566,11 +591,20 @@ export function EditableUserForm({ profile: initialProfile, additionalData: init
     if (role === 'lawyer' && initialAdditional) {
       try {
         const lawyerPayload: Record<string, unknown> = {
-          law_firm: lawFirm || null,
-          bar_number: barNumber || null,
-          years_experience: lawyerYearsExp ? parseInt(lawyerYearsExp) : null,
-          practice_areas: practiceAreas.length > 0 ? practiceAreas : null,
-          updated_at: new Date().toISOString(),
+          attorney_name:   attorneyName  || null,
+          attorney_title:  attorneyTitle || null,
+          firm_name:       firmName      || null,
+          firm_size:       firmSize      || null,
+          office_location: officeLocation || null,
+          website_url:     websiteUrl    || null,
+          contact_email:   contactEmail  || null,
+          contact_phone:   contactPhone  || null,
+          specializations: specializations.length > 0 ? specializations : null,
+          visa_types:      visaTypes.length > 0 ? visaTypes : null,
+          // NOTE: is_partner is intentionally excluded here.
+          // It is handled separately below via /api/admin/lawyer-partner
+          // because lawyer_profiles RLS blocks cross-user updates.
+          updated_at:      new Date().toISOString(),
         };
 
         const res = await fetch(`${supabaseUrl}/rest/v1/lawyer_profiles?user_id=eq.${initialProfile.id}`, {
@@ -585,6 +619,84 @@ export function EditableUserForm({ profile: initialProfile, additionalData: init
         }
       } catch (err) {
         newErrors.push(`Lawyer update error: ${(err as Error).message}`);
+      }
+
+      // ── AFFILIATE: update is_partner via service-role API route ──
+      // Cannot include is_partner in the PATCH above because lawyer_profiles
+      // RLS blocks admins from updating another user's row with the anon key.
+      // This dedicated route uses the service role key to bypass RLS and
+      // fires the DB trigger that auto-creates/deactivates affiliate_partners.
+      const partnerChanged = isPartner !== !!(initialAdditional?.is_partner);
+      if (partnerChanged) {
+        try {
+          const partnerRes = await fetch('/api/admin/lawyer-partner', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId:    initialProfile.id,
+              isPartner: isPartner,
+            }),
+          });
+          const partnerData = await partnerRes.json();
+          if (!partnerRes.ok || !partnerData.success) {
+            newErrors.push(`Affiliate partner update failed: ${partnerData.error ?? 'Unknown error'}`);
+          }
+        } catch (err) {
+          newErrors.push(`Affiliate partner error: ${(err as Error).message}`);
+        }
+      }
+      // ── END AFFILIATE ──
+    }
+
+    // ── Agency profile save ───────────────────────────────────
+    if (role === 'agency' && initialAdditional) {
+      try {
+        const agencyPayload: Record<string, unknown> = {
+          agency_name:       agencyName          || null,
+          contact_name:      agencyContactName   || null,
+          contact_email:     agencyContactEmail  || null,
+          contact_phone:     agencyContactPhone  || null,
+          agency_website:    agencyWebsite       || null,
+          agency_description: agencyDescription  || null,
+          agency_logo_url:   agencyLogoUrl       || null,
+          legal_name:        agencyLegalName     || null,
+          updated_at:        new Date().toISOString(),
+        };
+
+        const res = await fetch(`${supabaseUrl}/rest/v1/agency_profiles?user_id=eq.${initialProfile.id}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(agencyPayload),
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          newErrors.push(`Agency profile update failed: ${text}`);
+        }
+      } catch (err) {
+        newErrors.push(`Agency update error: ${(err as Error).message}`);
+      }
+
+      // ── AFFILIATE: toggle is_partner for agency via API route ──
+      const agencyPartnerChanged = isPartner !== !!(initialAdditional?.is_partner);
+      if (agencyPartnerChanged) {
+        try {
+          const partnerRes = await fetch('/api/admin/lawyer-partner', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId:    initialProfile.id,
+              isPartner: isPartner,
+              role:      'agency',
+            }),
+          });
+          const partnerData = await partnerRes.json();
+          if (!partnerRes.ok || !partnerData.success) {
+            newErrors.push(`Affiliate partner update failed: ${partnerData.error ?? 'Unknown error'}`);
+          }
+        } catch (err) {
+          newErrors.push(`Affiliate partner error: ${(err as Error).message}`);
+        }
       }
     }
 
@@ -604,7 +716,9 @@ export function EditableUserForm({ profile: initialProfile, additionalData: init
     additionalStatus,
     currentJobTitle, currentEmployer, yearsExperience, o1Score,
     companyName, industry, companySize, companyWebsite, companyLogoUrl, companyDescription,
-    lawFirm, barNumber, lawyerYearsExp, practiceAreas,
+    agencyName, agencyContactName, agencyContactEmail, agencyContactPhone, agencyWebsite, agencyDescription, agencyLogoUrl, agencyLegalName,
+    attorneyName, attorneyTitle, firmName, firmSize, officeLocation, websiteUrl,
+    contactEmail, contactPhone, specializations, visaTypes, isPartner,
     initialProfile.id, initialAdditional, router,
   ]);
 
@@ -842,22 +956,224 @@ export function EditableUserForm({ profile: initialProfile, additionalData: init
           <CardContent>
             {initialAdditional ? (
               <div className="space-y-4">
+                {/* Row 1 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <EditableField label="Law Firm" value={lawFirm} onChange={setLawFirm} placeholder="Smith & Associates" />
-                  <EditableField label="Bar Number" value={barNumber} onChange={setBarNumber} placeholder="BAR123456" />
-                  <EditableField label="Years of Experience" value={lawyerYearsExp} onChange={setLawyerYearsExp} type="number" placeholder="10" />
+                  <EditableField
+                    label="Attorney Name"
+                    value={attorneyName}
+                    onChange={setAttorneyName}
+                    placeholder="Jane Smith"
+                  />
+                  <EditableField
+                    label="Attorney Title"
+                    value={attorneyTitle}
+                    onChange={setAttorneyTitle}
+                    placeholder="Senior Partner"
+                  />
+                  <EditableField
+                    label="Firm Name"
+                    value={firmName}
+                    onChange={setFirmName}
+                    placeholder="Smith & Associates"
+                  />
+                  <EditableField
+                    label="Firm Size"
+                    value={firmSize}
+                    onChange={setFirmSize}
+                    placeholder="1-10 attorneys"
+                  />
+                  <EditableField
+                    label="Office Location"
+                    value={officeLocation}
+                    onChange={setOfficeLocation}
+                    placeholder="New York, NY"
+                  />
+                  <EditableField
+                    label="Website URL"
+                    value={websiteUrl}
+                    onChange={setWebsiteUrl}
+                    placeholder="https://smithlaw.com"
+                  />
+                  <EditableField
+                    label="Contact Email"
+                    value={contactEmail}
+                    onChange={setContactEmail}
+                    placeholder="jane@smithlaw.com"
+                  />
+                  <EditableField
+                    label="Contact Phone"
+                    value={contactPhone}
+                    onChange={setContactPhone}
+                    placeholder="+1 (555) 000-0000"
+                  />
                 </div>
+
+                {/* Tag editors */}
                 <TagsEditor
-                  label="Practice Areas"
-                  tags={practiceAreas}
-                  onChange={setPracticeAreas}
-                  placeholder="Add practice area..."
+                  label="Specializations"
+                  tags={specializations}
+                  onChange={setSpecializations}
+                  placeholder="Add specialization..."
                   tagColor="bg-yellow-50 text-yellow-700"
                 />
+                <TagsEditor
+                  label="Visa Types"
+                  tags={visaTypes}
+                  onChange={setVisaTypes}
+                  placeholder="Add visa type (e.g. O-1A)..."
+                  tagColor="bg-blue-50 text-blue-700"
+                />
+
+                {/* ── AFFILIATE: Partner toggle ── */}
+                <div className="border-t border-gray-100 pt-4 mt-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-yellow-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Affiliate Partner</p>
+                        <p className="text-xs text-gray-500">
+                          Grants access to the affiliate program — earns{' '}
+                          {isPartner
+                            ? <span className="text-green-600 font-medium">commission on referrals</span>
+                            : 'commission on referrals'
+                          }. Auto-creates their affiliate code.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {isPartner && (
+                        <span
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                          style={{ background: 'rgba(212,168,75,0.12)', color: '#92620A', border: '1px solid rgba(212,168,75,0.3)' }}
+                        >
+                          ★ Partner
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setIsPartner(!isPartner)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          isPartner ? 'bg-yellow-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            isPartner ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                  {isPartner && !!(initialAdditional?.is_partner) === false && (
+                    <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                      ⚡ Saving will enable affiliate status and auto-generate their unique referral code.
+                    </p>
+                  )}
+                  {!isPartner && !!(initialAdditional?.is_partner) && (
+                    <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+                      ⚠ Saving will deactivate this attorney&apos;s affiliate account.
+                    </p>
+                  )}
+                </div>
+                {/* ── END AFFILIATE ── */}
               </div>
             ) : (
               <p className="text-sm text-gray-500 italic">No lawyer profile record found. Save to update the main profile only.</p>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Agency Fields ── */}
+      {role === 'agency' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" /> Agency Profile
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {initialAdditional ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <EditableField label="Agency Name"    value={agencyName}         onChange={setAgencyName}         placeholder="Global Talent Agency" />
+                  <EditableField label="Legal Name"     value={agencyLegalName}    onChange={setAgencyLegalName}    placeholder="Global Talent Agency LLC" />
+                  <EditableField label="Contact Name"   value={agencyContactName}  onChange={setAgencyContactName}  placeholder="Jane Smith" />
+                  <EditableField label="Contact Email"  value={agencyContactEmail} onChange={setAgencyContactEmail} placeholder="jane@agency.com" />
+                  <EditableField label="Contact Phone"  value={agencyContactPhone} onChange={setAgencyContactPhone} placeholder="+1 (555) 000-0000" />
+                  <EditableField label="Website"        value={agencyWebsite}      onChange={setAgencyWebsite}      placeholder="https://agency.com" />
+                  <div className="md:col-span-2">
+                    <EditableField label="Logo URL"     value={agencyLogoUrl}      onChange={setAgencyLogoUrl}      placeholder="https://..." />
+                  </div>
+                </div>
+                <EditableField
+                  label="Description"
+                  value={agencyDescription}
+                  onChange={setAgencyDescription}
+                  multiline
+                  placeholder="About the agency..."
+                />
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 italic mb-4">
+                No agency profile record found. The affiliate toggle below still works.
+              </p>
+            )}
+
+            {/* ── AFFILIATE: Partner toggle — always visible for agency ── */}
+            {/* Shown outside the initialAdditional check because agency_profiles    */}
+            {/* has no is_partner column — partner status lives in affiliate_partners */}
+            <div className={`border-t border-gray-100 pt-4 ${initialAdditional ? 'mt-2' : 'mt-0'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-yellow-500" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Affiliate Partner</p>
+                    <p className="text-xs text-gray-500">
+                      Grants access to the affiliate program — earns{' '}
+                      {isPartner
+                        ? <span className="text-green-600 font-medium">commission on referrals</span>
+                        : 'commission on referrals'
+                      }. Auto-creates their affiliate code.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {isPartner && (
+                    <span
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                      style={{ background: 'rgba(212,168,75,0.12)', color: '#92620A', border: '1px solid rgba(212,168,75,0.3)' }}
+                    >
+                      ★ Partner
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsPartner(!isPartner)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      isPartner ? 'bg-yellow-500' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        isPartner ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+              {isPartner && !isPartnerInitial && (
+                <p className="text-xs text-amber-600 mt-2">
+                  ⚡ Saving will enable affiliate status and auto-generate their unique referral code.
+                </p>
+              )}
+              {!isPartner && isPartnerInitial && (
+                <p className="text-xs text-red-500 mt-2">
+                  ⚠ Saving will deactivate this agency&apos;s affiliate account.
+                </p>
+              )}
+            </div>
+            {/* ── END AFFILIATE ── */}
           </CardContent>
         </Card>
       )}

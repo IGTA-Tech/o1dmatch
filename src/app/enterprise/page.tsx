@@ -14,7 +14,7 @@ export const metadata = {
 
 export default function EnterprisePage() {
   return (
-    <div className="o1d-page" style={{ minHeight: "100vh", background: "#FBF8F1" }}>
+    <div className="o1d-page" style={{ minHeight: "100vh", background: "#FBF8F1", scrollBehavior: "smooth" }}>
       <Navbar />
 
       {/* ══════════════════════════════════════
@@ -88,9 +88,9 @@ export default function EnterprisePage() {
             display: "flex", alignItems: "center", justifyContent: "center",
             gap: "1rem", flexWrap: "wrap",
           }}>
-            <Link href="/contact" className="o1d-btn-primary" style={{ fontSize: "0.95rem", padding: "0.75rem 1.75rem" }}>
+            <a href="#contact" className="o1d-btn-primary" style={{ fontSize: "0.95rem", padding: "0.75rem 1.75rem" }}>
               Talk to Our Team <ArrowRight size={16} />
-            </Link>
+            </a>
             <a href="#who-its-for" style={{
               display: "inline-flex", alignItems: "center", gap: "0.4rem",
               fontSize: "0.9rem", color: "rgba(255,255,255,0.65)",
@@ -277,12 +277,12 @@ export default function EnterprisePage() {
                 </div>
 
                 {/* CTA */}
-                <Link href="/contact" className="o1d-btn-primary" style={{
+                <a href="#contact" className="o1d-btn-primary" style={{
                   display: "flex", justifyContent: "center",
                   fontSize: "0.9rem", padding: "0.75rem 1.5rem",
                 }}>
                   Get a Custom Quote
-                </Link>
+                </a>
 
                 <p style={{
                   textAlign: "center", marginTop: "0.85rem",
@@ -399,12 +399,12 @@ export default function EnterprisePage() {
                 </div>
 
                 {/* CTA */}
-                <Link href="/contact" className="o1d-btn-primary" style={{
+                <a href="#contact" className="o1d-btn-primary" style={{
                   display: "flex", justifyContent: "center",
                   fontSize: "0.9rem", padding: "0.75rem 1.5rem",
                 }}>
                   Apply to Partner Program
-                </Link>
+                </a>
 
                 <p style={{
                   textAlign: "center", marginTop: "0.85rem",
@@ -609,7 +609,7 @@ export default function EnterprisePage() {
                 ))}
               </div>
 
-              <Link href="/contact" style={{
+              <a href="#contact" style={{
                 marginTop: "auto",
                 display: "flex", justifyContent: "center", alignItems: "center",
                 gap: "0.4rem", fontSize: "0.88rem", fontWeight: 600,
@@ -618,7 +618,7 @@ export default function EnterprisePage() {
                 padding: "0.75rem 1.5rem",
               }}>
                 Get Started
-              </Link>
+              </a>
             </div>
 
             {/* Enterprise tier */}
@@ -704,14 +704,14 @@ export default function EnterprisePage() {
                 ))}
               </div>
 
-              <Link href="/contact" className="o1d-btn-primary" style={{
+              <a href="#contact" className="o1d-btn-primary" style={{
                 marginTop: "auto",
                 display: "flex", justifyContent: "center",
                 fontSize: "0.9rem", padding: "0.75rem 1.5rem",
                 position: "relative", zIndex: 1,
               }}>
                 Get a Custom Quote
-              </Link>
+              </a>
             </div>
 
           </div>
@@ -721,7 +721,7 @@ export default function EnterprisePage() {
       {/* ══════════════════════════════════════
           CONTACT FORM
       ══════════════════════════════════════ */}
-      <section style={{
+      <section id="contact" style={{
         background: "#0B1D35", padding: "5rem 1.5rem",
         position: "relative", overflow: "hidden",
       }}>
