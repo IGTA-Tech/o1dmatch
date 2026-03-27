@@ -11,7 +11,7 @@ import { signUpSchema, SignUpFormData } from '@/types/forms';
 import { createClient } from '@/lib/supabase/client';
 import {
   Loader2, Mail, Lock, User, AlertCircle, Check,
-  ArrowRight, Shield, X, Star, Briefcase, Users, Scale,
+  ArrowRight, Shield, Star, Briefcase, Users, Scale,
 } from 'lucide-react';
 import '@/app/theme.css';
 import Footer from "@/components/Footer";
@@ -602,7 +602,7 @@ function SignupForm() {
                       </p>
                       <p style={{ fontSize: '0.78rem', color: '#64748B', lineHeight: 1.55 }}>
                         Earn <strong style={{ color: '#92620A' }}>15% commission</strong> on the first payment from every client you refer.
-                        You'll receive a unique referral link once your application is approved.
+                        You&apos;ll receive a unique referral link once your application is approved.
                       </p>
                     </div>
                   </label>

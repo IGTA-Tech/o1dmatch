@@ -277,7 +277,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   // This fires for the first invoice and links the stripe_invoice_id
   // In Stripe API 2025-12-15+, invoice.subscription moved to
   // invoice.parent.subscription_details.subscription — cast to any for compatibility.
-  const invoiceAny   = invoice as any;
+  const invoiceAny   = invoice as unknown as { subscription?: string; parent?: { subscription_details?: { subscription?: string } } };
   const invoiceSubId = invoiceAny.subscription ?? invoiceAny.parent?.subscription_details?.subscription ?? null;
 
   if (invoiceSubId && invoice.billing_reason === 'subscription_create') {

@@ -207,8 +207,8 @@ export async function POST(req: NextRequest) {
       default:
         return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[Admin Affiliates]', action, err);
-    return NextResponse.json({ error: err.message ?? 'Unknown error' }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unknown error' }, { status: 500 });
   }
 }

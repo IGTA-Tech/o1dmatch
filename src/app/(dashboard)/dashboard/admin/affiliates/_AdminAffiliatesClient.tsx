@@ -8,10 +8,31 @@ interface Stats {
   totalPartners: number; activePartners: number; pendingApplications: number;
   pendingCommissions: number; readyToApprove: number; totalEarned: number; totalPending: number;
 }
+interface Partner {
+  id: string; user_id: string; affiliate_code: string; partner_type: string;
+  commission_rate: number; status: string; total_referrals: number;
+  total_conversions: number; total_earned: number; total_pending: number;
+  total_paid: number; payout_email: string | null; payout_method: string | null;
+  profile?: { full_name: string | null; email: string } | null;
+  [key: string]: unknown;
+}
+interface Commission {
+  id: string; affiliate_id: string; referred_user_id: string;
+  gross_amount: number; commission_amount: number; commission_rate: number;
+  status: string; clawback_until: string | null; created_at: string;
+  affiliate?: { affiliate_code: string; profile?: { full_name: string | null; email: string } | null } | null;
+  referred_user?: { full_name: string | null; email: string } | null;
+  [key: string]: unknown;
+}
+interface Payout {
+  id: string; partner_id: string; amount: number; status: string;
+  period_start: string; period_end: string;
+  partner?: { affiliate_code: string; payout_email: string | null; payout_method: string | null; profile?: { full_name: string | null; email: string } | null } | null;
+  [key: string]: unknown;
+}
 interface Props {
-  partners: any[]; commissions: any[]; payouts: any[];
-  adminId: string; activeTab: string; stats: Stats;
-  pagination: { page: number; perPage: number; total: number };
+  partners: Partner[]; commissions: Commission[]; payouts: Payout[];
+  activeTab: string; stats: Stats;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -44,7 +65,7 @@ async function adminAction(body: Record<string, unknown>): Promise<{ success: bo
 
 export default function AdminAffiliatesClient({
   partners: initialPartners, commissions: initialCommissions,
-  payouts: initialPayouts, adminId, activeTab, stats, pagination,
+  payouts: initialPayouts, activeTab, stats,
 }: Props) {
   const [tab, setTab]                 = useState(activeTab);
   const [partners, setPartners]       = useState(initialPartners);
@@ -111,12 +132,13 @@ export default function AdminAffiliatesClient({
   const handleApproveCommission = (id: string) => {
     setApprovingId(id);
     startTransition(async () => {
-      const res = await adminAction({ action: 'approve_commission', commissionId: id }) as any;
+      const res = await adminAction({ action: 'approve_commission', commissionId: id }) as { success: boolean; payout?: Payout; error?: string };
       setApprovingId(null);
       if (res.success) {
         setCommissions(prev => prev.map(c => c.id === id ? { ...c, status: 'approved' } : c));
         if (res.payout) {
-          setPayouts(prev => [res.payout, ...prev]);
+          const newPayout = res.payout;
+          setPayouts(prev => [newPayout, ...prev]);
           showToast('✓ Commission approved — pending payout created');
         } else {
           showToast('Commission approved');
@@ -146,7 +168,7 @@ export default function AdminAffiliatesClient({
   const handleExportCSV = () => {
     const rows = [
       ['Partner Name', 'Partner Email', 'Affiliate Code', 'Amount', 'Payout Email', 'Payout Method'],
-      ...payouts.map((p: any) => [
+      ...payouts.map((p: Payout) => [
         p.partner?.profile?.full_name ?? '',
         p.partner?.profile?.email ?? '',
         p.partner?.affiliate_code ?? '',
@@ -314,7 +336,7 @@ export default function AdminAffiliatesClient({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {commissions.map((c: any) => {
+              {commissions.map((c: Commission) => {
                 const clawbackPassed = c.clawback_until && new Date() > new Date(c.clawback_until);
                 return (
                   <tr key={c.id} className="hover:bg-gray-50">
@@ -383,7 +405,7 @@ export default function AdminAffiliatesClient({
               No pending payouts.
             </div>
           ) : (
-            payouts.map((p: any) => (
+            payouts.map((p: Payout) => (
               <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>

@@ -5,9 +5,9 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Ticket, Loader2, Trash2, ToggleLeft, ToggleRight,
   Copy, Check, AlertCircle, Search, RefreshCw, X,
-  Calendar, Users, Percent, Clock, Shield, Tag,
+  Percent, Clock, Shield,
   ChevronDown, ChevronUp, Gift, Pencil,
-  Package, DollarSign, TrendingUp, ChevronRight,
+  Package, ChevronRight,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -932,7 +932,7 @@ export default function AdminPromoCodesPage() {
             <div className="bg-white border border-dashed border-gray-200 rounded-xl p-12 text-center">
               <Package className="w-10 h-10 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500 font-medium">No partner batches yet</p>
-              <p className="text-gray-400 text-xs mt-1">Click "Generate Partner Batch" to create your first batch</p>
+              <p className="text-gray-400 text-xs mt-1">Click &quot;Generate Partner Batch&quot; to create your first batch</p>
             </div>
           ) : (
             <div className="space-y-3">

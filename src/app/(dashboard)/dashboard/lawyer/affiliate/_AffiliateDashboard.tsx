@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import {
   Copy, Check, TrendingUp, Users, DollarSign,
-  Clock, ChevronDown, Send, Star, ArrowUpRight,
+  Clock, Send, Star,
 } from 'lucide-react';
 
 interface AffiliatePartner {
@@ -82,7 +82,7 @@ function fmt(n: number) {
 }
 
 export default function AffiliateDashboard({
-  partner, commissions, payouts, userName,
+  partner, commissions, payouts,
   commissionThisMonth, activeSubscriptions, partnerType,
 }: Props) {
   const [copiedKey, setCopiedKey]       = useState<string | null>(null);
@@ -129,7 +129,7 @@ export default function AffiliateDashboard({
         </div>
         <h2 className="text-xl font-bold text-gray-900 mb-2">Application Under Review</h2>
         <p className="text-gray-500 text-sm">
-          Your affiliate partner application is being reviewed. You'll be notified once approved.
+          Your affiliate partner application is being reviewed. You&apos;ll be notified once approved.
         </p>
       </div>
     );
@@ -334,9 +334,9 @@ export default function AffiliateDashboard({
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
               <p className="text-sm font-semibold text-amber-800">⚠ W-9 Required</p>
               <p className="text-sm text-amber-700 mt-1">
-                You've earned $600+ this year. A W-9 form is required before your next payout.
+                You&apos;ve earned $600+ this year. A W-9 form is required before your next payout.
                 {!partner.w9_collected && (
-                  <a href={`/dashboard/lawyer/affiliate/w9`} className="underline font-medium ml-1">Submit W-9 →</a>
+                  <a href={`${dashBase}/affiliate/w9`} className="underline font-medium ml-1">Submit W-9 →</a>
                 )}
               </p>
             </div>

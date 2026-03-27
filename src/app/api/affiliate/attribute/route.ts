@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
-import { isWithinAttributionWindow, ATTRIBUTION_WINDOW_DAYS } from '@/lib/affiliate/types'
+import { isWithinAttributionWindow } from '@/lib/affiliate/types'
 
 // Service role for writes that bypass RLS
 const adminSupabase = createClient(
