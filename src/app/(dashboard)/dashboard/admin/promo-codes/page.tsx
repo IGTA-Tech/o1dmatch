@@ -54,7 +54,7 @@ interface Batch {
 
 interface BatchForm {
   partnerId: string; count: number; type: string;
-  trial_days: number; applicable_tier: string;
+  trial_days: number; applicable_tiers: string[];
   applicable_user_type: string; valid_until: string;
   purchase_price: string; description: string;
 }
@@ -70,7 +70,7 @@ const defaultForm: FormData = {
 
 const defaultBatchForm: BatchForm = {
   partnerId: "", count: 10, type: "trial", trial_days: 90,
-  applicable_tier: "talent:starter", applicable_user_type: "talent",
+  applicable_tiers: ["talent:starter"], applicable_user_type: "talent",
   valid_until: "", purchase_price: "", description: "",
 };
 
@@ -173,6 +173,8 @@ export default function AdminPromoCodesPage() {
   const [expandedBatch, setExpandedBatch] = useState<string | null>(null);
   const [batchForm, setBatchForm] = useState<BatchForm>(defaultBatchForm);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [partnerSearch, setPartnerSearch] = useState("");
+  const [partnerDropdownOpen, setPartnerDropdownOpen] = useState(false);
 
   /* ---------- Load promo codes ---------- */
   const loadPromoCodes = useCallback(async () => {
@@ -328,7 +330,7 @@ export default function AdminPromoCodesPage() {
           type:                 batchForm.type,
           trial_days:           batchForm.trial_days,
           discount_percent:     0,
-          applicable_tier:      stripPrefix(batchForm.applicable_tier),
+          applicable_tier:      batchForm.applicable_tiers.length > 0 ? batchForm.applicable_tiers.map(stripPrefix).join(",") : null,
           applicable_user_type: batchForm.applicable_user_type,
           valid_until:          batchForm.valid_until || null,
           purchase_price:       batchForm.purchase_price ? parseFloat(batchForm.purchase_price) : null,
@@ -800,18 +802,56 @@ export default function AdminPromoCodesPage() {
               </div>
               <form onSubmit={handleCreateBatch} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Partner */}
-                  <div>
+                  {/* Partner — searchable combobox */}
+                  <div className="relative">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Partner *</label>
-                    <select value={batchForm.partnerId} onChange={e => setBatchForm({ ...batchForm, partnerId: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                      <option value="">Select affiliate partner…</option>
-                      {partners.map(p => (
-                        <option key={p.id} value={p.id}>
-                          {p.profile?.full_name ?? p.affiliate_code} — {p.affiliate_code}
-                        </option>
-                      ))}
-                    </select>
+                    {/* Input shows selected partner name or search text */}
+                    <input
+                      type="text"
+                      placeholder="Search partner name or code…"
+                      value={partnerSearch || (batchForm.partnerId
+                        ? (() => { const p = partners.find(p => p.id === batchForm.partnerId); return p ? `${p.profile?.full_name ?? p.affiliate_code} — ${p.affiliate_code}` : ""; })()
+                        : "")}
+                      onFocus={() => { setPartnerSearch(""); setPartnerDropdownOpen(true); }}
+                      onChange={e => { setPartnerSearch(e.target.value); setPartnerDropdownOpen(true); setBatchForm({ ...batchForm, partnerId: "" }); }}
+                      onBlur={() => setTimeout(() => setPartnerDropdownOpen(false), 150)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    {/* Dropdown list */}
+                    {partnerDropdownOpen && (
+                      <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {partners
+                          .filter(p => {
+                            const q = partnerSearch.toLowerCase();
+                            return !q
+                              || p.affiliate_code.toLowerCase().includes(q)
+                              || (p.profile?.full_name ?? "").toLowerCase().includes(q)
+                              || (p.profile?.email ?? "").toLowerCase().includes(q);
+                          })
+                          .map(p => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onMouseDown={() => {
+                                setBatchForm({ ...batchForm, partnerId: p.id });
+                                setPartnerSearch("");
+                                setPartnerDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 transition-colors ${batchForm.partnerId === p.id ? "bg-indigo-50 font-semibold text-indigo-700" : "text-gray-700"}`}
+                            >
+                              <span className="font-medium">{p.profile?.full_name ?? "—"}</span>
+                              <span className="ml-2 text-xs text-gray-400 font-mono">{p.affiliate_code}</span>
+                              {p.profile?.email && <span className="block text-xs text-gray-400">{p.profile.email}</span>}
+                            </button>
+                          ))}
+                        {partners.filter(p => {
+                          const q = partnerSearch.toLowerCase();
+                          return !q || p.affiliate_code.toLowerCase().includes(q) || (p.profile?.full_name ?? "").toLowerCase().includes(q);
+                        }).length === 0 && (
+                          <p className="px-3 py-2 text-xs text-gray-400">No partners match &quot;{partnerSearch}&quot;</p>
+                        )}
+                      </div>
+                    )}
                     {partners.length === 0 && <p className="text-xs text-amber-600 mt-1">No active partners found. Approve a partner first.</p>}
                   </div>
 
@@ -851,22 +891,51 @@ export default function AdminPromoCodesPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Applicable User Type</label>
                     <select value={batchForm.applicable_user_type}
-                      onChange={e => setBatchForm({ ...batchForm, applicable_user_type: e.target.value })}
+                      onChange={e => {
+                        const newType = e.target.value;
+                        const validValues = newType === "employer"
+                          ? EMPLOYER_PLAN_OPTIONS.filter(o => o.value).map(o => o.value)
+                          : newType === "talent"
+                          ? TALENT_PLAN_OPTIONS.filter(o => o.value).map(o => o.value)
+                          : [...EMPLOYER_PLAN_OPTIONS, ...TALENT_PLAN_OPTIONS].filter(o => o.value).map(o => o.value);
+                        setBatchForm({
+                          ...batchForm,
+                          applicable_user_type: newType,
+                          applicable_tiers: batchForm.applicable_tiers.filter(t => validValues.includes(t)),
+                        });
+                      }}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                       {userTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
 
-                  {/* Applicable tier */}
+                  {/* Applicable tier — checkboxes matching All Codes tab */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Applicable Plan</label>
-                    <select value={batchForm.applicable_tier}
-                      onChange={e => setBatchForm({ ...batchForm, applicable_tier: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                      {[...EMPLOYER_PLAN_OPTIONS, ...TALENT_PLAN_OPTIONS].filter(o => o.value).map(o => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
+                    <div className="border border-gray-200 rounded-lg p-2 max-h-36 overflow-y-auto space-y-1">
+                      {(batchForm.applicable_user_type === "employer"
+                        ? EMPLOYER_PLAN_OPTIONS.filter(o => o.value)
+                        : batchForm.applicable_user_type === "talent"
+                        ? TALENT_PLAN_OPTIONS.filter(o => o.value)
+                        : [...EMPLOYER_PLAN_OPTIONS, ...TALENT_PLAN_OPTIONS].filter(o => o.value)
+                      ).map(o => (
+                        <label key={o.value} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
+                          <input type="checkbox"
+                            checked={batchForm.applicable_tiers.includes(o.value)}
+                            onChange={e => setBatchForm({
+                              ...batchForm,
+                              applicable_tiers: e.target.checked
+                                ? [...batchForm.applicable_tiers, o.value]
+                                : batchForm.applicable_tiers.filter(t => t !== o.value),
+                            })}
+                            className="rounded" />
+                          <span className="text-xs text-gray-700">{o.label}</span>
+                        </label>
                       ))}
-                    </select>
+                    </div>
+                    {batchForm.applicable_tiers.length === 0 && (
+                      <p className="text-xs text-gray-400 mt-1">No selection = applies to all plans</p>
+                    )}
                   </div>
 
                   {/* Purchase price */}
@@ -907,7 +976,9 @@ export default function AdminPromoCodesPage() {
                   <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 text-sm text-indigo-800">
                     <strong>Summary:</strong> Generate <strong>{batchForm.count}</strong> single-use{" "}
                     {batchForm.type === "trial" ? `${batchForm.trial_days}-day trial` : "upgrade"} codes
-                    {batchForm.applicable_tier ? ` for ${planLabel(batchForm.applicable_tier)}` : ""}
+                    {batchForm.applicable_tiers.length > 0
+                      ? ` for ${batchForm.applicable_tiers.map(t => planLabel(t)).join(", ")}`
+                      : ""}
                     {batchForm.purchase_price ? `, total value $${batchForm.purchase_price}` : ""}
                     {batchForm.valid_until ? `, expiring ${fmtDate(batchForm.valid_until)}` : ", no expiry"}.
                   </div>
