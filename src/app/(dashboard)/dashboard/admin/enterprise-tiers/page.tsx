@@ -1,12 +1,19 @@
 // src/app/(dashboard)/dashboard/admin/enterprise-tiers/page.tsx
 
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { TIERS } from '@/lib/tiers';
 import AssignTierClient from './AssignTierClient';
+import type { EnterpriseInquiry } from './AssignTierClient';
 
 export type { UserRow } from './types';
 import type { UserRow } from './types';
+
+const adminSupabase = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export default async function EnterpriseTiersAdminPage() {
   const supabase = await createClient();
@@ -15,14 +22,10 @@ export default async function EnterpriseTiersAdminPage() {
   if (!user) redirect('/login');
 
   const { data: adminProfile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
+    .from('profiles').select('role').eq('id', user.id).single();
   if (adminProfile?.role !== 'admin') redirect('/dashboard');
 
-  const { data: usersRaw } = await supabase
+  const { data: usersRaw } = await adminSupabase
     .from('profiles')
     .select('id, email, full_name, role, company_name, law_firm, created_at')
     .in('role', ['employer', 'agency', 'lawyer'])
@@ -30,18 +33,16 @@ export default async function EnterpriseTiersAdminPage() {
 
   const userIds = (usersRaw ?? []).map((u) => u.id);
 
-  // Fetch ALL rows — multiple per user now possible
-  const { data: tierAssignments } = await supabase
-    .from('enterprise_tier_assignments')
-    .select('user_id, tier_key')
-    .in('user_id', userIds);
+  const [
+    { data: tierAssignments },
+    { data: lawyerPartners },
+    { data: inquiriesRaw },
+  ] = await Promise.all([
+    adminSupabase.from('enterprise_tier_assignments').select('user_id, tier_key').in('user_id', userIds),
+    adminSupabase.from('lawyer_profiles').select('user_id, is_partner').in('user_id', userIds),
+    adminSupabase.from('enterprise_inquiries').select('*').order('created_at', { ascending: false }),
+  ]);
 
-  const { data: lawyerPartners } = await supabase
-    .from('lawyer_profiles')
-    .select('user_id, is_partner')
-    .in('user_id', userIds);
-
-  // Group tier_keys by user_id
   const tierMap = new Map<string, string[]>();
   for (const a of tierAssignments ?? []) {
     tierMap.set(a.user_id, [...(tierMap.get(a.user_id) ?? []), a.tier_key]);
@@ -70,7 +71,11 @@ export default async function EnterpriseTiersAdminPage() {
           Agency users can be assigned both Professional and Enterprise plans simultaneously.
         </p>
       </div>
-      <AssignTierClient users={users} tiers={TIERS} />
+      <AssignTierClient
+        users={users}
+        tiers={TIERS}
+        inquiries={(inquiriesRaw ?? []) as EnterpriseInquiry[]}
+      />
     </div>
   );
 }

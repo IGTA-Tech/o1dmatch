@@ -5,12 +5,42 @@ import { useState, useMemo } from 'react';
 import {
   Building2, Users, Scale, Search, CheckCircle2,
   XCircle, Loader2, ChevronDown, X, Star,
+  MessageSquare, Check, Filter,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import type { UserRow } from './types';
 import type { Tier, TierKey } from '@/lib/tiers';
 
 type RoleFilter = 'all' | 'employer' | 'agency' | 'lawyer' | 'assigned';
+
+export interface EnterpriseInquiry {
+  id:           string;
+  full_name:    string;
+  company_name: string;
+  email:        string;
+  phone:        string | null;
+  user_type:    string | null;
+  interests:    string[] | null;
+  message:      string | null;
+  status:       string;
+  notes:        string | null;
+  created_at:   string;
+  updated_at:   string | null;
+}
+
+const INQUIRY_STATUS_LABELS: Record<string, { label: string; bg: string; color: string }> = {
+  new:       { label: 'New',       bg: 'rgba(59,130,246,0.1)',  color: '#1D4ED8' },
+  contacted: { label: 'Contacted', bg: 'rgba(245,158,11,0.1)', color: '#B45309' },
+  qualified: { label: 'Qualified', bg: 'rgba(16,185,129,0.1)', color: '#065F46' },
+  closed:    { label: 'Closed',    bg: 'rgba(100,116,139,0.1)',color: '#334155' },
+  spam:      { label: 'Spam',      bg: 'rgba(239,68,68,0.1)',  color: '#991B1B' },
+};
+
+const USER_TYPE_LABELS: Record<string, string> = {
+  employer:             'Employer',
+  immigration_attorney: 'Immigration Attorney',
+  staffing_agency:      'Staffing Agency',
+};
 
 const ROLE_ICON: Record<string, React.ElementType> = {
   employer: Building2,
@@ -343,9 +373,11 @@ function AssignModal({
 export default function AssignTierClient({
   users: initialUsers,
   tiers,
+  inquiries: initialInquiries,
 }: {
-  users: UserRow[];
-  tiers: Record<TierKey, Tier>;
+  users:     UserRow[];
+  tiers:     Record<TierKey, Tier>;
+  inquiries: EnterpriseInquiry[];
 }) {
   const PAGE_SIZE = 50;
 
@@ -354,6 +386,17 @@ export default function AssignTierClient({
   const [search, setSearch]             = useState('');
   const [modal, setModal]               = useState<UserRow | null>(null);
   const [currentPage, setCurrentPage]   = useState(1);
+
+  // ── Inquiries state ──
+  const [mainTab, setMainTab]             = useState<'users' | 'inquiries'>('users');
+  const [inquiries, setInquiries]         = useState<EnterpriseInquiry[]>(initialInquiries);
+  const [inqStatusFilter, setInqStatusFilter] = useState<string>('all');
+  const [inqUserTypeFilter, setInqUserTypeFilter] = useState<string>('all');
+  const [inqSearch, setInqSearch]         = useState('');
+  const [editingInquiry, setEditingInquiry] = useState<string | null>(null);
+  const [editNotes, setEditNotes]         = useState('');
+  const [editStatus, setEditStatus]       = useState('');
+  const [savingInquiry, setSavingInquiry] = useState(false);
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -391,8 +434,67 @@ export default function AssignTierClient({
     assigned: users.filter((u) => (u.assigned_tiers ?? []).length > 0).length,
   };
 
+  // ── Filtered inquiries ──
+  const filteredInquiries = useMemo(() => {
+    return inquiries.filter(i => {
+      const matchStatus   = inqStatusFilter   === 'all' || i.status    === inqStatusFilter;
+      const matchUserType = inqUserTypeFilter === 'all' || i.user_type === inqUserTypeFilter;
+      const matchSearch   = !inqSearch || [i.full_name, i.company_name, i.email]
+        .some(v => v?.toLowerCase().includes(inqSearch.toLowerCase()));
+      return matchStatus && matchUserType && matchSearch;
+    });
+  }, [inquiries, inqStatusFilter, inqUserTypeFilter, inqSearch]);
+
+  // ── Save inquiry status + notes ──
+  const handleSaveInquiry = async (id: string) => {
+    setSavingInquiry(true);
+    try {
+      await fetch('/api/admin/enterprise-inquiry', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ id, status: editStatus, notes: editNotes }),
+      });
+      setInquiries(prev => prev.map(i =>
+        i.id === id ? { ...i, status: editStatus, notes: editNotes } : i
+      ));
+      setEditingInquiry(null);
+    } catch { /* silent */ }
+    finally { setSavingInquiry(false); }
+  };
+
   return (
     <>
+      {/* ── Main tab switcher ── */}
+      <div style={{ display: 'flex', gap: '0.25rem', borderBottom: '1.5px solid #E2E8F0', marginBottom: '1.5rem' }}>
+        {[
+          { key: 'users',     label: 'Users',                                       icon: Users        },
+          { key: 'inquiries', label: `Inquiries (${inquiries.length})`,             icon: MessageSquare},
+        ].map(({ key, label, icon: Icon }) => (
+          <button key={key} onClick={() => setMainTab(key as 'users' | 'inquiries')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.6rem 1rem', fontSize: '0.875rem', fontWeight: 600,
+              borderBottom: mainTab === key ? '2px solid #D4A84B' : '2px solid transparent',
+              color: mainTab === key ? '#92620A' : '#64748B',
+              background: 'none', border: 'none',
+              cursor: 'pointer', transition: 'all 0.15s', marginBottom: '-1.5px',
+            }}>
+            <Icon size={15} /> {label}
+            {key === 'inquiries' && inquiries.filter(i => i.status === 'new').length > 0 && (
+              <span style={{
+                fontSize: '0.65rem', fontWeight: 700, padding: '0.1rem 0.45rem',
+                borderRadius: 100, background: '#EF4444', color: '#fff',
+              }}>
+                {inquiries.filter(i => i.status === 'new').length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* ══ USERS TAB ══════════════════════════════════════════ */}
+      {mainTab === 'users' && (
+      <>
       {/* Summary stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
@@ -649,6 +751,158 @@ export default function AssignTierClient({
           onClose={() => setModal(null)}
           onSuccess={handleSuccess}
         />
+      )}
+      </>
+      )} {/* end users tab */}
+
+      {/* ══ INQUIRIES TAB ══════════════════════════════════════ */}
+      {mainTab === 'inquiries' && (
+        <div className="space-y-4">
+
+          {/* Filters row */}
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Search */}
+            <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+              <Search size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
+              <input type="text" placeholder="Search name, company, email…"
+                value={inqSearch} onChange={e => setInqSearch(e.target.value)}
+                style={{ width: '100%', paddingLeft: '2.25rem', paddingRight: '0.75rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: '0.85rem', color: '#0B1D35', outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+            {/* Status filter */}
+            <div style={{ position: 'relative' }}>
+              <select value={inqStatusFilter} onChange={e => setInqStatusFilter(e.target.value)}
+                style={{ appearance: 'none', paddingLeft: '0.75rem', paddingRight: '2rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: '0.85rem', color: '#0B1D35', outline: 'none', cursor: 'pointer', background: '#FFFFFF' }}>
+                <option value="all">All statuses</option>
+                {Object.entries(INQUIRY_STATUS_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label}</option>
+                ))}
+              </select>
+              <ChevronDown size={13} style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
+            </div>
+            {/* User type filter */}
+            <div style={{ position: 'relative' }}>
+              <select value={inqUserTypeFilter} onChange={e => setInqUserTypeFilter(e.target.value)}
+                style={{ appearance: 'none', paddingLeft: '0.75rem', paddingRight: '2rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: '0.85rem', color: '#0B1D35', outline: 'none', cursor: 'pointer', background: '#FFFFFF' }}>
+                <option value="all">All types</option>
+                {Object.entries(USER_TYPE_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+              <ChevronDown size={13} style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
+            </div>
+            <p style={{ fontSize: '0.82rem', color: '#94A3B8', margin: 0 }}>
+              {filteredInquiries.length} of {inquiries.length}
+            </p>
+          </div>
+
+          {/* Inquiries list */}
+          {filteredInquiries.length === 0 ? (
+            <div style={{ background: '#fff', border: '1px dashed #E2E8F0', borderRadius: 12, padding: '3rem 1rem', textAlign: 'center', color: '#94A3B8' }}>
+              <MessageSquare size={28} style={{ margin: '0 auto 0.75rem', display: 'block' }} />
+              <p style={{ margin: 0, fontWeight: 500 }}>No inquiries found</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredInquiries.map(inq => {
+                const isEditing = editingInquiry === inq.id;
+                const st = INQUIRY_STATUS_LABELS[inq.status] ?? INQUIRY_STATUS_LABELS['new'];
+                return (
+                  <Card key={inq.id}>
+                    <CardContent>
+                      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+
+                        {/* Left: inquiry details */}
+                        <div style={{ flex: 1, minWidth: 200 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
+                            <p style={{ margin: 0, fontWeight: 700, fontSize: '0.95rem', color: '#0B1D35' }}>{inq.full_name}</p>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '0.15rem 0.55rem', borderRadius: 100, background: st.bg, color: st.color }}>
+                              {st.label}
+                            </span>
+                            {inq.user_type && (
+                              <span style={{ fontSize: '0.72rem', padding: '0.15rem 0.55rem', borderRadius: 100, background: 'rgba(212,168,75,0.1)', color: '#92620A', fontWeight: 600 }}>
+                                {USER_TYPE_LABELS[inq.user_type] ?? inq.user_type}
+                              </span>
+                            )}
+                          </div>
+                          <p style={{ margin: '0 0 0.25rem', fontSize: '0.85rem', color: '#475569' }}>
+                            {inq.company_name} · <a href={`mailto:${inq.email}`} style={{ color: '#3B82F6', textDecoration: 'none' }}>{inq.email}</a>
+                            {inq.phone && ` · ${inq.phone}`}
+                          </p>
+                          {inq.interests && inq.interests.length > 0 && (
+                            <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
+                              {inq.interests.map(interest => (
+                                <span key={interest} style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: 100, background: '#F1F5F9', color: '#64748B', border: '1px solid #E2E8F0' }}>
+                                  {interest.replace(/_/g, ' ')}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {inq.message && (
+                            <p style={{ margin: '0.25rem 0 0', fontSize: '0.82rem', color: '#64748B', lineHeight: 1.5, borderLeft: '3px solid #E2E8F0', paddingLeft: '0.6rem' }}>
+                              {inq.message}
+                            </p>
+                          )}
+                          {inq.notes && !isEditing && (
+                            <p style={{ margin: '0.5rem 0 0', fontSize: '0.82rem', color: '#0B1D35', background: 'rgba(212,168,75,0.07)', border: '1px solid rgba(212,168,75,0.2)', borderRadius: 7, padding: '0.4rem 0.6rem' }}>
+                              📝 {inq.notes}
+                            </p>
+                          )}
+                          <p style={{ margin: '0.4rem 0 0', fontSize: '0.75rem', color: '#94A3B8' }}>
+                            {new Date(inq.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+
+                        {/* Right: edit panel or action button */}
+                        <div style={{ flexShrink: 0 }}>
+                          {isEditing ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', minWidth: 220 }}>
+                              {/* Status select */}
+                              <div style={{ position: 'relative' }}>
+                                <select value={editStatus} onChange={e => setEditStatus(e.target.value)}
+                                  style={{ width: '100%', appearance: 'none', paddingLeft: '0.65rem', paddingRight: '1.75rem', paddingTop: '0.45rem', paddingBottom: '0.45rem', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: '0.82rem', color: '#0B1D35', outline: 'none', background: '#fff', cursor: 'pointer' }}>
+                                  {Object.entries(INQUIRY_STATUS_LABELS).map(([k, v]) => (
+                                    <option key={k} value={k}>{v.label}</option>
+                                  ))}
+                                </select>
+                                <ChevronDown size={12} style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
+                              </div>
+                              {/* Notes textarea */}
+                              <textarea
+                                rows={3}
+                                value={editNotes}
+                                onChange={e => setEditNotes(e.target.value)}
+                                placeholder="Add internal notes…"
+                                style={{ width: '100%', padding: '0.5rem 0.65rem', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: '0.82rem', color: '#0B1D35', outline: 'none', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                              />
+                              {/* Save / cancel */}
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <button onClick={() => handleSaveInquiry(inq.id)} disabled={savingInquiry}
+                                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', padding: '0.45rem 0.75rem', borderRadius: 7, background: '#0B1D35', color: '#fff', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: savingInquiry ? 'not-allowed' : 'pointer', opacity: savingInquiry ? 0.6 : 1 }}>
+                                  {savingInquiry ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Check size={13} />}
+                                  Save
+                                </button>
+                                <button onClick={() => setEditingInquiry(null)}
+                                  style={{ padding: '0.45rem 0.75rem', borderRadius: 7, background: '#F1F5F9', color: '#475569', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+                                  <X size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setEditingInquiry(inq.id); setEditStatus(inq.status); setEditNotes(inq.notes ?? ''); }}
+                              style={{ padding: '0.4rem 0.85rem', border: '1.5px solid #D4A84B', borderRadius: 7, background: '#FFFFFF', color: '#92620A', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              Update
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
     </>
   );
