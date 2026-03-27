@@ -31,9 +31,6 @@ export default async function AdminAffiliatesPage({
 
   const params  = await searchParams;
   const tab     = params.tab ?? 'partners';
-  const page    = parseInt(params.page ?? '1');
-  const perPage = 25;
-  const offset  = (page - 1) * perPage;
 
   // ── Partners — use service role to bypass RLS ──
   const { data: partners } = await adminSupabase
@@ -42,7 +39,7 @@ export default async function AdminAffiliatesPage({
     .order('created_at', { ascending: false });
 
   // ── Commissions ──
-  const { data: commissions, count: commissionsCount } = await adminSupabase
+  const { data: commissions } = await adminSupabase
     .from('affiliate_commissions')
     .select(`
       *,
@@ -50,7 +47,6 @@ export default async function AdminAffiliatesPage({
       referred_user:profiles!affiliate_commissions_referred_user_id_fkey(full_name, email)
     `, { count: 'exact' })
     .order('created_at', { ascending: false })
-    .range(offset, offset + perPage - 1);
 
   // ── Payouts ──
   const { data: payouts } = await adminSupabase
@@ -78,7 +74,6 @@ export default async function AdminAffiliatesPage({
       partners={partners ?? []}
       commissions={commissions ?? []}
       payouts={payouts ?? []}
-      adminId={user.id}
       activeTab={tab}
       stats={{
         totalPartners:          partners?.length ?? 0,
@@ -89,7 +84,6 @@ export default async function AdminAffiliatesPage({
         totalEarned,
         totalPending,
       }}
-      pagination={{ page, perPage, total: commissionsCount ?? 0 }}
     />
   );
 }
