@@ -441,7 +441,7 @@ export default function AdminAffiliatesClient({
                           onChange={e => {
                             setSelectedCommissions(prev => {
                               const next = new Set(prev);
-                              e.target.checked ? next.add(c.id) : next.delete(c.id);
+                              if (e.target.checked) { next.add(c.id); } else { next.delete(c.id); }
                               return next;
                             });
                           }}
@@ -568,7 +568,7 @@ export default function AdminAffiliatesClient({
                     onChange={e => {
                       setSelectedPayouts(prev => {
                         const next = new Set(prev);
-                        e.target.checked ? next.add(p.id) : next.delete(p.id);
+                        if (e.target.checked) { next.add(p.id); } else { next.delete(p.id); }
                         return next;
                       });
                     }}
