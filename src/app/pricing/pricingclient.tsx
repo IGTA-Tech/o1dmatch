@@ -158,24 +158,47 @@ function PricingPageContent({ initialUserId, initialRole }: {
     if (initialRole) {
       if (initialRole === 'employer') setView('employers');
       else if (initialRole === 'talent') setView('talent');
-      return;
+      // Still subscribe below so cross-tab logout/login is detected
     }
 
-    // Fallback: use Supabase browser client (reliable, works with HttpOnly cookies)
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user) return;
-      setUserId(session.user.id);
+
+    const applyUser = (u: { id: string } | null) => {
+      if (!u) return;
+      setUserId(u.id);
       supabase
         .from('profiles')
         .select('role')
-        .eq('id', session.user.id)
+        .eq('id', u.id)
         .single()
         .then(({ data }: { data: { role: string } | null }) => {
           if (data?.role === 'employer') { setUserRole('employer'); setView('employers'); }
           else if (data?.role === 'talent') { setUserRole('talent'); setView('talent'); }
         });
-    });
+    };
+
+    // Initial check — getUser() is reliable with App Router cookies
+    supabase.auth.getUser().then(
+      ({ data }: { data: { user: import('@supabase/supabase-js').User | null } }) => {
+        if (!initialRole) applyUser(data.user);
+      }
+    );
+
+    // Cross-tab: react when user logs in or out in another tab
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event: import('@supabase/supabase-js').AuthChangeEvent,
+       session: import('@supabase/supabase-js').Session | null) => {
+        if (session?.user) {
+          applyUser(session.user);
+        } else {
+          setUserId(null);
+          setUserRole(null);
+          setView('employers');
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, [initialRole]);
 
   useEffect(() => {
