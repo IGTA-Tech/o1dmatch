@@ -139,20 +139,23 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     { count: employerCount },
     { count: lawyerCount },
     { count: adminCount },
+    { count: agencyCount },
   ] = await Promise.all([
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'talent'),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'employer'),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'lawyer'),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'agency'),
   ]);
 
   const tabs = [
-    { key: 'all', label: 'All Users', count: allCount || 0, icon: Users },
-    { key: 'talent', label: 'Talent', count: talentCount || 0, icon: User },
-    { key: 'employer', label: 'Employers', count: employerCount || 0, icon: Building2 },
-    { key: 'lawyer', label: 'Lawyers', count: lawyerCount || 0, icon: Scale },
-    { key: 'admin', label: 'Admins', count: adminCount || 0, icon: Shield },
+    { key: 'all',      label: 'All Users', count: allCount      || 0, icon: Users    },
+    { key: 'talent',   label: 'Talent',    count: talentCount   || 0, icon: User     },
+    { key: 'employer', label: 'Employers', count: employerCount || 0, icon: Building2},
+    { key: 'agency',   label: 'Agencies',  count: agencyCount   || 0, icon: Building2},
+    { key: 'lawyer',   label: 'Lawyers',   count: lawyerCount   || 0, icon: Scale    },
+    { key: 'admin',    label: 'Admins',    count: adminCount    || 0, icon: Shield   },
   ];
 
   const getRoleBadge = (userRole: string) => {
@@ -180,6 +183,8 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
         return <Building2 className="w-4 h-4 text-green-500" />;
       case 'lawyer':
         return <Scale className="w-4 h-4 text-yellow-500" />;
+      case 'agency':
+        return <Building2 className="w-4 h-4 text-purple-500" />;
       case 'admin':
         return <Shield className="w-4 h-4 text-red-500" />;
       default:

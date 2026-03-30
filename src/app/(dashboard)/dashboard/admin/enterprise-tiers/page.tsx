@@ -5,7 +5,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { TIERS } from '@/lib/tiers';
 import AssignTierClient from './AssignTierClient';
-import type { EnterpriseInquiry } from './AssignTierClient';
+import type { EnterpriseInquiry, EnterprisePayment } from './AssignTierClient';
 
 export type { UserRow } from './types';
 import type { UserRow } from './types';
@@ -37,11 +37,29 @@ export default async function EnterpriseTiersAdminPage() {
     { data: tierAssignments },
     { data: lawyerPartners },
     { data: inquiriesRaw },
+    { data: paymentsRaw },
   ] = await Promise.all([
     adminSupabase.from('enterprise_tier_assignments').select('user_id, tier_key').in('user_id', userIds),
     adminSupabase.from('lawyer_profiles').select('user_id, is_partner').in('user_id', userIds),
     adminSupabase.from('enterprise_inquiries').select('*').order('created_at', { ascending: false }),
+    adminSupabase.from('enterprise_payments').select('*').order('created_at', { ascending: false }),
   ]);
+
+  // ── Fetch profiles for payment users separately (enterprise_payments.user_id → auth.users, not profiles) ──
+  const paymentUserIds = Array.from(new Set((paymentsRaw ?? []).map(p => p.user_id).filter(Boolean)));
+  const { data: paymentProfiles } = paymentUserIds.length > 0
+    ? await adminSupabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', paymentUserIds)
+    : { data: [] };
+
+  const profileMap = new Map((paymentProfiles ?? []).map(p => [p.id, p]));
+
+  const payments: EnterprisePayment[] = (paymentsRaw ?? []).map(p => ({
+    ...p,
+    profile: profileMap.get(p.user_id) ?? null,
+  })) as EnterprisePayment[];
 
   const tierMap = new Map<string, string[]>();
   for (const a of tierAssignments ?? []) {
@@ -75,6 +93,7 @@ export default async function EnterpriseTiersAdminPage() {
         users={users}
         tiers={TIERS}
         inquiries={(inquiriesRaw ?? []) as EnterpriseInquiry[]}
+        payments={payments}
       />
     </div>
   );

@@ -3,10 +3,21 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
 import { TIERS, TierKey } from '@/lib/tiers';
-import { Check, X, ArrowRight, Building2, Users, Scale, Sparkles, Star, Mail } from 'lucide-react';
+import { Check, X, ArrowRight, Building2, Users, Scale, Sparkles, Star, Mail, CheckCircle2 } from 'lucide-react';
 import '@/app/theme.css';
 import PlanCTAButton from './PlanCTAButton';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-12-15.clover' as never,
+});
+
+const adminSupabase = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export const metadata = {
   title: 'My Enterprise Plan | O1DMatch',
@@ -163,10 +174,50 @@ function PlanCard({ tierKey, isPartner, priceId }: { tierKey: TierKey; isPartner
 /* ─────────────────────────────────────────────────────────
    Page — server component
 ───────────────────────────────────────────────────────── */
-export default async function EnterpriseTierPage() {
+export default async function EnterpriseTierPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; canceled?: string; session_id?: string }>;
+}) {
   const supabase = await createClient();
+  const params = await searchParams;
+  const isSuccess  = params.success === 'true';
+  const isCanceled = params.canceled === 'true';
+  const sessionId  = params.session_id ?? null;
 
   const { data: { user } } = await supabase.auth.getUser();
+
+  // ── On successful payment: sync enterprise_payments from Stripe session ──
+  let paymentSynced = false;
+  if (isSuccess && sessionId && user) {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      if (session.payment_status === 'paid' || session.status === 'complete') {
+        const tierKey = session.metadata?.tier_key ?? session.metadata?.tier ?? '';
+        await adminSupabase
+          .from('enterprise_payments')
+          .upsert({
+            user_id:               user.id,
+            tier_key:              tierKey,
+            stripe_session_id:     session.id,
+            stripe_customer_id:    session.customer as string ?? null,
+            stripe_subscription_id: session.subscription as string ?? null,
+            amount_total:          (session.amount_total ?? 0) / 100,
+            currency:              session.currency ?? 'usd',
+            billing_email:         session.customer_email ?? null,
+            status:                'paid',
+            updated_at:            new Date().toISOString(),
+          }, {
+            onConflict:       'stripe_session_id',
+            ignoreDuplicates: false,  // update if already exists as pending
+          });
+        paymentSynced = true;
+        console.log('[EnterpriseTier] ✓ Payment synced from session:', sessionId, '| synced:', paymentSynced);
+      }
+    } catch (err) {
+      console.error('[EnterpriseTier] Failed to sync payment from session:', err);
+    }
+  }
 
   let assignedTierKeys: TierKey[] = [];
   let isPartner = false;
@@ -234,6 +285,44 @@ export default async function EnterpriseTierPage() {
 
       {/* ── Body ── */}
       <div className="o1d-pricing-body">
+
+        {/* ── Payment success banner ── */}
+        {isSuccess && (
+          <div style={{
+            maxWidth: 640, margin: '0 auto 2rem', padding: '1rem 1.25rem',
+            background: 'rgba(16,185,129,0.07)', border: '1.5px solid rgba(16,185,129,0.25)',
+            borderRadius: 12, display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+          }}>
+            <CheckCircle2 size={20} style={{ color: '#10B981', flexShrink: 0, marginTop: '0.1rem' }} />
+            <div>
+              <p style={{ margin: 0, fontWeight: 700, color: '#065F46', fontSize: '0.95rem' }}>
+                Payment successful — welcome to your enterprise plan!
+              </p>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: '#047857' }}>
+                Your plan is now active. Our team will reach out within 24 hours to get you set up.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Payment canceled banner ── */}
+        {isCanceled && (
+          <div style={{
+            maxWidth: 640, margin: '0 auto 2rem', padding: '1rem 1.25rem',
+            background: 'rgba(239,68,68,0.06)', border: '1.5px solid rgba(239,68,68,0.2)',
+            borderRadius: 12, display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+          }}>
+            <X size={20} style={{ color: '#EF4444', flexShrink: 0, marginTop: '0.1rem' }} />
+            <div>
+              <p style={{ margin: 0, fontWeight: 700, color: '#991B1B', fontSize: '0.95rem' }}>
+                Payment was canceled
+              </p>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: '#B91C1C' }}>
+                No charge was made. Click &quot;Activate Plan&quot; below to try again.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ── No plan state ── */}
         {!hasPlans && (

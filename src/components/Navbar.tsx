@@ -20,7 +20,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { usePathname } from "next/navigation";
-import { getSupabaseAuthData } from '@/lib/supabase/getToken';
+import { createClient } from '@/lib/supabase/client';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 
 // Define User interface locally
@@ -121,32 +121,60 @@ export default function Navbar() {
       }
     } catch (err) {
       console.error('Error fetching user role:', err);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // Get auth data directly from cookie
-        const authData = getSupabaseAuthData();
+    const supabase = createClient();
 
-        if (authData?.user) {
-          setUser(authData.user as AuthUser);
-          await fetchUserRole(authData.user.id, authData.access_token);
+    // Failsafe: always resolve loading after 3s max
+    const failsafe = setTimeout(() => setLoading(false), 3000);
+
+    // getUser() is more reliable than getSession() in Next.js App Router
+    supabase.auth.getUser().then(({ data }: { data: { user: import('@supabase/supabase-js').User | null } }) => { const authUser = data.user;
+      if (authUser) {
+        setUser(authUser as AuthUser);
+        // Get session for access token needed by fetchUserRole
+        supabase.auth.getSession().then(({ data: sessionData }: { data: { session: import('@supabase/supabase-js').Session | null } }) => { const session = sessionData.session;
+          if (session?.access_token) {
+            fetchUserRole(authUser.id, session.access_token);
+          } else {
+            setLoading(false);
+          }
+        });
+      } else {
+        setUser(null);
+        setUserRole(null);
+        setLoading(false);
+      }
+    }).catch(() => {
+      setUser(null);
+      setUserRole(null);
+      setLoading(false);
+    });
+
+    // Listen for auth state changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event: import('@supabase/supabase-js').AuthChangeEvent, session: import('@supabase/supabase-js').Session | null) => {
+        clearTimeout(failsafe);
+        if (session?.user) {
+          setUser(session.user as AuthUser);
+          fetchUserRole(session.user.id, session.access_token);
         } else {
           setUser(null);
           setUserRole(null);
+          setTalentTier(null);
+          setLoading(false);
         }
-      } catch (error) {
-        console.log('Auth check error:', error);
-        setUser(null);
-        setUserRole(null);
-      } finally {
-        setLoading(false);
       }
-    };
+    );
 
-    checkAuth();
+    return () => {
+      clearTimeout(failsafe);
+      subscription.unsubscribe();
+    };
   }, [fetchUserRole]);
 
   const getDashboardLink = () => {
@@ -198,7 +226,7 @@ export default function Navbar() {
   const profileLink = getProfileLink();
 
   return (
-    <header className={`fixed ${isDemoMode ? 'top-10' : 'top-0'} left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 z-50`}>
+    <header className={`fixed ${isDemoMode ? 'top-10' : 'top-0'} left-0 right-0 backdrop-blur-sm border-b border-[#1a3050] z-50`} style={{ background: 'rgba(11,29,53,0.95)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2.5">
@@ -209,7 +237,7 @@ export default function Navbar() {
               O1
             </div>
             <span
-              className="font-bold text-lg text-gray-900"
+              className="font-bold text-lg text-white"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
               O1DMatch
@@ -220,31 +248,31 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center gap-8">
             <Link
               href="/how-it-works/candidates"
-              className={`py-2 hover:text-gray-900 ${pathname === "/how-it-works/candidates" ? "text-blue-600" : "text-gray-600"}`}
+              className={`py-2 hover:text-white ${pathname === "/how-it-works/candidates" ? "text-blue-600" : "text-white/70"}`}
             >
               For Candidates
             </Link>
             <Link
               href="/how-it-works/employers"
-              className={`py-2 hover:text-gray-900 ${pathname === "/how-it-works/employers" ? "text-blue-600" : "text-gray-600"}`}
+              className={`py-2 hover:text-white ${pathname === "/how-it-works/employers" ? "text-blue-600" : "text-white/70"}`}
             >
               For Employers
             </Link>
             <Link
               href="/pricing"
-              className={`py-2 hover:text-gray-900 ${pathname === "/pricing" ? "text-blue-600" : "text-gray-600"}`}
+              className={`py-2 hover:text-white ${pathname === "/pricing" ? "text-blue-600" : "text-white/70"}`}
             >
               Pricing
             </Link>
             <Link
               href="/enterprise"
-              className={`py-2 hover:text-gray-900 ${pathname === "/enterprise" ? "text-blue-600" : "text-gray-600"}`}
+              className={`py-2 hover:text-white ${pathname === "/enterprise" ? "text-blue-600" : "text-white/70"}`}
             >
               Enterprise
             </Link>
             <Link
               href="/about"
-              className={`py-2 hover:text-gray-900 ${pathname === "/about" ? "text-blue-600" : "text-gray-600"}`}
+              className={`py-2 hover:text-white ${pathname === "/about" ? "text-blue-600" : "text-white/70"}`}
             >
               About
             </Link>
@@ -252,7 +280,7 @@ export default function Navbar() {
             {/* Blog Link */}
             {/* <Link
               href="/blog"
-              className={`flex items-center gap-1 py-2 hover:text-gray-900 ${pathname.startsWith("/blog") ? "text-blue-600" : "text-gray-600"}`}
+              className={`flex items-center gap-1 py-2 hover:text-white ${pathname.startsWith("/blog") ? "text-blue-600" : "text-white/70"}`}
             >
               <BookOpen className="w-4 h-4" />
               Blog
@@ -262,8 +290,8 @@ export default function Navbar() {
             {/* <div className="relative" ref={legalRef}>
               <button
                 onClick={() => setIsLegalOpen(!isLegalOpen)}
-                className={`flex items-center gap-1 py-2 hover:text-gray-900 ${
-                  pathname === "/privacy" || pathname === "/terms" ? "text-blue-600" : "text-gray-600"
+                className={`flex items-center gap-1 py-2 hover:text-white ${
+                  pathname === "/privacy" || pathname === "/terms" ? "text-blue-600" : "text-white/70"
                 }`}
               >
                 <Shield className="w-4 h-4" />
@@ -297,7 +325,7 @@ export default function Navbar() {
             <div className="relative" ref={onboardingRef}>
               <button
                 onClick={() => setIsOnboardingOpen(!isOnboardingOpen)}
-                className={`flex items-center gap-1 py-2 hover:text-gray-900 ${isOnboardingActive ? "text-blue-600" : "text-gray-600"}`}
+                className={`flex items-center gap-1 py-2 hover:text-white ${isOnboardingActive ? "text-blue-600" : "text-white/70"}`}
               >
                 Onboarding
                 <ChevronDown className={`w-4 h-4 transition-transform ${isOnboardingOpen ? 'rotate-180' : ''}`} />
@@ -326,8 +354,8 @@ export default function Navbar() {
             </div>
 
             {/* Auth Links - Show based on user state, not loading */}
-            {loading ? (
-              // Show skeleton while loading
+            {(!user && loading) ? (
+              // Show skeleton only when user existence is unknown
               <div className="flex items-center gap-4">
                 <div className="w-20 h-8 bg-gray-200 rounded animate-pulse" />
                 <div className="w-24 h-8 bg-gray-200 rounded animate-pulse" />
@@ -338,7 +366,7 @@ export default function Navbar() {
                 <div className="relative" ref={dashboardRef}>
                   <button
                     onClick={() => setIsDashboardOpen(!isDashboardOpen)}
-                    className={`flex items-center gap-1 py-2 hover:text-gray-900 ${pathname.startsWith("/dashboard") ? "text-blue-600" : "text-gray-600"}`}
+                    className={`flex items-center gap-1 py-2 hover:text-white ${pathname.startsWith("/dashboard") ? "text-blue-600" : "text-white/70"}`}
                   >
                     <LayoutDashboard className="w-4 h-4" />
                     Dashboard
@@ -465,7 +493,7 @@ export default function Navbar() {
                           Social Media Scanner
                         </Link>
                       )}
-                      <div className="border-t border-gray-100 my-1" />
+                      <div className="border-t border-[#1a3050] my-1" />
                       <div className="px-4 py-2">
                         <SignOutButton variant="menu" />
                       </div>
@@ -477,7 +505,7 @@ export default function Navbar() {
               <>
                 <Link
                   href={loginHref}
-                  className={`py-2 hover:text-gray-900 ${pathname === "/login" ? "text-blue-600" : "text-gray-600"}`}
+                  className={`py-2 hover:text-white ${pathname === "/login" ? "text-blue-600" : "text-white/70"}`}
                 >
                   Log In
                 </Link>
@@ -498,55 +526,55 @@ export default function Navbar() {
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
-              <X className="w-6 h-6 text-gray-600" />
+              <X className="w-6 h-6 text-white/70" />
             ) : (
-              <Menu className="w-6 h-6 text-gray-600" />
+              <Menu className="w-6 h-6 text-white/70" />
             )}
           </button>
         </div>
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-100">
+          <div className="md:hidden py-4 border-t border-[#1a3050]">
             <nav className="flex flex-col gap-2">
               <Link
                 href="/how-it-works/candidates"
-                className="text-gray-600 hover:text-gray-900 py-2"
+                className="text-white/70 hover:text-white py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 For Candidates
               </Link>
               <Link
                 href="/how-it-works/employers"
-                className="text-gray-600 hover:text-gray-900 py-2"
+                className="text-white/70 hover:text-white py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 For Employers
               </Link>
               <Link
                 href="/pricing"
-                className="text-gray-600 hover:text-gray-900 py-2"
+                className="text-white/70 hover:text-white py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Pricing
               </Link>
               <Link
                 href="/enterprise"
-                className={`text-gray-600 hover:text-gray-900 py-2 ${pathname === "/enterprise" ? "text-blue-600 font-medium" : ""}`}
+                className={`text-white/70 hover:text-white py-2 ${pathname === "/enterprise" ? "text-blue-600 font-medium" : ""}`}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Enterprise
               </Link>
               <Link
                 href="/about"
-                className="text-gray-600 hover:text-gray-900 py-2"
+                className="text-white/70 hover:text-white py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 About
               </Link>
              {/* <Link
                 href="/blog"
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <BookOpen className="w-4 h-4" />
@@ -554,18 +582,18 @@ export default function Navbar() {
               </Link>
                <Link
                 href="/lawyers"
-                className="text-gray-600 hover:text-gray-900 py-2"
+                className="text-white/70 hover:text-white py-2"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Lawyer Directory
               </Link> */}
 
               {/* Mobile Legal Links */}
-              {/* <div className="py-2 border-t border-gray-100 mt-2">
+              {/* <div className="py-2 border-t border-[#1a3050] mt-2">
                 <p className="text-sm font-medium text-gray-500 mb-2">Legal</p>
                 <Link
                   href="/privacy"
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
+                  className="flex items-center gap-2 text-white/70 hover:text-white py-2 pl-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <Shield className="w-4 h-4" />
@@ -573,7 +601,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   href="/terms"
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
+                  className="flex items-center gap-2 text-white/70 hover:text-white py-2 pl-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <FileText className="w-4 h-4" />
@@ -582,11 +610,11 @@ export default function Navbar() {
               </div> */}
 
               {/* Mobile Onboarding Links */}
-              <div className="py-2 border-t border-gray-100 mt-2">
+              <div className="py-2 border-t border-[#1a3050] mt-2">
                 <p className="text-sm font-medium text-gray-500 mb-2">Onboarding</p>
                 <Link
                   href="https://app.o1dmatch.com/onboarding/talent"
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
+                  className="flex items-center gap-2 text-white/70 hover:text-white py-2 pl-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <Users className="w-4 h-4" />
@@ -594,7 +622,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   href="https://app.o1dmatch.com/onboarding/employer"
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2 pl-2"
+                  className="flex items-center gap-2 text-white/70 hover:text-white py-2 pl-2"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <Building2 className="w-4 h-4" />
@@ -603,15 +631,15 @@ export default function Navbar() {
               </div>
 
               {/* Mobile Auth Links */}
-              {loading ? (
-                <div className="border-t border-gray-100 pt-2 mt-2">
+              {(!user && loading) ? (
+                <div className="border-t border-[#1a3050] pt-2 mt-2">
                   <div className="w-full h-10 bg-gray-200 rounded animate-pulse" />
                 </div>
               ) : isLoggedIn ? (
-                <div className="border-t border-gray-100 pt-2 mt-2">
+                <div className="border-t border-[#1a3050] pt-2 mt-2">
                   <Link
                     href={getDashboardLink()}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                    className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <LayoutDashboard className="w-4 h-4" />
@@ -620,7 +648,7 @@ export default function Navbar() {
                   {profileLink && (
                     <Link
                       href={profileLink}
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <User className="w-4 h-4" />
@@ -630,7 +658,7 @@ export default function Navbar() {
                   {userRole === 'employer' && (
                     <Link
                       href="/dashboard/employer/billing"
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <CreditCard className="w-4 h-4" />
@@ -640,7 +668,7 @@ export default function Navbar() {
                   {userRole === 'employer' && (
                     <Link
                       href="/dashboard/employer/xtraordinarypetitions"
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <FileText className="w-4 h-4" />
@@ -650,7 +678,7 @@ export default function Navbar() {
                   {userRole === 'employer' && (
                     <Link
                       href="/dashboard/employer/visa-evaluations"
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <ClipboardCheck className="w-4 h-4" />
@@ -660,7 +688,7 @@ export default function Navbar() {
                   {userRole === 'employer' && (
                     <Link
                       href="/dashboard/employer/scoring"
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <Star className="w-4 h-4" />
@@ -670,7 +698,7 @@ export default function Navbar() {
                   {userRole === 'employer' && (
                     <Link
                       href="/dashboard/employer/exhibits"
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <FolderOpen className="w-4 h-4" />
@@ -680,7 +708,7 @@ export default function Navbar() {
                   {userRole === 'agency' && (
                     <Link
                       href="/dashboard/agency/messages"
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <MessageSquare className="w-4 h-4" />
@@ -690,7 +718,7 @@ export default function Navbar() {
                   {userRole === 'talent' && (
                     <Link
                       href="/dashboard/talent/billing"
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <CreditCard className="w-4 h-4" />
@@ -700,7 +728,7 @@ export default function Navbar() {
                   {/* {userRole === 'talent' && !isFreeTalent && (
                     <Link
                       href="/dashboard/talent/scoring"
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <BarChart3 className="w-4 h-4" />
@@ -710,7 +738,7 @@ export default function Navbar() {
                   {userRole === 'talent' && !isFreeTalent && (
                     <Link
                       href="/dashboard/talent/visa-evaluations"
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <ClipboardCheck className="w-4 h-4" />
@@ -720,7 +748,7 @@ export default function Navbar() {
                   {userRole === 'talent' && !isFreeTalent && (
                     <Link
                       href="/dashboard/talent/social-media-scanner"
-                      className="flex items-center gap-2 text-gray-600 hover:text-gray-900 py-2"
+                      className="flex items-center gap-2 text-white/70 hover:text-white py-2"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <Shield className="w-4 h-4" />
@@ -731,10 +759,10 @@ export default function Navbar() {
                   <SignOutButton variant="menu" />
                 </div>
               ) : (
-                <div className="border-t border-gray-100 pt-2 mt-2 space-y-2">
+                <div className="border-t border-[#1a3050] pt-2 mt-2 space-y-2">
                   <Link
                     href={loginHref}
-                    className="text-gray-600 hover:text-gray-900 py-2 block"
+                    className="text-white/70 hover:text-white py-2 block"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Log In

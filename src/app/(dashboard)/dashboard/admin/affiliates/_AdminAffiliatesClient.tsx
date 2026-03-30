@@ -77,8 +77,59 @@ export default function AdminAffiliatesClient({
   const [editingRate, setEditingRate] = useState<string | null>(null);
   const [newRate, setNewRate]         = useState('');
   const [approvingId, setApprovingId] = useState<string | null>(null); // per-row spinner
+  const [selectedCommissions, setSelectedCommissions] = useState<Set<string>>(new Set());
+  const [selectedPayouts, setSelectedPayouts]         = useState<Set<string>>(new Set());
+  const [bulkRef, setBulkRef]                         = useState('');
+  const [bulkApproving, setBulkApproving]             = useState(false);
+  const [bulkPaying, setBulkPaying]                   = useState(false);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  // ── Approveble commissions (pending + clawback passed) ──
+  const approvableCommissions = commissions.filter(
+    c => c.status === 'pending' && c.clawback_until && new Date() > new Date(c.clawback_until)
+  );
+
+  // ── Bulk approve selected commissions ──
+  const handleBulkApproveSelected = async () => {
+    if (selectedCommissions.size === 0) return;
+    if (!confirm(`Approve ${selectedCommissions.size} selected commission${selectedCommissions.size > 1 ? 's' : ''}?`)) return;
+    setBulkApproving(true);
+    const ids = Array.from(selectedCommissions);
+    let approved = 0;
+    const newPayouts: Payout[] = [];
+    for (const id of ids) {
+      const res = await adminAction({ action: 'approve_commission', commissionId: id }) as { success: boolean; payout?: Payout; error?: string };
+      if (res.success) {
+        approved++;
+        if (res.payout) newPayouts.push(res.payout);
+      }
+    }
+    setCommissions(prev => prev.map(c => selectedCommissions.has(c.id) ? { ...c, status: 'approved' } : c));
+    if (newPayouts.length > 0) setPayouts(prev => [...newPayouts, ...prev]);
+    setSelectedCommissions(new Set());
+    setBulkApproving(false);
+    showToast(`✓ ${approved} commission${approved > 1 ? 's' : ''} approved — ${newPayouts.length} payout${newPayouts.length > 1 ? 's' : ''} created`);
+  };
+
+  // ── Bulk mark payouts paid ──
+  const handleBulkMarkPaid = async () => {
+    if (selectedPayouts.size === 0) return;
+    if (!bulkRef.trim()) { showToast('Enter a reference for all selected payouts'); return; }
+    if (!confirm(`Mark ${selectedPayouts.size} payout${selectedPayouts.size > 1 ? 's' : ''} as paid with reference "${bulkRef}"?`)) return;
+    setBulkPaying(true);
+    const ids = Array.from(selectedPayouts);
+    let paid = 0;
+    for (const id of ids) {
+      const res = await adminAction({ action: 'mark_payout_paid', payoutId: id, reference: bulkRef });
+      if (res.success) paid++;
+    }
+    setPayouts(prev => prev.filter(p => !selectedPayouts.has(p.id)));
+    setSelectedPayouts(new Set());
+    setBulkRef('');
+    setBulkPaying(false);
+    showToast(`✓ ${paid} payout${paid > 1 ? 's' : ''} marked as paid`);
+  };
 
   // ── Partner: approve/suspend ──
   const handlePartnerStatus = (id: string, status: 'active' | 'suspended' | 'inactive') => {
@@ -326,10 +377,50 @@ export default function AdminAffiliatesClient({
 
       {/* ── COMMISSIONS TAB ── */}
       {tab === 'commissions' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="space-y-3">
+          {/* Bulk toolbar — shows when rows are selected */}
+          {selectedCommissions.size > 0 && (
+            <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+              <span className="text-sm font-semibold text-blue-700">
+                {selectedCommissions.size} selected
+              </span>
+              <button
+                onClick={handleBulkApproveSelected}
+                disabled={bulkApproving}
+                className="px-4 py-1.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+              >
+                {bulkApproving ? (
+                  <><svg className="animate-spin w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"/></svg> Approving…</>
+                ) : `✓ Approve ${selectedCommissions.size} selected`}
+              </button>
+              <button
+                onClick={() => setSelectedCommissions(new Set())}
+                className="text-xs text-blue-500 hover:text-blue-700 underline"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 w-8">
+                  <input
+                    type="checkbox"
+                    className="rounded"
+                    checked={approvableCommissions.length > 0 && approvableCommissions.every(c => selectedCommissions.has(c.id))}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setSelectedCommissions(new Set(approvableCommissions.map(c => c.id)));
+                      } else {
+                        setSelectedCommissions(new Set());
+                      }
+                    }}
+                    title="Select all approvable commissions"
+                  />
+                </th>
                 {['Referred User', 'Partner', 'Payment', 'Commission', 'Clawback Until', 'Status', 'Actions'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
                 ))}
@@ -338,8 +429,25 @@ export default function AdminAffiliatesClient({
             <tbody className="divide-y divide-gray-100">
               {commissions.map((c: Commission) => {
                 const clawbackPassed = c.clawback_until && new Date() > new Date(c.clawback_until);
+                const canSelect = c.status === 'pending' && !!clawbackPassed;
                 return (
-                  <tr key={c.id} className="hover:bg-gray-50">
+                  <tr key={c.id} className={`hover:bg-gray-50 ${selectedCommissions.has(c.id) ? 'bg-blue-50' : ''}`}>
+                    <td className="px-4 py-3">
+                      {canSelect && (
+                        <input
+                          type="checkbox"
+                          className="rounded"
+                          checked={selectedCommissions.has(c.id)}
+                          onChange={e => {
+                            setSelectedCommissions(prev => {
+                              const next = new Set(prev);
+                              e.target.checked ? next.add(c.id) : next.delete(c.id);
+                              return next;
+                            });
+                          }}
+                        />
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <p className="text-sm font-medium text-gray-900">{c.referred_user?.full_name ?? '—'}</p>
                       <p className="text-xs text-gray-400">{c.referred_user?.email}</p>
@@ -395,20 +503,77 @@ export default function AdminAffiliatesClient({
             <div className="text-center py-12 text-gray-400 text-sm">No commissions found.</div>
           )}
         </div>
+        </div>
       )}
 
       {/* ── PAYOUTS TAB ── */}
       {tab === 'payouts' && (
         <div className="space-y-3">
+
+          {/* Bulk mark paid toolbar */}
+          {payouts.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3 flex-wrap shadow-sm">
+              <input
+                type="checkbox"
+                className="rounded"
+                checked={payouts.length > 0 && payouts.every(p => selectedPayouts.has(p.id))}
+                onChange={e => {
+                  if (e.target.checked) setSelectedPayouts(new Set(payouts.map(p => p.id)));
+                  else setSelectedPayouts(new Set());
+                }}
+              />
+              <span className="text-sm text-gray-600 font-medium">
+                {selectedPayouts.size > 0 ? `${selectedPayouts.size} selected` : 'Select all'}
+              </span>
+              {selectedPayouts.size > 0 && (
+                <>
+                  <input
+                    type="text"
+                    placeholder="Bulk reference (PayPal batch, check #)"
+                    value={bulkRef}
+                    onChange={e => setBulkRef(e.target.value)}
+                    className="text-sm border border-gray-300 rounded-xl px-3 py-2 flex-1 min-w-[220px] focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  <button
+                    onClick={handleBulkMarkPaid}
+                    disabled={bulkPaying || !bulkRef.trim()}
+                    className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                  >
+                    {bulkPaying ? (
+                      <><svg className="animate-spin w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"/></svg> Marking paid…</>
+                    ) : `✓ Mark ${selectedPayouts.size} as Paid`}
+                  </button>
+                  <button onClick={() => { setSelectedPayouts(new Set()); setBulkRef(''); }}
+                    className="text-xs text-gray-400 hover:text-gray-600 underline">
+                    Clear
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
           {payouts.length === 0 ? (
             <div className="bg-white rounded-xl border border-dashed border-gray-300 p-12 text-center text-gray-400 text-sm">
               No pending payouts.
             </div>
           ) : (
             payouts.map((p: Payout) => (
-              <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div>
+              <div key={p.id} className={`bg-white rounded-xl border border-gray-200 p-5 shadow-sm transition-colors ${selectedPayouts.has(p.id) ? 'border-green-300 bg-green-50' : ''}`}>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Checkbox */}
+                  <input
+                    type="checkbox"
+                    className="rounded flex-shrink-0"
+                    checked={selectedPayouts.has(p.id)}
+                    onChange={e => {
+                      setSelectedPayouts(prev => {
+                        const next = new Set(prev);
+                        e.target.checked ? next.add(p.id) : next.delete(p.id);
+                        return next;
+                      });
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="font-semibold text-gray-900">{p.partner?.profile?.full_name ?? '—'}</p>
                       <code className="text-xs bg-gray-100 px-2 py-0.5 rounded">{p.partner?.affiliate_code}</code>

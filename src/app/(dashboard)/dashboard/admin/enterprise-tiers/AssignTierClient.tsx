@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import {
   Building2, Users, Scale, Search, CheckCircle2,
   XCircle, Loader2, ChevronDown, X, Star,
-  MessageSquare, Check,
+  MessageSquare, Check, CreditCard, DollarSign,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import type { UserRow } from './types';
@@ -40,6 +40,35 @@ const USER_TYPE_LABELS: Record<string, string> = {
   employer:             'Employer',
   immigration_attorney: 'Immigration Attorney',
   staffing_agency:      'Staffing Agency',
+};
+
+export interface EnterprisePayment {
+  id:                     string;
+  user_id:                string;
+  tier_key:               string;
+  stripe_session_id:      string | null;
+  stripe_customer_id:     string | null;
+  stripe_subscription_id: string | null;
+  amount_total:           number | null;
+  currency:               string;
+  status:                 string;
+  billing_email:          string | null;
+  created_at:             string;
+  profile?: { full_name: string | null; email: string } | null;
+}
+
+const TIER_LABELS: Record<string, string> = {
+  managed_enterprise:  'Employer Enterprise',
+  agency_professional: 'Agency Professional',
+  agency_enterprise:   'Agency Enterprise',
+  attorney_partner:    'Attorney Partner',
+};
+
+const PAYMENT_STATUS_STYLE: Record<string, { bg: string; color: string }> = {
+  paid:     { bg: 'rgba(16,185,129,0.1)',  color: '#065F46' },
+  pending:  { bg: 'rgba(245,158,11,0.1)',  color: '#92400E' },
+  canceled: { bg: 'rgba(239,68,68,0.1)',   color: '#991B1B' },
+  refunded: { bg: 'rgba(100,116,139,0.1)', color: '#334155' },
 };
 
 const ROLE_ICON: Record<string, React.ElementType> = {
@@ -374,10 +403,12 @@ export default function AssignTierClient({
   users: initialUsers,
   tiers,
   inquiries: initialInquiries,
+  payments,
 }: {
   users:     UserRow[];
   tiers:     Record<TierKey, Tier>;
   inquiries: EnterpriseInquiry[];
+  payments:  EnterprisePayment[];
 }) {
   const PAGE_SIZE = 50;
 
@@ -388,7 +419,7 @@ export default function AssignTierClient({
   const [currentPage, setCurrentPage]   = useState(1);
 
   // ── Inquiries state ──
-  const [mainTab, setMainTab]             = useState<'users' | 'inquiries'>('users');
+  const [mainTab, setMainTab]             = useState<'users' | 'assigned' | 'inquiries' | 'payments'>('users');
   const [inquiries, setInquiries]         = useState<EnterpriseInquiry[]>(initialInquiries);
   const [inqStatusFilter, setInqStatusFilter] = useState<string>('all');
   const [inqUserTypeFilter, setInqUserTypeFilter] = useState<string>('all');
@@ -467,10 +498,12 @@ export default function AssignTierClient({
       {/* ── Main tab switcher ── */}
       <div style={{ display: 'flex', gap: '0.25rem', borderBottom: '1.5px solid #E2E8F0', marginBottom: '1.5rem' }}>
         {[
-          { key: 'users',     label: 'Users',                                       icon: Users        },
-          { key: 'inquiries', label: `Inquiries (${inquiries.length})`,             icon: MessageSquare},
+          { key: 'users',    label: 'Users',                                               icon: Users        },
+          { key: 'assigned', label: `Tiers Assigned (${counts.assigned})`,                 icon: CheckCircle2 },
+          { key: 'inquiries',label: `Inquiries (${inquiries.length})`,                     icon: MessageSquare},
+          { key: 'payments', label: `Payments (${payments.length})`,                       icon: CreditCard   },
         ].map(({ key, label, icon: Icon }) => (
-          <button key={key} onClick={() => setMainTab(key as 'users' | 'inquiries')}
+          <button key={key} onClick={() => setMainTab(key as 'users' | 'assigned' | 'inquiries' | 'payments')}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
               padding: '0.6rem 1rem', fontSize: '0.875rem', fontWeight: 600,
@@ -495,19 +528,17 @@ export default function AssignTierClient({
       {/* ══ USERS TAB ══════════════════════════════════════════ */}
       {mainTab === 'users' && (
       <>
-      {/* Summary stats */}
+      {/* Summary stats — read-only, no filter click */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Employers',      value: counts.employer, icon: Building2,   color: 'text-blue-600',   bg: 'bg-blue-50',   filter: 'employer' as RoleFilter },
-          { label: 'Agencies',       value: counts.agency,   icon: Users,       color: 'text-purple-600', bg: 'bg-purple-50', filter: 'agency'   as RoleFilter },
-          { label: 'Attorneys',      value: counts.lawyer,   icon: Scale,       color: 'text-indigo-600', bg: 'bg-indigo-50', filter: 'lawyer'   as RoleFilter },
-          { label: 'Tiers Assigned', value: counts.assigned, icon: CheckCircle2,color: 'text-green-600',  bg: 'bg-green-50',  filter: 'assigned' as RoleFilter },
-        ].map(({ label, value, icon: Icon, color, bg, filter }) => (
-          <button
+          { label: 'Employers',      value: counts.employer, icon: Building2,   color: 'text-blue-600',   bg: 'bg-blue-50'   },
+          { label: 'Agencies',       value: counts.agency,   icon: Users,       color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Attorneys',      value: counts.lawyer,   icon: Scale,       color: 'text-indigo-600', bg: 'bg-indigo-50' },
+          { label: 'Tiers Assigned', value: counts.assigned, icon: CheckCircle2,color: 'text-green-600',  bg: 'bg-green-50'  },
+        ].map(({ label, value, icon: Icon, color, bg }) => (
+          <div
             key={label}
-            onClick={() => handleRoleFilter(filter)}
-            className={`text-left w-full ${roleFilter === filter ? 'ring-2 ring-[#D4A84B]' : ''}`}
-            style={{ borderRadius: 12, background: '#FFFFFF', border: '1px solid #E2E8F0', padding: '1rem', cursor: 'pointer', transition: 'all 0.15s' }}
+            style={{ borderRadius: 12, background: '#FFFFFF', border: '1px solid #E2E8F0', padding: '1rem' }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div className={`p-2 ${bg} rounded-lg w-fit`}>
@@ -516,7 +547,7 @@ export default function AssignTierClient({
               <p className="text-2xl font-bold text-gray-900">{value}</p>
               <p className="text-sm text-gray-600">{label}</p>
             </div>
-          </button>
+          </div>
         ))}
       </div>
 
@@ -524,7 +555,7 @@ export default function AssignTierClient({
       <Card>
         <CardHeader>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-            <CardTitle>Users</CardTitle>
+            <CardTitle>All Users</CardTitle>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
               {/* Search */}
               <div style={{ position: 'relative' }}>
@@ -543,7 +574,7 @@ export default function AssignTierClient({
                   }}
                 />
               </div>
-              {/* Role filter */}
+              {/* Role filter dropdown */}
               <div style={{ position: 'relative' }}>
                 <select
                   value={roleFilter}
@@ -560,7 +591,6 @@ export default function AssignTierClient({
                   <option value="employer">Employers</option>
                   <option value="agency">Agencies</option>
                   <option value="lawyer">Attorneys</option>
-                  <option value="assigned">Tiers Assigned</option>
                 </select>
                 <ChevronDown size={13} style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
               </div>
@@ -755,6 +785,91 @@ export default function AssignTierClient({
       </>
       )} {/* end users tab */}
 
+      {/* ══ TIERS ASSIGNED TAB ═════════════════════════════════ */}
+      {mainTab === 'assigned' && (
+        <Card>
+          <CardHeader>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+              <CardTitle>Users with Assigned Tiers ({counts.assigned})</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {users.filter(u => (u.assigned_tiers ?? []).length > 0).length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No users have been assigned a tier yet.</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                      {['User', 'Role', 'Company / Firm', 'Assigned Tiers', 'Joined', 'Action'].map((h) => (
+                        <th key={h} style={{
+                          padding: '0.6rem 0.75rem', textAlign: 'left',
+                          fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8',
+                          textTransform: 'uppercase', letterSpacing: '0.06em',
+                        }}>
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users
+                      .filter(u => (u.assigned_tiers ?? []).length > 0)
+                      .map((u) => {
+                        const Icon = ROLE_ICON[u.role] ?? Building2;
+                        return (
+                          <tr key={u.id} style={{ borderBottom: '1px solid #F8FAFC' }}>
+                            <td style={{ padding: '0.75rem' }}>
+                              <p style={{ margin: 0, fontWeight: 600, color: '#0B1D35' }}>{u.full_name || '—'}</p>
+                              <p style={{ margin: 0, fontSize: '0.78rem', color: '#94A3B8' }}>{u.email}</p>
+                            </td>
+                            <td style={{ padding: '0.75rem' }}>
+                              <span style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                                padding: '0.2rem 0.6rem', borderRadius: 100,
+                                fontSize: '0.72rem', fontWeight: 600,
+                                background: '#F8FAFC', color: '#475569', border: '1px solid #E2E8F0',
+                              }}>
+                                <Icon size={11} /> {ROLE_LABEL[u.role] ?? u.role}
+                              </span>
+                            </td>
+                            <td style={{ padding: '0.75rem', color: '#475569', fontSize: '0.85rem' }}>
+                              {u.company_name || u.law_firm || <span style={{ color: '#CBD5E1' }}>—</span>}
+                            </td>
+                            <td style={{ padding: '0.75rem' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                                {(u.assigned_tiers ?? []).map((key) => (
+                                  <TierBadge key={key} tierKey={key} tiers={tiers} />
+                                ))}
+                              </div>
+                            </td>
+                            <td style={{ padding: '0.75rem', color: '#94A3B8', fontSize: '0.82rem' }}>
+                              {new Date(u.created_at).toLocaleDateString()}
+                            </td>
+                            <td style={{ padding: '0.75rem' }}>
+                              <button
+                                onClick={() => setModal(u)}
+                                style={{
+                                  padding: '0.4rem 0.85rem',
+                                  border: '1.5px solid #D4A84B', borderRadius: 7,
+                                  background: '#FFFFFF', color: '#92620A',
+                                  fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                                }}
+                              >
+                                Change Tiers
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* ══ INQUIRIES TAB ══════════════════════════════════════ */}
       {mainTab === 'inquiries' && (
         <div className="space-y-4">
@@ -902,6 +1017,87 @@ export default function AssignTierClient({
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ══ PAYMENTS TAB ═══════════════════════════════════════ */}
+      {mainTab === 'payments' && (
+        <div className="space-y-4">
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Total Payments', value: payments.length,                                                                       color: 'text-gray-900'  },
+              { label: 'Paid',           value: payments.filter(p => p.status === 'paid').length,                                      color: 'text-green-700' },
+              { label: 'Total Revenue',  value: `$${payments.filter(p=>p.status==='paid').reduce((s,p)=>s+(p.amount_total??0),0).toLocaleString('en-US',{minimumFractionDigits:2})}`, color: 'text-blue-700' },
+            ].map(s => (
+              <div key={s.label} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: '1rem' }}>
+                <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Payments table */}
+          <Card>
+            <CardHeader><CardTitle>Enterprise Payment History</CardTitle></CardHeader>
+            <CardContent>
+              {payments.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#94A3B8' }}>
+                  <CreditCard size={32} style={{ margin: '0 auto 0.75rem', display: 'block' }} />
+                  <p style={{ margin: 0, fontWeight: 500 }}>No enterprise payments yet</p>
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.82rem' }}>Payments appear here after users complete Stripe checkout</p>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                        {['User', 'Tier', 'Amount', 'Status', 'Billing Email', 'Subscription ID', 'Date'].map(h => (
+                          <th key={h} style={{ padding: '0.6rem 0.75rem', textAlign: 'left', fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payments.map(p => {
+                        const st = PAYMENT_STATUS_STYLE[p.status] ?? PAYMENT_STATUS_STYLE['pending'];
+                        return (
+                          <tr key={p.id} style={{ borderBottom: '1px solid #F8FAFC' }}>
+                            <td style={{ padding: '0.75rem' }}>
+                              <p style={{ margin: 0, fontWeight: 600, color: '#0B1D35' }}>{p.profile?.full_name ?? '—'}</p>
+                              <p style={{ margin: 0, fontSize: '0.75rem', color: '#94A3B8' }}>{p.profile?.email ?? p.user_id.slice(0, 8) + '…'}</p>
+                            </td>
+                            <td style={{ padding: '0.75rem' }}>
+                              <span style={{ display: 'inline-block', padding: '0.2rem 0.65rem', borderRadius: 100, fontSize: '0.72rem', fontWeight: 600, background: 'rgba(212,168,75,0.1)', color: '#92620A', border: '1px solid rgba(212,168,75,0.25)' }}>
+                                {TIER_LABELS[p.tier_key] ?? p.tier_key}
+                              </span>
+                            </td>
+                            <td style={{ padding: '0.75rem', fontWeight: 700, color: '#0B1D35' }}>
+                              {p.amount_total != null ? `$${p.amount_total.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—'}
+                            </td>
+                            <td style={{ padding: '0.75rem' }}>
+                              <span style={{ display: 'inline-block', padding: '0.2rem 0.65rem', borderRadius: 100, fontSize: '0.72rem', fontWeight: 600, background: st.bg, color: st.color, textTransform: 'capitalize' }}>
+                                {p.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '0.75rem', fontSize: '0.82rem', color: '#475569' }}>{p.billing_email ?? '—'}</td>
+                            <td style={{ padding: '0.75rem' }}>
+                              {p.stripe_subscription_id
+                                ? <code style={{ fontSize: '0.72rem', background: '#F1F5F9', padding: '0.2rem 0.4rem', borderRadius: 4, color: '#475569' }}>{p.stripe_subscription_id.slice(0, 14)}…</code>
+                                : '—'}
+                            </td>
+                            <td style={{ padding: '0.75rem', fontSize: '0.82rem', color: '#94A3B8' }}>
+                              {new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
     </>
